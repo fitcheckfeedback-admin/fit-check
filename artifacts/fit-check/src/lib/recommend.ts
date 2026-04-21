@@ -21,10 +21,13 @@ export interface Recommendation {
   fitScore: number;
 }
 
+function getRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 export function generateRecommendation(input: RecommendationInput): Recommendation {
   let { temperatureF, precipChance, weatherCode, windMph, humidity, isDay, style } = input;
 
-  // Nudge slightly warmer if it's night time
   if (!isDay) {
     temperatureF -= 5;
   }
@@ -37,64 +40,65 @@ export function generateRecommendation(input: RecommendationInput): Recommendati
 
   const wmoInfo = getWeatherInfo(weatherCode);
 
-  // Core temperature tiers
   if (temperatureF < 40) {
     mainOutfit = getStyleCopy("heavy coat, sweater, pants", style);
-    outerwear = "Heavy coat";
-    accessories.push("Closed-toe shoes");
+    outerwear = getRandom(["A heavy parka", "Thick winter coat", "Insulated jacket"]);
+    accessories.push("Warm socks", "Sturdy shoes");
     if (temperatureF < 25) {
-      accessories.push("Beanie", "Gloves");
-      warnings.push("Freezing temps. Layer up heavily.");
+      accessories.push("Beanie", "Gloves", "Scarf");
+      warnings.push("Bitterly cold. Layer up heavily to stay safe.");
       fitScore -= 20;
+    } else {
+      warnings.push("Pretty chilly out there. Keep wrapped up.");
     }
   } else if (temperatureF < 56) {
     mainOutfit = getStyleCopy("jacket, long sleeve, pants", style);
-    outerwear = "Jacket or hoodie";
+    outerwear = getRandom(["A dependable jacket", "Your favorite hoodie", "A solid mid-layer"]);
     accessories.push("Closed-toe shoes");
   } else if (temperatureF < 70) {
     mainOutfit = getStyleCopy("light long sleeve or tee, jeans", style);
-    if (temperatureF < 62) outerwear = "Light layer";
+    if (temperatureF < 62) outerwear = "Light overshirt or cardigan";
     accessories.push("Sneakers");
   } else if (temperatureF < 81) {
     mainOutfit = getStyleCopy("tee, shorts", style);
-    accessories.push("Sneakers or light shoes");
+    accessories.push("Comfortable sneakers");
   } else {
     mainOutfit = getStyleCopy("tank or breathable shirt, shorts", style);
-    accessories.push("Light shoes");
-    warnings.push("Hot one today. Stay hydrated.");
+    accessories.push("Breathable shoes or sandals");
+    warnings.push("It's getting hot. Remember to hydrate.");
+    if (isDay) accessories.push("Sunglasses");
     fitScore -= 10;
   }
 
-  // Modifiers
   if (precipChance >= 60) {
-    accessories.push("Umbrella", "Waterproof shoes");
-    if (!outerwear) outerwear = "Rain jacket";
-    warnings.push("Rain expected, grab an umbrella.");
+    accessories.push("Umbrella", "Water-resistant shoes");
+    if (!outerwear) outerwear = "Light rain jacket";
+    warnings.push("High chance of rain. Don't get caught without cover.");
     fitScore -= 15;
   } else if (precipChance >= 30) {
-    warnings.push("Maybe bring an umbrella, chance of rain.");
+    warnings.push("Might sprinkle later. An umbrella wouldn't hurt.");
     fitScore -= 5;
   }
 
   if (windMph >= 15 && temperatureF < 65) {
-    warnings.push("It's breezy out there — consider a windbreaker.");
+    warnings.push("It's pretty breezy. A windbreaker could save the day.");
     if (!outerwear) outerwear = "Windbreaker";
     fitScore -= 10;
   }
 
   if (humidity >= 70 && temperatureF >= 75) {
-    warnings.push("High humidity. Lightweight fabrics recommended.");
+    warnings.push("It's quite muggy. Stick to lightweight, breathable fabrics.");
     fitScore -= 5;
   }
 
   if (wmoInfo.category === "thunderstorm") {
-    warnings.push("Strong thunderstorm warning. Stay dry.");
-    accessories.push("Sturdy waterproof gear");
+    warnings.push("Storms rolling in. Stay indoors if you can, or pack serious rain gear.");
+    accessories.push("Waterproof jacket");
     fitScore -= 20;
   }
 
   if (wmoInfo.category === "snow") {
-    warnings.push("Snowy conditions. Boots are a must.");
+    warnings.push("Snow on the ground. Proper footwear is essential.");
     accessories.push("Winter boots");
     if (!outerwear) outerwear = "Heavy winter coat";
     fitScore -= 15;
@@ -106,45 +110,121 @@ export function generateRecommendation(input: RecommendationInput): Recommendati
 }
 
 function getStyleCopy(base: string, style: StylePreference): string {
-  const map: Record<string, Record<StylePreference, string>> = {
+  const map: Record<string, Record<StylePreference, string[]>> = {
     "heavy coat, sweater, pants": {
-      Casual: "A comfy sweater, heavy coat, and your favorite pants.",
-      Streetwear: "Oversized hoodie under a puffer jacket with cargo pants.",
-      Athletic: "Thermal base layers, fleece, and weather-resistant joggers.",
-      Workwear: "Heavy duty canvas jacket over a thick flannel and tough denim.",
-      Minimal: "Monochrome wool sweater, tailored coat, and structured trousers."
+      Casual: [
+        "Throw on your chunkiest sweater, a heavy coat, and some reliable pants.",
+        "A thick knit sweater under your warmest coat with everyday pants."
+      ],
+      Streetwear: [
+        "Massive puffer jacket over a heavy hoodie and baggy cargo pants.",
+        "Oversized heavy outerwear layered with a graphic hoodie and wide pants."
+      ],
+      Athletic: [
+        "Thermal base layers under a heavy fleece and weather-resistant joggers.",
+        "Insulated performance jacket with thick track pants."
+      ],
+      Workwear: [
+        "Heavy canvas jacket lined with fleece, over a thick flannel and tough denim.",
+        "Rugged winter coat over a heavyweight henley and reinforced pants."
+      ],
+      Minimal: [
+        "A structured tailored coat over a monochrome wool sweater and clean trousers.",
+        "Heavy minimal topcoat with a fine knit turtleneck and wool trousers."
+      ]
     },
     "jacket, long sleeve, pants": {
-      Casual: "A long sleeve tee, a solid jacket, and everyday pants.",
-      Streetwear: "Graphic long sleeve, bomber jacket, and relaxed denim.",
-      Athletic: "Track jacket over a performance tee with joggers.",
-      Workwear: "Chore coat, thermal henley, and durable pants.",
-      Minimal: "Clean jacket over a simple crewneck and neat slacks."
+      Casual: [
+        "A comfortable long sleeve tee, a solid jacket, and everyday pants.",
+        "Your favorite jacket over a simple long sleeve and jeans."
+      ],
+      Streetwear: [
+        "A bold bomber or varsity jacket over a graphic long sleeve and relaxed denim.",
+        "Layer a zip-up over a heavyweight vintage long sleeve and baggy jeans."
+      ],
+      Athletic: [
+        "Sleek track jacket over a performance long sleeve and fitted joggers.",
+        "A technical zip-up with breathable athletic pants."
+      ],
+      Workwear: [
+        "A classic chore coat over a thermal henley and durable canvas pants.",
+        "Tough utility jacket over a chambray shirt and sturdy jeans."
+      ],
+      Minimal: [
+        "A clean, unbranded jacket over a simple crewneck and neat slacks.",
+        "Minimalist zip jacket with a crisp long sleeve and straight trousers."
+      ]
     },
     "light long sleeve or tee, jeans": {
-      Casual: "A light long sleeve or tee paired with comfortable jeans.",
-      Streetwear: "Vintage tee, optional overshirt, and baggy jeans.",
-      Athletic: "Athleisure long sleeve and training pants.",
-      Workwear: "Sturdy button-down and classic denim.",
-      Minimal: "Crisp white tee, light cardigan, and slim jeans."
+      Casual: [
+        "A light long sleeve or classic tee paired with comfortable jeans.",
+        "Just a simple tee or henley with your go-to pair of jeans."
+      ],
+      Streetwear: [
+        "A vintage graphic tee, an optional flannel, and perfectly bagged jeans.",
+        "Oversized boxy tee with wide-leg denim and statement sneakers."
+      ],
+      Athletic: [
+        "A moisture-wicking long sleeve and flexible training pants.",
+        "Performance quarter-zip with tapered athletic joggers."
+      ],
+      Workwear: [
+        "A sturdy button-down shirt tucked into classic raw denim.",
+        "A heavyweight pocket tee and double-knee work pants."
+      ],
+      Minimal: [
+        "A crisp white tee, a light cardigan if needed, and slim jeans.",
+        "A perfectly fitted premium t-shirt and tailored dark denim."
+      ]
     },
     "tee, shorts": {
-      Casual: "A simple t-shirt and your go-to shorts.",
-      Streetwear: "Boxy tee, stylish shorts, and statement sneakers.",
-      Athletic: "Moisture-wicking tee and athletic shorts.",
-      Workwear: "Short sleeve work shirt and durable canvas shorts.",
-      Minimal: "Fitted basic tee and tailored shorts."
+      Casual: [
+        "A soft, simple t-shirt and your most comfortable shorts.",
+        "Your favorite everyday tee paired with casual shorts."
+      ],
+      Streetwear: [
+        "A heavyweight boxy tee, stylish shorts, and fresh sneakers.",
+        "Graphic tee, nylon shorts, and a bold pair of kicks."
+      ],
+      Athletic: [
+        "A breathable performance tee and athletic shorts.",
+        "Moisture-wicking training shirt and lightweight gym shorts."
+      ],
+      Workwear: [
+        "A short sleeve work shirt and durable canvas shorts.",
+        "Tough pocket t-shirt and reinforced utility shorts."
+      ],
+      Minimal: [
+        "A fitted basic tee and cleanly tailored shorts.",
+        "A monochromatic short sleeve and simple, unbranded shorts."
+      ]
     },
     "tank or breathable shirt, shorts": {
-      Casual: "A breezy tank or shirt and light shorts.",
-      Streetwear: "Mesh jersey or tank, nylon shorts, and fresh kicks.",
-      Athletic: "Performance tank and running shorts.",
-      Workwear: "Lightweight button-up and functional shorts.",
-      Minimal: "Linen blend shirt and simple shorts."
+      Casual: [
+        "A breezy tank or light shirt and breathable shorts.",
+        "The lightest tee or tank you own and easy shorts."
+      ],
+      Streetwear: [
+        "A mesh jersey or relaxed tank, lightweight shorts, and clean sneakers.",
+        "Oversized breathable tee with athletic mesh shorts."
+      ],
+      Athletic: [
+        "A high-performance cooling tank and running shorts.",
+        "Ultralight training tank top and minimal athletic shorts."
+      ],
+      Workwear: [
+        "A lightweight, breathable button-up and functional shorts.",
+        "A light chambray short sleeve and utility work shorts."
+      ],
+      Minimal: [
+        "A linen blend shirt and simple, structured shorts.",
+        "A fine cotton tank and crisp, minimalist shorts."
+      ]
     }
   };
 
-  return map[base]?.[style] || base;
+  const options = map[base]?.[style];
+  return options ? getRandom(options) : base;
 }
 
 function average(arr: number[]): number {
@@ -157,11 +237,6 @@ export function generateTimeOfDayRecs(
   style: StylePreference, 
   units: "f" | "c"
 ) {
-  // Extract today's hourly data starting from current time
-  const now = new Date();
-  
-  // Find indices for morning (6-11), afternoon (12-17), evening (18-22)
-  // Simple approach: get the next 24 hours and bucket them
   const indices = {
     morning: [] as number[],
     afternoon: [] as number[],
@@ -193,7 +268,6 @@ export function generateTimeOfDayRecs(
     const wind = average(idxs.map(i => hourlyForecast.wind_speed_10m[i]));
     const hum = average(idxs.map(i => hourlyForecast.relative_humidity_2m[i]));
     
-    // Most common weather code in the bucket
     const codes = idxs.map(i => hourlyForecast.weather_code[i]);
     const codeMap = codes.reduce((acc, c) => { acc[c] = (acc[c] || 0) + 1; return acc; }, {} as Record<number, number>);
     let maxCode = codes[0];
@@ -205,7 +279,6 @@ export function generateTimeOfDayRecs(
       }
     }
 
-    // Determine isDay simply by hour
     const hourAvg = average(idxs.map(i => new Date(hourlyForecast.time[i]).getHours()));
     const isDay = hourAvg >= 6 && hourAvg <= 18;
 

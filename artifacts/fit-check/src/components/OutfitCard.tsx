@@ -1,6 +1,5 @@
 import { Recommendation } from "@/lib/recommend";
 import { FitScoreBadge } from "./FitScoreBadge";
-import { Card } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -12,64 +11,62 @@ export function OutfitCard({ recommendation }: OutfitCardProps) {
   const { mainOutfit, outerwear, accessories, warnings, fitScore } = recommendation;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-    >
-      <Card className="rounded-3xl p-6 border border-border bg-card shadow-sm relative overflow-hidden">
-        <div className="absolute top-4 right-4">
-          <FitScoreBadge score={fitScore} />
+    <div className="bg-card rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-border/60 relative overflow-hidden group hover:border-primary/30 transition-colors">
+      {/* Decorative gradient blur based on score */}
+      <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="absolute top-5 right-5">
+        <FitScoreBadge score={fitScore} />
+      </div>
+      
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            The Fit
+          </h3>
+          <p className="text-2xl font-display font-semibold leading-tight pr-14 text-foreground/90">
+            {mainOutfit}
+          </p>
         </div>
-        
-        <div className="space-y-4">
+
+        {outerwear && (
           <div>
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-              Main Fit
+            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">
+              Layer Up
             </h3>
-            <p className="text-xl font-medium leading-snug pr-12">
-              {mainOutfit}
+            <p className="text-lg font-medium text-foreground/80">
+              {outerwear}
             </p>
           </div>
+        )}
 
-          {outerwear && (
-            <div>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                Outerwear
-              </h3>
-              <p className="text-lg text-foreground/90">
-                {outerwear}
-              </p>
-            </div>
-          )}
-
-          {accessories.length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                Accessories
-              </h3>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {accessories.map((acc, i) => (
-                  <span key={i} className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm font-medium">
-                    {acc}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {warnings.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-border/50 space-y-2">
-              {warnings.map((warning, i) => (
-                <div key={i} className="flex items-start gap-2 text-amber-600 dark:text-amber-400">
-                  <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
-                  <p className="text-sm font-medium">{warning}</p>
-                </div>
+        {accessories.length > 0 && (
+          <div>
+            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
+              Extras
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {accessories.map((acc, i) => (
+                <span key={i} className="px-3 py-1.5 bg-secondary text-secondary-foreground border border-border/50 rounded-xl text-sm font-semibold shadow-sm">
+                  {acc}
+                </span>
               ))}
             </div>
-          )}
-        </div>
-      </Card>
-    </motion.div>
+          </div>
+        )}
+
+        {warnings.length > 0 && (
+          <div className="mt-4 pt-5 border-t border-border/40 space-y-2.5">
+            {warnings.map((warning, i) => (
+              <div key={i} className="flex items-start gap-2.5 text-amber-600 dark:text-amber-400 bg-amber-500/10 p-3 rounded-2xl">
+                <AlertTriangle className="w-5 h-5 shrink-0" />
+                <p className="text-sm font-semibold leading-snug">{warning}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
