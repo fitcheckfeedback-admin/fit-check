@@ -86,9 +86,12 @@ export default function Closet() {
       animate={{ opacity: 1 }}
       className="p-6 space-y-8 pb-12"
     >
-      <div>
-        <h1 className="text-4xl font-display font-bold mb-2">My Closet</h1>
-        <p className="text-muted-foreground font-medium">Add items to see them matched in your daily recommendations.</p>
+      <div className="flex items-center gap-3 mb-2">
+        <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-xl shadow-sm hidden" />
+        <div>
+          <h1 className="text-4xl font-display font-bold">My Closet</h1>
+          <p className="text-muted-foreground font-medium">Add items to see them matched in your daily recommendations.</p>
+        </div>
       </div>
 
       <div className="space-y-10">

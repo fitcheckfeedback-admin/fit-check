@@ -59,9 +59,12 @@ export default function Settings() {
       animate={{ opacity: 1 }}
       className="p-6 space-y-8 pb-24"
     >
-      <div>
-        <h1 className="text-4xl font-display font-bold mb-2">Settings</h1>
-        <p className="text-muted-foreground font-medium">Manage your preferences and location.</p>
+      <div className="flex items-center gap-4 mb-2">
+        <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-xl shadow-sm" />
+        <div>
+          <h1 className="text-4xl font-display font-bold">Settings</h1>
+          <p className="text-muted-foreground font-medium">Manage your preferences and location.</p>
+        </div>
       </div>
 
       <section className="space-y-4">

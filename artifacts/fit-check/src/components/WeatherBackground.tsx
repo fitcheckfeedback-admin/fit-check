@@ -52,7 +52,7 @@ export function WeatherBackground({ weatherCode, isDay }: WeatherBackgroundProps
         <motion.div
           animate={{ scale: [1, 1.05, 1], opacity: [0.6, 0.8, 0.6] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-24 -right-24 w-96 h-96 bg-yellow-300/40 rounded-full blur-3xl"
+          className="absolute -top-24 -right-24 w-96 h-96 bg-[#FF9500]/30 rounded-full blur-3xl"
         />
       )}
 

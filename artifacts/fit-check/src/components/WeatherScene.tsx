@@ -21,17 +21,17 @@ export function WeatherScene({ weatherCode, className = "w-32 h-32", isDay = tru
       className="origin-center"
       style={{ transformOrigin: "50px 50px" }}
     >
-      <circle cx="50" cy="50" r="20" fill={isDay ? "#FDB813" : "#C4D3DF"} />
+      <circle cx="50" cy="50" r="20" fill={isDay ? "#FF9500" : "#C4D3DF"} />
       {isDay && (
         <>
-          <line x1="50" y1="15" x2="50" y2="5" stroke="#FDB813" strokeWidth="4" strokeLinecap="round" />
-          <line x1="50" y1="85" x2="50" y2="95" stroke="#FDB813" strokeWidth="4" strokeLinecap="round" />
-          <line x1="15" y1="50" x2="5" y2="50" stroke="#FDB813" strokeWidth="4" strokeLinecap="round" />
-          <line x1="85" y1="50" x2="95" y2="50" stroke="#FDB813" strokeWidth="4" strokeLinecap="round" />
-          <line x1="25" y1="25" x2="18" y2="18" stroke="#FDB813" strokeWidth="4" strokeLinecap="round" />
-          <line x1="75" y1="75" x2="82" y2="82" stroke="#FDB813" strokeWidth="4" strokeLinecap="round" />
-          <line x1="25" y1="75" x2="18" y2="82" stroke="#FDB813" strokeWidth="4" strokeLinecap="round" />
-          <line x1="75" y1="25" x2="82" y2="18" stroke="#FDB813" strokeWidth="4" strokeLinecap="round" />
+          <line x1="50" y1="15" x2="50" y2="5" stroke="#FF9500" strokeWidth="4" strokeLinecap="round" />
+          <line x1="50" y1="85" x2="50" y2="95" stroke="#FF9500" strokeWidth="4" strokeLinecap="round" />
+          <line x1="15" y1="50" x2="5" y2="50" stroke="#FF9500" strokeWidth="4" strokeLinecap="round" />
+          <line x1="85" y1="50" x2="95" y2="50" stroke="#FF9500" strokeWidth="4" strokeLinecap="round" />
+          <line x1="25" y1="25" x2="18" y2="18" stroke="#FF9500" strokeWidth="4" strokeLinecap="round" />
+          <line x1="75" y1="75" x2="82" y2="82" stroke="#FF9500" strokeWidth="4" strokeLinecap="round" />
+          <line x1="25" y1="75" x2="18" y2="82" stroke="#FF9500" strokeWidth="4" strokeLinecap="round" />
+          <line x1="75" y1="25" x2="82" y2="18" stroke="#FF9500" strokeWidth="4" strokeLinecap="round" />
         </>
       )}
     </motion.g>

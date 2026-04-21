@@ -126,7 +126,12 @@ export default function Home() {
       >
         <WeatherBackground weatherCode={weather.current.weather_code} isDay={isDay} />
         
-        <div className="relative z-10 flex flex-col items-center text-center">
+        <div className="absolute top-6 left-6 z-20 flex items-center gap-2">
+          <img src="/logo.png" alt="Fit Check" className="w-8 h-8 rounded-lg shadow-sm" />
+          <span className="font-display font-bold text-foreground/90 tracking-tight">Fit Check</span>
+        </div>
+
+        <div className="relative z-10 flex flex-col items-center text-center mt-6">
           <button 
             onClick={() => setShowSearch(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-background/20 hover:bg-background/30 backdrop-blur-md rounded-full text-foreground/90 font-medium text-sm transition-colors mb-8"

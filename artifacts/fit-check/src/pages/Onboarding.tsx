@@ -71,7 +71,7 @@ export default function Onboarding() {
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.2, type: "spring" }}
               >
-                <WeatherScene weatherCode={1} className="w-40 h-40 drop-shadow-xl" isDay={true} />
+                <img src="/logo.png" alt="Fit Check Logo" className="w-32 h-32 rounded-[2rem] drop-shadow-xl object-cover" />
               </motion.div>
 
               <div className="space-y-3">
