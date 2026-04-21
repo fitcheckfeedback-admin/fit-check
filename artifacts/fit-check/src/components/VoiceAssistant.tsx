@@ -66,7 +66,7 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
     if (isOpen && answer && !isSpeaking) {
       answerTimeoutRef.current = setTimeout(() => {
         handleClose();
-      }, 6000);
+      }, 20000);
     }
     return () => {
       if (answerTimeoutRef.current) clearTimeout(answerTimeoutRef.current);
