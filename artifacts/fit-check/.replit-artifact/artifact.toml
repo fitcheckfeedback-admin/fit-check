@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Fit Check"
+version = "1.0.0"
+id = "artifacts/fit-check"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20187
+
+[services.development]
+run = "pnpm --filter @workspace/fit-check run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/fit-check", "run", "build" ]
+publicDir = "artifacts/fit-check/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20187"
+BASE_PATH = "/"

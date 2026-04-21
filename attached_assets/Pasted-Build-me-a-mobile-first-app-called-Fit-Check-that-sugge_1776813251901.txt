@@ -1,0 +1,190 @@
+Build me a mobile-first app called “Fit Check” that suggests what clothes to wear based on the local weather forecast.
+
+App goal:
+The app should feel like a simple, modern personal stylist that checks the weather and gives clothing recommendations for the day. It should be fun, clean, and easy to use. The main purpose is to help users decide what to wear based on temperature, rain, wind, humidity, and overall conditions.
+
+Core concept:
+The app pulls live weather data based on the user’s location or a manually entered city. It then translates the weather into simple outfit suggestions like:
+- T-shirt and shorts
+- Light hoodie and jeans
+- Rain jacket and sneakers
+- Sweater with pants
+- Heavy jacket, beanie, and boots
+
+The app should not just show weather. It should turn weather into useful outfit advice.
+
+Target user experience:
+A user opens the app and instantly sees:
+1. Current weather
+2. Today’s high and low
+3. Chance of rain
+4. A simple clothing suggestion
+5. Optional extras like “bring an umbrella” or “wear layers”
+
+Main features:
+1. Location-based weather
+- Ask for location permission
+- If allowed, automatically detect location and pull current weather
+- Also allow manual city search if the user does not want to share location
+
+2. Daily outfit recommendation
+- Based on current temp, feels like temp, rain chance, wind, and conditions
+- Show one main outfit suggestion for the day
+- Example:
+  “Today’s fit: T-shirt, light shorts, and sneakers.”
+  “You may want a light jacket this morning.”
+  “Bring an umbrella this afternoon.”
+
+3. Time-of-day recommendations
+- Morning
+- Afternoon
+- Evening
+Because weather changes during the day, the app should adjust suggestions by time block
+
+4. Weather-based clothing logic
+Use weather rules like:
+- Under 40°F: heavy coat, hoodie/sweater, pants, closed-toe shoes
+- 40–55°F: jacket or hoodie, pants
+- 56–69°F: light long sleeve or T-shirt with optional light layer
+- 70–80°F: T-shirt and shorts
+- 81°F+: tank top or breathable shirt, shorts, hydration reminder
+
+Rain logic:
+- If rain chance is high, suggest umbrella or rain jacket
+- If storms are expected, mention waterproof shoes if possible
+
+Wind logic:
+- If windy and cool, recommend an extra layer
+
+Humidity logic:
+- If hot and humid, recommend lightweight breathable clothing
+
+5. Style preference options
+Let the user choose their style vibe:
+- Casual
+- Streetwear
+- Athletic
+- Workwear
+- Minimal
+The recommendation text should slightly change based on the selected style
+
+Examples:
+Casual: “T-shirt, shorts, and comfy sneakers”
+Streetwear: “Oversized tee, shorts, and clean sneakers”
+Athletic: “Moisture-wicking tee, gym shorts, and trainers”
+
+6. Closet/favorites feature
+Allow users to save favorite clothing items or outfit types for future versions
+For now this can be simple:
+- Tops
+- Bottoms
+- Outerwear
+- Shoes
+Then try to match recommendations to saved preferences if available
+
+7. Clean UI
+Design should look modern, smooth, and app-store ready
+Style:
+- Minimal but fun
+- Soft rounded cards
+- Trendy, polished look
+- Easy to read
+- Weather icons
+- Outfit cards
+- Clean fonts
+- Subtle animations if possible
+
+Main screens:
+1. Welcome / onboarding screen
+- App name: Fit Check
+- Short tagline: “What to wear, based on the weather.”
+- Button to enable location
+- Button to continue with city search
+
+2. Home screen
+Show:
+- City/location
+- Current temperature
+- Weather condition
+- High/low
+- Main outfit recommendation
+- Extra suggestions like umbrella, jacket, layers
+- Morning / afternoon / evening tabs or cards
+
+3. Style preferences screen
+- Choose vibe: casual, streetwear, athletic, workwear, minimal
+
+4. Saved closet screen
+- Let users add simple clothing item names
+- Example: black hoodie, white tee, jeans, black shorts, sneakers
+
+5. Settings screen
+- Toggle Fahrenheit/Celsius
+- Change location
+- Manage style preference
+
+Recommendation engine behavior:
+Create a rules-based recommendation engine first.
+Do not overcomplicate it with AI.
+Use clear if/else logic based on:
+- temperature
+- feels_like
+- precipitation chance
+- weather condition
+- wind speed
+- humidity
+- time of day
+
+Then output:
+- main outfit recommendation
+- optional outerwear suggestion
+- accessories suggestion
+- warnings like umbrella, rain, or heat
+
+Sample output examples:
+Example 1:
+Weather: 78°F, partly cloudy, low rain chance
+Output:
+“Today’s fit: T-shirt, shorts, and sneakers.”
+“Optional: bring a light layer for later tonight.”
+
+Example 2:
+Weather: 52°F, windy, cloudy
+Output:
+“Today’s fit: hoodie or light jacket with jeans and closed-toe shoes.”
+“It’s breezy, so wear an extra layer.”
+
+Example 3:
+Weather: 88°F, humid, sunny
+Output:
+“Today’s fit: breathable T-shirt or tank, shorts, and lightweight shoes.”
+“It’s hot today, so wear light fabrics and stay hydrated.”
+
+Example 4:
+Weather: 61°F, 80% rain chance
+Output:
+“Today’s fit: long sleeve shirt, light pants, and waterproof shoes.”
+“Bring an umbrella or a rain jacket.”
+
+Technical requirements:
+- Build as a responsive mobile-first web app
+- Use React if possible
+- Use a clean component-based structure
+- Use a weather API like OpenWeatherMap or another simple weather service
+- Organize code clearly so I can keep building on it later
+- Include sample/mock data fallback if API key is missing
+- Use good UX and polished design
+- Add comments in the code so a beginner can understand it
+
+Nice extras if possible:
+- Animated weather icons
+- Swipe between daily forecasts
+- “Fit score” for the day
+- Notifications like:
+  “Rain this afternoon — bring a jacket”
+- Dark mode
+
+Important:
+Make the app feel useful, stylish, and easy to understand.
+The recommendation text should sound natural, not robotic.
+Keep the design modern enough that it could look like a real app on the App Store.
