@@ -2,11 +2,12 @@ import { useState } from "react";
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { MapPin, RefreshCw, Sun, Moon, Laptop, Thermometer, Trash2 } from "lucide-react";
+import { MapPin, RefreshCw, Sun, Moon, Laptop, Thermometer, Trash2, Copy } from "lucide-react";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useLocation } from "wouter";
 import { CitySearch } from "@/components/CitySearch";
 import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +26,7 @@ export default function Settings() {
   const { getCurrentPosition, loading } = useGeolocation();
   const [, setLocation] = useLocation();
   const [showCitySearch, setShowCitySearch] = useState(false);
+  const { toast } = useToast();
 
   const handleUpdateLocation = async () => {
     try {
@@ -193,6 +195,30 @@ export default function Settings() {
               })}
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider pl-2">Use with Siri</h2>
+        <div className="bg-card rounded-[2rem] border shadow-sm p-5 space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Want to ask Siri what to wear? On your iPhone, open the Shortcuts app and create a shortcut that opens this URL. Then say "Hey Siri, what should I wear?" to launch Fit Check instantly.
+          </p>
+          <div className="flex items-center gap-2 bg-muted p-3 rounded-xl overflow-hidden">
+            <code className="text-xs flex-1 truncate">{window.location.origin}/?voice=1</code>
+            <Button variant="secondary" size="sm" onClick={() => {
+              navigator.clipboard.writeText(`${window.location.origin}/?voice=1`);
+              toast({ title: "Copied!" });
+            }}>
+              <Copy className="w-4 h-4" />
+            </Button>
+          </div>
+          <ol className="text-sm text-muted-foreground list-decimal pl-4 space-y-2">
+            <li>Open the Shortcuts app on iPhone.</li>
+            <li>Tap the + to create a new shortcut.</li>
+            <li>Add the action "Open URL" and paste the URL above.</li>
+            <li>Tap the settings icon and add to Siri with phrase "What should I wear?"</li>
+          </ol>
         </div>
       </section>
 

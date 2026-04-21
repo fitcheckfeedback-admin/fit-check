@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { formatTemp, formatTime } from "@/lib/format";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { VoiceAssistant } from "@/components/VoiceAssistant";
 
 export default function Home() {
   const { settings, updateSettings } = useFitCheckSettings();
@@ -272,6 +273,20 @@ export default function Home() {
           </div>
         </motion.section>
       </div>
+      
+      {weather && todayRec && (
+        <VoiceAssistant 
+          weatherData={weather} 
+          recommendation={todayRec} 
+          settings={settings} 
+          autoStart={new URLSearchParams(window.location.search).get('voice') === '1'}
+          onCloseAutoStart={() => {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('voice');
+            window.history.replaceState({}, '', url);
+          }}
+        />
+      )}
     </div>
   );
 }
