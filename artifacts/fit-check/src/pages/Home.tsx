@@ -8,12 +8,35 @@ import { TimeOfDayTabs } from "@/components/TimeOfDayTabs";
 import { CitySearch } from "@/components/CitySearch";
 import { generateRecommendation, generateTimeOfDayRecs } from "@/lib/recommend";
 import { getWeatherInfo } from "@/lib/weather-codes";
-import { MapPin, Droplets, Wind, Sunset, Sunrise, Search } from "lucide-react";
+import { pickClosetItems } from "@/lib/closetMatch";
+import { useClosetImage } from "@/hooks/useClosetImage";
+import { MapPin, Droplets, Wind, Sunset, Sunrise, Search, Shirt, Scissors, Layers, Footprints } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatTemp, formatTime } from "@/lib/format";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { VoiceAssistant } from "@/components/VoiceAssistant";
+
+function ClosetMatchThumbnail({ item, label, icon: Icon }: { item: import("@/lib/storage").ClosetItem; label: string; icon: any }) {
+  const { src } = useClosetImage(item.imageId);
+  return (
+    <div className="flex flex-col items-center gap-2 group shrink-0">
+      <div className="w-20 h-20 rounded-2xl bg-card border-2 border-border shadow-sm overflow-hidden relative">
+        {src ? (
+          <img src={src} alt={item.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-muted/30 text-muted-foreground">
+             <Icon className="w-8 h-8 opacity-50" />
+          </div>
+        )}
+      </div>
+      <div className="text-center w-20">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-tight mb-0.5">{label}</p>
+        <p className="text-xs font-semibold text-foreground truncate" title={item.name}>{item.name}</p>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const { settings, updateSettings } = useFitCheckSettings();
@@ -71,28 +94,19 @@ export default function Home() {
 
   const timeOfDayRecs = generateTimeOfDayRecs(weather.hourly, settings.style, settings.units);
 
-  const allRecWords = `${todayRec.mainOutfit} ${todayRec.outerwear || ""}`.toLowerCase();
-  const closetMatches: string[] = [];
-  
-  const allClosetItems = [
-    ...settings.closet.tops,
-    ...settings.closet.bottoms,
-    ...settings.closet.outerwear,
-    ...settings.closet.shoes
-  ];
-
-  allClosetItems.forEach(item => {
-    const words = item.toLowerCase().split(/\s+/);
-    if (words.some(w => allRecWords.includes(w)) && item.trim() !== "") {
-      closetMatches.push(item);
-    }
-  });
+  const closetMatchResult = pickClosetItems(todayRec, settings.closet, settings.style);
+  const matchedItems = [
+    { cat: "tops", label: "Top", icon: Shirt, item: closetMatchResult.tops },
+    { cat: "bottoms", label: "Bottom", icon: Scissors, item: closetMatchResult.bottoms },
+    { cat: "outerwear", label: "Layer", icon: Layers, item: closetMatchResult.outerwear },
+    { cat: "shoes", label: "Shoes", icon: Footprints, item: closetMatchResult.shoes }
+  ].filter(x => x.item !== undefined);
 
   const highF = weather.daily.temperature_2m_max[0];
   const lowF = weather.daily.temperature_2m_min[0];
 
   return (
-    <div className="flex-1 flex flex-col relative pb-8">
+    <div className="flex-1 flex flex-col relative pb-28">
       <AnimatePresence>
         {showSearch && (
           <motion.div 
@@ -176,18 +190,24 @@ export default function Home() {
           <h2 className="text-2xl font-display font-bold mb-4 px-1">Today's Fit</h2>
           <OutfitCard recommendation={todayRec} />
           
-          {closetMatches.length > 0 && (
+          {matchedItems.length > 0 && (
             <motion.div 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              className="mt-4 px-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-6 bg-card border rounded-3xl p-5 shadow-sm overflow-hidden relative"
             >
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">From your closet</p>
-              <div className="flex flex-wrap gap-2">
-                {closetMatches.map((item, i) => (
-                  <span key={i} className="px-3 py-1.5 bg-card border rounded-lg text-sm font-medium shadow-sm">
-                    {item}
-                  </span>
+              <div className="absolute -top-10 -left-10 w-32 h-32 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+              <div className="flex items-center justify-between mb-4 relative z-10">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                  Wear Today
+                </h3>
+              </div>
+              <div className="flex overflow-x-auto hide-scrollbar gap-4 pb-1 relative z-10 snap-x">
+                {matchedItems.map((match, i) => (
+                  <div key={i} className="snap-start">
+                    <ClosetMatchThumbnail item={match.item!} label={match.label} icon={match.icon} />
+                  </div>
                 ))}
               </div>
             </motion.div>
@@ -211,7 +231,6 @@ export default function Home() {
                 const temp = weather.hourly.temperature_2m[i];
                 const pop = weather.hourly.precipitation_probability[i];
                 const code = weather.hourly.weather_code[i];
-                const info = getWeatherInfo(code);
                 const isDayHour = hourDate.getHours() >= 6 && hourDate.getHours() <= 18;
 
                 return (

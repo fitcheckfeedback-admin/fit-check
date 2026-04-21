@@ -3,6 +3,7 @@ import { Recommendation } from "./recommend";
 import { WeatherForecastResponse } from "./weather";
 import { FitCheckSettings } from "./storage";
 import { getWeatherInfo } from "./weather-codes";
+import { pickClosetItems } from "./closetMatch";
 
 export function buildVoiceAnswer(
   intent: VoiceIntent,
@@ -24,33 +25,39 @@ export function buildVoiceAnswer(
   const outer = recommendation.outerwear ? ` Throw on ${recommendation.outerwear.toLowerCase()}.` : "";
   const accs = recommendation.accessories.length > 0 ? ` Don't forget ${recommendation.accessories.join(" and ").toLowerCase()}.` : "";
 
+  const matches = pickClosetItems(recommendation, settings.closet, settings.style);
+  const matchedNames = Object.values(matches).filter(Boolean).map(i => i!.name);
+  const closetStr = matchedNames.length > 0 
+    ? ` From your closet, try ${matchedNames.slice(0, -1).join(", ")}${matchedNames.length > 1 ? " and " : ""}${matchedNames[matchedNames.length - 1]}.` 
+    : "";
+
   switch (intent.type) {
     case "tomorrow": {
       const tmrwTempMax = t(daily.temperature_2m_max[1]);
       const tmrwCondition = getWeatherInfo(daily.weather_code[1]).label.toLowerCase();
-      return `Tomorrow looks like ${tmrwTempMax} and ${tmrwCondition}. A good idea would be ${outf}.${outer}${accs}`;
+      return `Tomorrow looks like ${tmrwTempMax} and ${tmrwCondition}. A good idea would be ${outf}.${outer}${accs}${closetStr}`;
     }
     
     case "rain": {
       if (maxPrecip > 30) {
         return `There is a ${maxPrecip} percent chance of rain today. You should wear a rain jacket, waterproof shoes, and bring an umbrella.`;
       }
-      return `It doesn't look like much rain today, just a ${maxPrecip} percent chance. ${recommendation.mainOutfit} should be fine.`;
+      return `It doesn't look like much rain today, just a ${maxPrecip} percent chance. ${recommendation.mainOutfit} should be fine.${closetStr}`;
     }
     
     case "warmth": {
       if (current.temperature_2m < 50) {
-        return `It's chilly out there, currently ${currentTemp}. Layer up with ${outf}.${outer}${accs}`;
+        return `It's chilly out there, currently ${currentTemp}. Layer up with ${outf}.${outer}${accs}${closetStr}`;
       } else if (current.temperature_2m > 80) {
-        return `It's pretty warm today at ${currentTemp}. Keep it light with ${outf}.`;
+        return `It's pretty warm today at ${currentTemp}. Keep it light with ${outf}.${closetStr}`;
       }
-      return `The temperature is comfortable at ${currentTemp}. ${recommendation.mainOutfit} is a great choice.`;
+      return `The temperature is comfortable at ${currentTemp}. ${recommendation.mainOutfit} is a great choice.${closetStr}`;
     }
     
     case "morning":
     case "afternoon":
     case "evening": {
-      return `For this ${intent.type}, expect around ${currentTemp} and ${currentCondition}. You'll be set with ${outf}.${outer}`;
+      return `For this ${intent.type}, expect around ${currentTemp} and ${currentCondition}. You'll be set with ${outf}.${outer}${closetStr}`;
     }
     
     case "today":
@@ -58,7 +65,7 @@ export function buildVoiceAnswer(
       let rainWarn = "";
       if (maxPrecip > 30) rainWarn = ` Maybe grab an umbrella, there's a ${maxPrecip} percent chance of rain later.`;
       
-      return `It's ${currentTemp} and ${currentCondition} in ${settings.location?.name || "your area"}. Today's fit: ${outf}.${outer}${accs}${rainWarn}`;
+      return `It's ${currentTemp} and ${currentCondition} in ${settings.location?.name || "your area"}. Today's fit: ${outf}.${outer}${accs}${closetStr}${rainWarn}`;
     }
   }
 }
