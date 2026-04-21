@@ -108,49 +108,42 @@ export function useVoiceAssistant() {
     };
   }, [isSupported]);
 
-  const speak = useCallback((text: string, voiceName?: string | null) => {
-    if (!window.speechSynthesis) return;
-    
-    window.speechSynthesis.cancel();
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    const setVoice = () => {
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length === 0) return;
-      
-      let chosen: SpeechSynthesisVoice | undefined;
-      if (voiceName) {
-        chosen = voices.find(v => v.name === voiceName);
-      }
-      if (!chosen) {
-        chosen = voices.find(v => 
-          (v.name.includes('Samantha') || v.name.includes('Google US English') || v.name.includes('Natural')) && v.lang === 'en-US'
-        ) || voices.find(v => v.lang === 'en-US') || voices[0];
-      }
-      utterance.voice = chosen;
-    };
-
-    setVoice();
-    if (window.speechSynthesis.getVoices().length === 0) {
-      window.speechSynthesis.addEventListener('voiceschanged', setVoice, { once: true });
+  const speak = useCallback(async (text: string, voiceName?: string | null) => {
+    // Try cloud TTS first for life-like voices; fall back to browser if it fails
+    try {
+      const { speakWithCloud, isCloudVoice, DEFAULT_VOICE } = await import('@/lib/cloudTTS');
+      const voice = isCloudVoice(voiceName) ? voiceName : DEFAULT_VOICE;
+      await speakWithCloud(text, {
+        voice,
+        onStart: () => setIsSpeaking(true),
+        onEnd: () => setIsSpeaking(false),
+        onError: () => setIsSpeaking(false),
+      });
+      return;
+    } catch (err) {
+      console.warn('Cloud TTS unavailable, falling back to browser voice:', err);
     }
 
+    // Fallback: Web Speech API
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      utterance.voice = voices.find(v => v.lang === 'en-US') || voices[0];
+    }
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = (e) => {
-      console.error('Speech synthesis error:', e);
-      setIsSpeaking(false);
-    };
-
+    utterance.onerror = () => setIsSpeaking(false);
     window.speechSynthesis.speak(utterance);
   }, []);
 
   const cancelSpeech = useCallback(() => {
+    import('@/lib/cloudTTS').then(({ stopCloudSpeech }) => stopCloudSpeech());
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
-      setIsSpeaking(false);
     }
+    setIsSpeaking(false);
   }, []);
 
   return {

@@ -8,17 +8,8 @@ import { useLocation } from "wouter";
 import { CitySearch } from "@/components/CitySearch";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { useVoices } from "@/hooks/useVoices";
 import { useVoiceAssistant } from "@/hooks/useVoiceAssistant";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { CLOUD_VOICES, DEFAULT_VOICE } from "@/lib/cloudTTS";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,14 +29,14 @@ export default function Settings() {
   const [, setLocation] = useLocation();
   const [showCitySearch, setShowCitySearch] = useState(false);
   const { toast } = useToast();
-  const voices = useVoices();
-  const { speak } = useVoiceAssistant();
+  const { speak, isSpeaking, cancelSpeech } = useVoiceAssistant();
   
-  const englishVoices = voices.filter(v => v.lang.toLowerCase().startsWith("en"));
-  const otherVoices = voices.filter(v => !v.lang.toLowerCase().startsWith("en"));
-  
-  const handleTestVoice = () => {
-    speak("Hi, I'm your Fit Check assistant. Today looks like a good day to layer up.", settings.voiceName);
+  const handleTestVoice = (voiceId?: string) => {
+    if (isSpeaking) {
+      cancelSpeech();
+      return;
+    }
+    speak("Hi, I'm your Fit Check assistant. Today looks like a great day to layer up.", voiceId ?? settings.voiceName);
   };
 
   const handleUpdateLocation = async () => {
@@ -231,54 +222,47 @@ export default function Settings() {
             </div>
           </div>
 
-          {voices.length === 0 ? (
-            <p className="text-sm text-muted-foreground bg-muted/30 rounded-xl p-3">
-              Loading voices from your device... If none appear, your browser may not support this feature.
-            </p>
-          ) : (
-            <>
-              <Select
-                value={settings.voiceName ?? "__auto__"}
-                onValueChange={(val) => updateSettings({ voiceName: val === "__auto__" ? null : val })}
-              >
-                <SelectTrigger className="h-12 rounded-xl text-base bg-background">
-                  <SelectValue placeholder="Choose a voice" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[320px]">
-                  <SelectItem value="__auto__">Auto (recommended)</SelectItem>
-                  {englishVoices.length > 0 && (
-                    <SelectGroup>
-                      <SelectLabel>English</SelectLabel>
-                      {englishVoices.map(v => (
-                        <SelectItem key={v.name} value={v.name}>
-                          {v.name} <span className="text-muted-foreground text-xs ml-1">({v.lang})</span>
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
+          <div className="grid grid-cols-1 gap-2">
+            {CLOUD_VOICES.map(v => {
+              const isActive = (settings.voiceName ?? DEFAULT_VOICE) === v.id;
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => updateSettings({ voiceName: v.id })}
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-2xl border-2 text-left transition-all",
+                    isActive 
+                      ? "border-primary bg-primary/5" 
+                      : "border-transparent bg-muted/30 hover:bg-muted/50"
                   )}
-                  {otherVoices.length > 0 && (
-                    <SelectGroup>
-                      <SelectLabel>Other languages</SelectLabel>
-                      {otherVoices.map(v => (
-                        <SelectItem key={v.name} value={v.name}>
-                          {v.name} <span className="text-muted-foreground text-xs ml-1">({v.lang})</span>
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  )}
-                </SelectContent>
-              </Select>
-
-              <Button 
-                variant="secondary" 
-                className="w-full h-12 rounded-xl text-base"
-                onClick={handleTestVoice}
-              >
-                <Play className="w-4 h-4 mr-2" />
-                Test voice
-              </Button>
-            </>
-          )}
+                >
+                  <div className={cn(
+                    "w-9 h-9 rounded-full flex items-center justify-center font-display font-bold text-sm shrink-0",
+                    isActive ? "bg-primary text-primary-foreground" : "bg-background text-foreground"
+                  )}>
+                    {v.label[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm leading-tight">{v.label}</p>
+                    <p className="text-xs text-muted-foreground truncate">{v.desc}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleTestVoice(v.id); }}
+                    className="w-9 h-9 rounded-full bg-background border flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors shrink-0"
+                    aria-label={`Preview ${v.label}`}
+                  >
+                    <Play className="w-4 h-4" />
+                  </button>
+                </button>
+              );
+            })}
+          </div>
+          
+          <p className="text-xs text-muted-foreground pt-1">
+            Powered by AI for natural, life-like speech.
+          </p>
         </div>
       </section>
 
