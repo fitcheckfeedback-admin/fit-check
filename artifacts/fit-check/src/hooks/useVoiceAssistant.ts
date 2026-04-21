@@ -108,7 +108,7 @@ export function useVoiceAssistant() {
     };
   }, [isSupported]);
 
-  const speak = useCallback((text: string) => {
+  const speak = useCallback((text: string, voiceName?: string | null) => {
     if (!window.speechSynthesis) return;
     
     window.speechSynthesis.cancel();
@@ -117,12 +117,18 @@ export function useVoiceAssistant() {
     
     const setVoice = () => {
       const voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) {
-        const preferred = voices.find(v => 
+      if (voices.length === 0) return;
+      
+      let chosen: SpeechSynthesisVoice | undefined;
+      if (voiceName) {
+        chosen = voices.find(v => v.name === voiceName);
+      }
+      if (!chosen) {
+        chosen = voices.find(v => 
           (v.name.includes('Samantha') || v.name.includes('Google US English') || v.name.includes('Natural')) && v.lang === 'en-US'
         ) || voices.find(v => v.lang === 'en-US') || voices[0];
-        utterance.voice = preferred;
       }
+      utterance.voice = chosen;
     };
 
     setVoice();

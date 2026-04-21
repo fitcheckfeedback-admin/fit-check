@@ -57,7 +57,7 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
         const intent = parseVoiceQuestion(transcript);
         const ans = buildVoiceAnswer(intent, weatherData, recommendation, settings);
         setAnswer(ans);
-        speak(ans);
+        speak(ans, settings.voiceName);
       }
     }
   }, [isOpen, isListening, transcript, isSpeaking, answer, weatherData, recommendation, settings, speak]);

@@ -2,12 +2,23 @@ import { useState } from "react";
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { MapPin, RefreshCw, Sun, Moon, Laptop, Thermometer, Trash2, Copy } from "lucide-react";
+import { MapPin, RefreshCw, Sun, Moon, Laptop, Thermometer, Trash2, Copy, Mic, Play } from "lucide-react";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useLocation } from "wouter";
 import { CitySearch } from "@/components/CitySearch";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { useVoices } from "@/hooks/useVoices";
+import { useVoiceAssistant } from "@/hooks/useVoiceAssistant";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +38,15 @@ export default function Settings() {
   const [, setLocation] = useLocation();
   const [showCitySearch, setShowCitySearch] = useState(false);
   const { toast } = useToast();
+  const voices = useVoices();
+  const { speak } = useVoiceAssistant();
+  
+  const englishVoices = voices.filter(v => v.lang.toLowerCase().startsWith("en"));
+  const otherVoices = voices.filter(v => !v.lang.toLowerCase().startsWith("en"));
+  
+  const handleTestVoice = () => {
+    speak("Hi, I'm your Fit Check assistant. Today looks like a good day to layer up.", settings.voiceName);
+  };
 
   const handleUpdateLocation = async () => {
     try {
@@ -195,6 +215,70 @@ export default function Settings() {
               })}
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider pl-2">Voice</h2>
+        <div className="bg-card rounded-[2rem] border shadow-sm p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-amber-500/10 rounded-xl text-amber-600">
+              <Mic className="w-5 h-5" />
+            </div>
+            <div>
+              <Label className="text-base font-semibold">Assistant voice</Label>
+              <p className="text-xs text-muted-foreground">Pick the voice that reads responses aloud.</p>
+            </div>
+          </div>
+
+          {voices.length === 0 ? (
+            <p className="text-sm text-muted-foreground bg-muted/30 rounded-xl p-3">
+              Loading voices from your device... If none appear, your browser may not support this feature.
+            </p>
+          ) : (
+            <>
+              <Select
+                value={settings.voiceName ?? "__auto__"}
+                onValueChange={(val) => updateSettings({ voiceName: val === "__auto__" ? null : val })}
+              >
+                <SelectTrigger className="h-12 rounded-xl text-base bg-background">
+                  <SelectValue placeholder="Choose a voice" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[320px]">
+                  <SelectItem value="__auto__">Auto (recommended)</SelectItem>
+                  {englishVoices.length > 0 && (
+                    <SelectGroup>
+                      <SelectLabel>English</SelectLabel>
+                      {englishVoices.map(v => (
+                        <SelectItem key={v.name} value={v.name}>
+                          {v.name} <span className="text-muted-foreground text-xs ml-1">({v.lang})</span>
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  )}
+                  {otherVoices.length > 0 && (
+                    <SelectGroup>
+                      <SelectLabel>Other languages</SelectLabel>
+                      {otherVoices.map(v => (
+                        <SelectItem key={v.name} value={v.name}>
+                          {v.name} <span className="text-muted-foreground text-xs ml-1">({v.lang})</span>
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  )}
+                </SelectContent>
+              </Select>
+
+              <Button 
+                variant="secondary" 
+                className="w-full h-12 rounded-xl text-base"
+                onClick={handleTestVoice}
+              >
+                <Play className="w-4 h-4 mr-2" />
+                Test voice
+              </Button>
+            </>
+          )}
         </div>
       </section>
 

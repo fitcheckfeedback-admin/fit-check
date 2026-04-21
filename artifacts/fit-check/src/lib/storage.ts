@@ -33,6 +33,7 @@ export interface FitCheckSettings {
   style: StylePreference;
   closet: ClosetData;
   theme: ThemePreference;
+  voiceName: string | null;
 }
 
 const DEFAULT_SETTINGS: FitCheckSettings = {
@@ -46,7 +47,8 @@ const DEFAULT_SETTINGS: FitCheckSettings = {
     outerwear: [],
     shoes: []
   },
-  theme: "system"
+  theme: "system",
+  voiceName: null
 };
 
 export function getSettings(): FitCheckSettings {
@@ -87,8 +89,9 @@ export function getSettings(): FitCheckSettings {
       };
     }
     const theme = (localStorage.getItem("fitcheck.theme") as ThemePreference) || "system";
+    const voiceName = localStorage.getItem("fitcheck.voiceName") || null;
 
-    return { onboarded, location, units, style, closet, theme };
+    return { onboarded, location, units, style, closet, theme, voiceName };
   } catch (e) {
     return DEFAULT_SETTINGS;
   }
@@ -101,6 +104,13 @@ export function saveSettings(settings: Partial<FitCheckSettings>) {
   if (settings.style !== undefined) localStorage.setItem("fitcheck.style", settings.style);
   if (settings.closet !== undefined) localStorage.setItem("fitcheck.closet", JSON.stringify(settings.closet));
   if (settings.theme !== undefined) localStorage.setItem("fitcheck.theme", settings.theme);
+  if (settings.voiceName !== undefined) {
+    if (settings.voiceName === null) {
+      localStorage.removeItem("fitcheck.voiceName");
+    } else {
+      localStorage.setItem("fitcheck.voiceName", settings.voiceName);
+    }
+  }
   
   // Dispatch an event so hooks can re-render
   window.dispatchEvent(new Event("fitcheck.settings.updated"));
