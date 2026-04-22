@@ -64,22 +64,16 @@ function Router() {
 }
 
 function AppTracker() {
-  const { settings } = useFitCheckSettings();
-
   useEffect(() => {
-    // Fire once per session with location attached (runs after settings load)
+    // Fire once per session — trackEvent reads location from localStorage directly
     const key = "fitcheck.sessionTracked";
     if (!sessionStorage.getItem(key)) {
       sessionStorage.setItem(key, "1");
-      const loc = settings.location;
       trackEvent("app_open", {
         referrer: document.referrer || undefined,
-        city: loc ? loc.name : undefined,
-        lat: loc ? loc.lat : undefined,
-        lon: loc ? loc.lon : undefined,
       });
     }
-  }, [settings.location]);
+  }, []);
 
   return null;
 }

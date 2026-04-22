@@ -45,10 +45,9 @@ export function trackEvent(
     body: JSON.stringify({
       deviceId,
       eventType,
-      metadata: {
-        ...location,
-        ...metadata,
-      },
+      metadata: Object.fromEntries(
+        Object.entries({ ...location, ...metadata }).filter(([, v]) => v !== undefined)
+      ),
     }),
   }).catch(() => {
     // Silently ignore — analytics must never break the app

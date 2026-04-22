@@ -1,4 +1,4 @@
-modules = ["nodejs-24"]
+modules = ["nodejs-24", "postgresql-16"]
 
 [deployment]
 router = "application"
@@ -41,3 +41,6 @@ externalPort = 80
 VAPID_PUBLIC_KEY = "BNxUckKwKUN9Sk8xfhwZwADNOrSdBRVSkOUkz2c31uZ0_VICVXlFRkHFfEgqu3ndWoJVkTxx15GyB3c0E1M5gAQ"
 VAPID_PRIVATE_KEY = "JVdOOvbBprOYzUKz7FvrhDDCOLtHxrKPRkWh-NlgbfU"
 VAPID_EMAIL = "mailto:fitcheck@app.local"
+
+[nix]
+channel = "stable-25_05"
