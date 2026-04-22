@@ -9,6 +9,7 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import { useLocation } from "wouter";
 import { CitySearch } from "@/components/CitySearch";
 import { motion, AnimatePresence } from "framer-motion";
+import { reverseGeocode } from "@/lib/weather";
 import { useToast } from "@/hooks/use-toast";
 import { useVoiceAssistant } from "@/hooks/useVoiceAssistant";
 import { useVoices } from "@/hooks/useVoices";
@@ -50,14 +51,15 @@ export default function Settings() {
   const handleUpdateLocation = async () => {
     try {
       const pos = await getCurrentPosition();
+      const cityName = await reverseGeocode(pos.lat, pos.lon);
       updateSettings({
         location: {
           lat: pos.lat,
           lon: pos.lon,
-          name: "Current Location"
+          name: cityName,
         }
       });
-      trackEvent("location_set", { city: "Current Location", lat: pos.lat, lon: pos.lon, method: "gps" });
+      trackEvent("location_set", { city: cityName, lat: pos.lat, lon: pos.lon, method: "gps" });
     } catch (e) {
       console.error(e);
       setShowCitySearch(true);

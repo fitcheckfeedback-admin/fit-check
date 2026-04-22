@@ -74,6 +74,25 @@ export interface TripDayForecast {
   sunset: string;
 }
 
+export async function reverseGeocode(lat: number, lon: number): Promise<string> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`,
+      { headers: { "Accept-Language": "en" } }
+    );
+    if (!res.ok) return "Current Location";
+    const data = await res.json();
+    const a = data.address ?? {};
+    const city = a.city || a.town || a.village || a.suburb || a.county || a.state || "";
+    const state = a.state_code || a.state || "";
+    if (city && state && a.country_code === "us") return `${city}, ${state}`;
+    if (city) return city;
+    return "Current Location";
+  } catch {
+    return "Current Location";
+  }
+}
+
 export async function fetchTripForecast(lat: number, lon: number, startDate: string, endDate: string): Promise<TripDayForecast[]> {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&start_date=${startDate}&end_date=${endDate}`;
   const res = await fetch(url);

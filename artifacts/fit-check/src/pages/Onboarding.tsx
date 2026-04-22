@@ -8,6 +8,7 @@ import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { CitySearch } from "@/components/CitySearch";
 import { trackEvent } from "@/lib/analytics";
 import { STYLE_TYPES } from "@/lib/storage";
+import { reverseGeocode } from "@/lib/weather";
 
 type Step = "welcome" | "search" | "style";
 
@@ -25,10 +26,11 @@ export default function Onboarding() {
   const handleUseLocation = async () => {
     try {
       const pos = await getCurrentPosition();
-      const loc = { lat: pos.lat, lon: pos.lon, name: "Current Location" };
+      const cityName = await reverseGeocode(pos.lat, pos.lon);
+      const loc = { lat: pos.lat, lon: pos.lon, name: cityName };
       setPendingLocation(loc);
       updateSettings({ location: loc });
-      trackEvent("location_set", { city: loc.name, lat: loc.lat, lon: loc.lon, method: "gps" });
+      trackEvent("location_set", { city: cityName, lat: pos.lat, lon: pos.lon, method: "gps" });
       setStep("style");
     } catch {
       setStep("search");
