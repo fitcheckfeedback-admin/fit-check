@@ -5,17 +5,16 @@ import { WeatherScene } from "@/components/WeatherScene";
 import { WeatherBackground } from "@/components/WeatherBackground";
 import { OutfitCard } from "@/components/OutfitCard";
 import { WeatherAlertBanner } from "@/components/WeatherAlertBanner";
-import { TimeOfDayTabs } from "@/components/TimeOfDayTabs";
 import { CitySearch } from "@/components/CitySearch";
-import { generateRecommendation, generateTimeOfDayRecs } from "@/lib/recommend";
+import { generateRecommendation } from "@/lib/recommend";
 import { getWeatherTags, matchSavedFits } from "@/lib/savedFitsMatch";
 import { SavedFit } from "@/lib/storage";
 import { getWeatherInfo } from "@/lib/weather-codes";
 import { pickClosetItems } from "@/lib/closetMatch";
 import { useClosetImage } from "@/hooks/useClosetImage";
-import { MapPin, Droplets, Wind, Sunset, Sunrise, Search, Shirt, Scissors, Layers, Footprints, Bell, Bookmark, ChevronRight, X, Share2, Gem, Plane, Sparkles } from "lucide-react";
+import { MapPin, Search, Shirt, Scissors, Layers, Footprints, Bell, Bookmark, ChevronRight, X, Share2, Gem, Plane } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { formatTemp, formatTime } from "@/lib/format";
+import { formatTemp } from "@/lib/format";
 import { useState, useEffect, useRef } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
@@ -185,8 +184,6 @@ export default function Home() {
 
   const matchingFits = matchSavedFits(settings.savedFits || [], currentTags);
   const allSavedFits = settings.savedFits || [];
-
-  const timeOfDayRecs = generateTimeOfDayRecs(weather.hourly, settings.style, settings.units);
 
   const closetMatchResult = pickClosetItems(activeRec, settings.closet, settings.style);
   const matchedItems = [
@@ -512,87 +509,11 @@ export default function Home() {
           </motion.section>
         )}
 
-        {/* Hourly Strip */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <div className="bg-card border rounded-3xl p-4 shadow-sm">
-            <div className="flex overflow-x-auto hide-scrollbar gap-4 pb-2 snap-x">
-              {(() => {
-                const offset = isTomorrow ? 24 : 0;
-                return weather.hourly.time.slice(offset, offset + 24).map((time, i) => {
-                  if (i > 4 && i % 2 !== 0) return null;
-                  const hourDate = new Date(time);
-                  const isNow = !isTomorrow && i === 0;
-                  const temp = weather.hourly.temperature_2m[offset + i];
-                  const pop = weather.hourly.precipitation_probability[offset + i];
-                  const code = weather.hourly.weather_code[offset + i];
-                  const isDayHour = hourDate.getHours() >= 6 && hourDate.getHours() <= 18;
-                  return (
-                    <div key={time} className={`flex flex-col items-center justify-between space-y-3 snap-start shrink-0 w-14 ${isNow ? 'bg-primary/10 p-2 -mx-2 rounded-2xl' : ''}`}>
-                      <span className={`text-xs font-medium ${isNow ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
-                        {isNow ? 'Now' : hourDate.toLocaleTimeString([], { hour: 'numeric' })}
-                      </span>
-                      <WeatherScene weatherCode={code} isDay={isDayHour} className="w-8 h-8" />
-                      <span className="font-semibold">{formatTemp(temp, settings.units)}</span>
-                      {pop > 0 ? (
-                        <span className="text-[10px] font-bold text-blue-500 flex items-center"><Droplets className="w-2.5 h-2.5 mr-0.5" />{pop}%</span>
-                      ) : (
-                        <span className="text-[10px] font-medium text-transparent">-</span>
-                      )}
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-          </div>
-        </motion.section>
-
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <h2 className="text-2xl font-display font-bold mb-4 px-1">{isTomorrow ? "Tomorrow's Hours" : "Later Today"}</h2>
-          <TimeOfDayTabs {...timeOfDayRecs} />
-        </motion.section>
-
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="grid grid-cols-2 gap-4"
-        >
-          <div className="bg-card border rounded-3xl p-5 shadow-sm flex flex-col">
-            <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5"><Wind className="w-4 h-4"/> Wind</span>
-            <span className="text-2xl font-display font-bold">{Math.round(weather.current.wind_speed_10m)} <span className="text-base text-muted-foreground font-sans font-medium">mph</span></span>
-          </div>
-          
-          <div className="bg-card border rounded-3xl p-5 shadow-sm flex flex-col">
-            <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5"><Droplets className="w-4 h-4"/> Humidity</span>
-            <span className="text-2xl font-display font-bold">{Math.round(weather.current.relative_humidity_2m)}%</span>
-          </div>
-
-          <div className="col-span-2 bg-card border rounded-3xl p-5 shadow-sm flex justify-between items-center">
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1.5"><Sunrise className="w-4 h-4"/> Sunrise</span>
-              <span className="font-semibold text-lg">{formatTime(weather.daily.sunrise[0])}</span>
-            </div>
-            <div className="w-px h-10 bg-border" />
-            <div className="flex flex-col text-right">
-              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-end gap-1.5"><Sunset className="w-4 h-4"/> Sunset</span>
-              <span className="font-semibold text-lg">{formatTime(weather.daily.sunset[0])}</span>
-            </div>
-          </div>
-        </motion.section>
-
         {/* Trip Planner promo */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.3 }}
         >
           <button
             onClick={() => setLocation('/trip')}
