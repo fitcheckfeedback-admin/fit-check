@@ -1,0 +1,11 @@
+import { pgTable, text, timestamp, uuid, jsonb } from "drizzle-orm/pg-core";
+
+export const analyticsEventsTable = pgTable("analytics_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  deviceId: text("device_id").notNull(),
+  eventType: text("event_type").notNull(),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type AnalyticsEvent = typeof analyticsEventsTable.$inferSelect;

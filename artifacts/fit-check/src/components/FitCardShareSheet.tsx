@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { exportFitCard } from "@/lib/fitCardCanvas";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { trackEvent } from "@/lib/analytics";
 
 interface FitCardShareSheetProps {
   open: boolean;
@@ -29,6 +30,7 @@ export function FitCardShareSheet({ open, onOpenChange, data }: FitCardShareShee
   // Re-export card whenever photo changes (async, non-blocking)
   useEffect(() => {
     if (open && activeData) {
+      trackEvent("fit_card_opened");
       exportFitCard(activeData).then(setBlob).catch(console.error);
     } else if (!open) {
       setBlob(null);
@@ -89,6 +91,7 @@ export function FitCardShareSheet({ open, onOpenChange, data }: FitCardShareShee
         }
       }
       await navigator.share(shareData);
+      trackEvent("fit_card_shared", { method: "native" });
     } catch (e: unknown) {
       if (e instanceof Error && e.name !== "AbortError") {
         toast({ title: "Sharing not supported on this browser", variant: "destructive" });
@@ -110,6 +113,7 @@ export function FitCardShareSheet({ open, onOpenChange, data }: FitCardShareShee
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       toast({ title: "Image saved!" });
+      trackEvent("fit_card_saved");
     } catch {
       toast({ title: "Failed to save image", variant: "destructive" });
     } finally {

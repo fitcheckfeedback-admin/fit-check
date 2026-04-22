@@ -5,6 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AppShell } from "@/components/AppShell";
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
+import { useEffect } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 // Pages
 import Onboarding from "@/pages/Onboarding";
@@ -52,6 +54,10 @@ function Router() {
 }
 
 function App() {
+  useEffect(() => {
+    trackEvent("app_open", { referrer: document.referrer || undefined });
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
