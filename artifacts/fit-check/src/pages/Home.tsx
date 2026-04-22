@@ -259,19 +259,16 @@ export default function Home() {
             <Search className="w-3 h-3 ml-1 opacity-50" />
           </button>
           
-          <div className="flex flex-row items-center justify-center gap-6">
+          <div className="flex flex-col items-center gap-1">
             <motion.div
               initial={{ scale: 0.8, rotate: -10 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ type: "spring", stiffness: 200, damping: 20 }}
             >
-              <WeatherScene weatherCode={weather.current.weather_code} isDay={isDay} className="w-28 h-28 drop-shadow-xl" />
+              <WeatherScene weatherCode={weather.current.weather_code} isDay={isDay} className="w-24 h-24 drop-shadow-xl" />
             </motion.div>
-            
-            <div className="flex flex-col items-start">
-              <TempDisplay tempF={weather.current.temperature_2m} units={settings.units} />
-              <p className="text-xl font-display font-medium tracking-wide text-foreground/90">{wmoInfo.label}</p>
-            </div>
+            <TempDisplay tempF={weather.current.temperature_2m} units={settings.units} />
+            <p className="text-lg font-display font-medium tracking-wide text-foreground/90">{wmoInfo.label}</p>
           </div>
           
           <div className="flex items-center gap-4 mt-6 px-5 py-2.5 bg-background/20 backdrop-blur-md rounded-2xl text-sm text-foreground/90 font-medium border border-background/20 shadow-sm">
