@@ -118,10 +118,10 @@ router.get("/analytics/summary", async (req, res) => {
       opens: count(),
     })
     .from(analyticsEventsTable)
-    .where(sql`metadata->>'city' IS NOT NULL`)
+    .where(sql`metadata->>'city' IS NOT NULL AND metadata->>'city' != 'Current Location' AND trim(metadata->>'city') != ''`)
     .groupBy(sql`metadata->>'city'`)
     .orderBy(desc(countDistinct(analyticsEventsTable.deviceId)))
-    .limit(50);
+    .limit(100);
 
   const recent = await db
     .select()

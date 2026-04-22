@@ -194,7 +194,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     pct: r.pct,
   }));
 
-  const topCities = data.locationDistribution.slice(0, 10);
+  const topCities = data.locationDistribution;
   const maxCityUsers = topCities[0] ? Number(topCities[0].uniqueDevices) : 1;
 
   return (
@@ -321,20 +321,27 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
 
         {/* Location distribution — always visible */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card border border-border rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <MapPin className="w-4 h-4 text-amber-500" />
-            <h2 className="text-sm font-bold">Top Cities</h2>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-amber-500" />
+              <h2 className="text-sm font-bold">Cities</h2>
+            </div>
+            {topCities.length > 0 && (
+              <span className="text-xs font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                {topCities.length} {topCities.length === 1 ? "city" : "cities"}
+              </span>
+            )}
           </div>
-          <p className="text-xs text-muted-foreground mb-4">Ranked by unique users</p>
+          <p className="text-xs text-muted-foreground mb-4">All cities where the app is in use, ranked by unique users</p>
 
           {topCities.length === 0 ? (
             <div className="py-6 text-center space-y-1">
               <MapPin className="w-8 h-8 text-muted-foreground/30 mx-auto" />
               <p className="text-sm font-medium text-muted-foreground">No city data yet</p>
-              <p className="text-xs text-muted-foreground/70">Cities will appear here as users open the app with a location set.</p>
+              <p className="text-xs text-muted-foreground/70">Cities appear here once users open the app with a named location set.</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
               {topCities.map((loc, i) => {
                 const pct = Math.round((Number(loc.uniqueDevices) / maxCityUsers) * 100);
                 return (
