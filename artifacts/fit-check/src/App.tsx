@@ -18,11 +18,12 @@ import Closet from "@/pages/Closet";
 import Settings from "@/pages/Settings";
 import Reminders from "@/pages/Reminders";
 import Analytics from "@/pages/Analytics";
+import Cam from "@/pages/Cam";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ component: Component, ...rest }: any) {
+function ProtectedRoute({ component: Component, hideNav, ...rest }: any) {
   const { settings } = useFitCheckSettings();
   const [pathname] = useLocation();
 
@@ -37,7 +38,7 @@ function ProtectedRoute({ component: Component, ...rest }: any) {
   }
 
   return (
-    <AppShell>
+    <AppShell hideNav={hideNav}>
       <Component {...rest} />
     </AppShell>
   );
@@ -53,6 +54,7 @@ function Router() {
       <Route path="/closet" component={() => <ProtectedRoute component={Closet} />} />
       <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
       <Route path="/reminders" component={() => <ProtectedRoute component={Reminders} />} />
+      <Route path="/cam" component={() => <ProtectedRoute component={Cam} hideNav />} />
       <Route path="/analytics" component={Analytics} />
       <Route component={() => (
         <AppShell hideNav>
