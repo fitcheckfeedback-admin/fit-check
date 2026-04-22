@@ -34,6 +34,8 @@ export interface FitCheckSettings {
   closet: ClosetData;
   theme: ThemePreference;
   voiceName: string | null;
+  notificationsEnabled: boolean;
+  morningAlertTime: string;
 }
 
 const DEFAULT_SETTINGS: FitCheckSettings = {
@@ -48,7 +50,9 @@ const DEFAULT_SETTINGS: FitCheckSettings = {
     shoes: []
   },
   theme: "system",
-  voiceName: null
+  voiceName: null,
+  notificationsEnabled: false,
+  morningAlertTime: "08:00"
 };
 
 export function getSettings(): FitCheckSettings {
@@ -90,8 +94,10 @@ export function getSettings(): FitCheckSettings {
     }
     const theme = (localStorage.getItem("fitcheck.theme") as ThemePreference) || "system";
     const voiceName = localStorage.getItem("fitcheck.voiceName") || null;
+    const notificationsEnabled = localStorage.getItem("fitcheck.notificationsEnabled") === "true";
+    const morningAlertTime = localStorage.getItem("fitcheck.morningAlertTime") || "08:00";
 
-    return { onboarded, location, units, style, closet, theme, voiceName };
+    return { onboarded, location, units, style, closet, theme, voiceName, notificationsEnabled, morningAlertTime };
   } catch (e) {
     return DEFAULT_SETTINGS;
   }
@@ -104,6 +110,8 @@ export function saveSettings(settings: Partial<FitCheckSettings>) {
   if (settings.style !== undefined) localStorage.setItem("fitcheck.style", settings.style);
   if (settings.closet !== undefined) localStorage.setItem("fitcheck.closet", JSON.stringify(settings.closet));
   if (settings.theme !== undefined) localStorage.setItem("fitcheck.theme", settings.theme);
+  if (settings.notificationsEnabled !== undefined) localStorage.setItem("fitcheck.notificationsEnabled", String(settings.notificationsEnabled));
+  if (settings.morningAlertTime !== undefined) localStorage.setItem("fitcheck.morningAlertTime", settings.morningAlertTime);
   if (settings.voiceName !== undefined) {
     if (settings.voiceName === null) {
       localStorage.removeItem("fitcheck.voiceName");

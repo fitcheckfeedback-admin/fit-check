@@ -13,6 +13,7 @@ import Forecast from "@/pages/Forecast";
 import Style from "@/pages/Style";
 import Closet from "@/pages/Closet";
 import Settings from "@/pages/Settings";
+import Reminders from "@/pages/Reminders";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ function Router() {
       <Route path="/style" component={() => <ProtectedRoute component={Style} />} />
       <Route path="/closet" component={() => <ProtectedRoute component={Closet} />} />
       <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
+      <Route path="/reminders" component={() => <ProtectedRoute component={Reminders} />} />
       <Route component={() => (
         <AppShell hideNav>
           <NotFound />

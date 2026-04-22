@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { MapPin, RefreshCw, Sun, Moon, Laptop, Thermometer, Trash2, Copy, Mic, Play } from "lucide-react";
+import { MapPin, RefreshCw, Sun, Moon, Laptop, Thermometer, Trash2, Copy, Mic, Play, BellRing, CheckCircle2 } from "lucide-react";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useLocation } from "wouter";
 import { CitySearch } from "@/components/CitySearch";
@@ -10,6 +10,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { useVoiceAssistant } from "@/hooks/useVoiceAssistant";
 import { useVoices } from "@/hooks/useVoices";
+import { Switch } from "@/components/ui/switch";
+import { registerServiceWorker } from "@/lib/swRegister";
+import { subscribeToPush, sendSubscriptionToServer, unsubscribeFromPush } from "@/lib/pushSubscribe";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,6 +68,60 @@ export default function Settings() {
       }
     });
     setShowCitySearch(false);
+  };
+
+  const handleToggleNotifications = async (checked: boolean) => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      toast({ title: "Notifications not supported on this browser", variant: "destructive" });
+      return;
+    }
+
+    try {
+      if (checked) {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          toast({ title: "Permission denied", description: "Please enable notifications in your browser settings.", variant: "destructive" });
+          return;
+        }
+        
+        const reg = await registerServiceWorker();
+        if (!reg) throw new Error("Service worker registration failed");
+        
+        const sub = await subscribeToPush(reg);
+        if (!sub) throw new Error("Failed to subscribe");
+        
+        await sendSubscriptionToServer(sub);
+        updateSettings({ notificationsEnabled: true });
+        toast({ title: "Notifications enabled!" });
+      } else {
+        const reg = await navigator.serviceWorker.ready;
+        await unsubscribeFromPush(reg);
+        updateSettings({ notificationsEnabled: false });
+        toast({ title: "Notifications disabled" });
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast({ title: "Error toggling notifications", description: e.message, variant: "destructive" });
+      // Revert optimism
+      updateSettings({ notificationsEnabled: settings.notificationsEnabled });
+    }
+  };
+
+  const handleTestNotification = async () => {
+    try {
+      const res = await fetch('/api/push/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: "This is a test from Fit Check!" })
+      });
+      if (res.ok) {
+        toast({ title: "Test notification sent!" });
+      } else {
+        throw new Error("Failed to send");
+      }
+    } catch (e) {
+      toast({ title: "Error sending test notification", variant: "destructive" });
+    }
   };
 
   return (
@@ -207,6 +264,58 @@ export default function Settings() {
               })}
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider pl-2">Notifications</h2>
+        <div className="bg-card rounded-[2rem] border shadow-sm p-5 space-y-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-pink-500/10 rounded-xl text-pink-500">
+                <BellRing className="w-5 h-5" />
+              </div>
+              <div>
+                <Label className="text-base font-semibold">Daily outfit alert</Label>
+                <p className="text-xs text-muted-foreground">Get a morning summary</p>
+              </div>
+            </div>
+            <Switch 
+              checked={settings.notificationsEnabled} 
+              onCheckedChange={handleToggleNotifications} 
+            />
+          </div>
+
+          <AnimatePresence>
+            {settings.notificationsEnabled && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-4 pt-2 overflow-hidden border-t"
+              >
+                <div className="flex items-center justify-between pt-2">
+                  <Label className="text-sm font-medium">Alert time</Label>
+                  <input 
+                    type="time" 
+                    value={settings.morningAlertTime || "08:00"}
+                    onChange={(e) => updateSettings({ morningAlertTime: e.target.value })}
+                    className="bg-muted text-foreground border-none rounded-xl px-3 py-1.5 text-sm font-semibold focus:ring-primary"
+                  />
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full rounded-xl"
+                  onClick={handleTestNotification}
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />
+                  Send test notification
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </section>
 

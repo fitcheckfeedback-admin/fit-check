@@ -10,12 +10,15 @@ import { generateRecommendation, generateTimeOfDayRecs } from "@/lib/recommend";
 import { getWeatherInfo } from "@/lib/weather-codes";
 import { pickClosetItems } from "@/lib/closetMatch";
 import { useClosetImage } from "@/hooks/useClosetImage";
-import { MapPin, Droplets, Wind, Sunset, Sunrise, Search, Shirt, Scissors, Layers, Footprints } from "lucide-react";
+import { MapPin, Droplets, Wind, Sunset, Sunrise, Search, Shirt, Scissors, Layers, Footprints, Bell } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatTemp, formatTime } from "@/lib/format";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { VoiceAssistant } from "@/components/VoiceAssistant";
+import { useLocation } from "wouter";
+import { getOrCreateDeviceId } from "@/lib/deviceId";
+import { useQuery } from "@tanstack/react-query";
 
 function ClosetMatchThumbnail({ item, label, icon: Icon }: { item: import("@/lib/storage").ClosetItem; label: string; icon: any }) {
   const { src } = useClosetImage(item.imageId);
@@ -42,6 +45,18 @@ export default function Home() {
   const { settings, updateSettings } = useFitCheckSettings();
   const { data: weather, isLoading, isError } = useWeather(settings.location);
   const [showSearch, setShowSearch] = useState(false);
+  const [, setLocation] = useLocation();
+  const deviceId = getOrCreateDeviceId();
+
+  const { data: reminders = [] } = useQuery({
+    queryKey: ['reminders', deviceId],
+    queryFn: async () => {
+      const res = await fetch(`/api/push/reminders?deviceId=${deviceId}`);
+      if (!res.ok) throw new Error("Failed to load reminders");
+      return res.json();
+    },
+    refetchInterval: 60000,
+  });
 
   if (isLoading || !weather) {
     return (
@@ -155,6 +170,20 @@ export default function Home() {
               <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/60 leading-tight">Today's fit, sorted</span>
             </div>
           </div>
+        </div>
+
+        <div className="absolute top-6 right-6 z-20">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="rounded-full bg-background/20 hover:bg-background/40 backdrop-blur-md relative"
+            onClick={() => setLocation('/reminders')}
+          >
+            <Bell className="w-5 h-5 text-foreground/90" />
+            {reminders.length > 0 && (
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-500 border border-background shadow-sm" />
+            )}
+          </Button>
         </div>
 
         <div className="relative z-10 flex flex-col items-center text-center mt-14">
