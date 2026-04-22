@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 const NAV_ITEMS = [
   { path: "/", label: "Home", icon: Home, cam: false },
   { path: "/forecast", label: "Forecast", icon: Cloud, cam: false },
-  { path: "/cam", label: "Cam", icon: Video, cam: true },
+  { path: "/cam", label: "GRWM", icon: Video, cam: true },
   { path: "/closet", label: "Closet", icon: Shirt, cam: false },
   { path: "/settings", label: "Settings", icon: Settings, cam: false },
 ];

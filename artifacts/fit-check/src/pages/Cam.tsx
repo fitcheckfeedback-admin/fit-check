@@ -52,7 +52,7 @@ export default function Cam() {
         streamRef.current.getTracks().forEach(t => t.stop());
       }
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode, width: { ideal: 1080 }, height: { ideal: 1920 } },
+        video: { facingMode },
         audio: true,
       });
       streamRef.current = stream;
@@ -82,32 +82,53 @@ export default function Cam() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    canvas.width = video.videoWidth || 1080;
-    canvas.height = video.videoHeight || 1920;
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    if (!vw || !vh) {
+      rafRef.current = requestAnimationFrame(drawFrame);
+      return;
+    }
+
+    // Fix canvas to a portrait 9:16 output — matches phone screen
+    const CW = 720;
+    const CH = 1280;
+    if (canvas.width !== CW) canvas.width = CW;
+    if (canvas.height !== CH) canvas.height = CH;
+
+    // Object-cover math: scale video to fill canvas, crop excess
+    const scale = Math.max(CW / vw, CH / vh);
+    const sw = vw * scale;
+    const sh = vh * scale;
+    const ox = (CW - sw) / 2;
+    const oy = (CH - sh) / 2;
 
     ctx.filter = FILTERS[filterIdx].css;
     ctx.save();
     if (facingMode === "user") {
-      ctx.translate(canvas.width, 0);
+      ctx.translate(CW, 0);
       ctx.scale(-1, 1);
     }
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(video, ox, oy, sw, sh);
     ctx.restore();
     ctx.filter = "none";
 
     const loc = settings.location?.name;
-    const temp = "Today's Fit";
 
-    ctx.font = "bold 36px system-ui, sans-serif";
-    ctx.fillStyle = "rgba(0,0,0,0.4)";
-    ctx.fillRect(24, 24, canvas.width - 48, 110);
+    ctx.font = "bold 38px system-ui, sans-serif";
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    ctx.roundRect(24, 24, CW - 48, 120, 20);
+    ctx.fill();
 
     ctx.fillStyle = "#FF9500";
-    ctx.fillText("Fit Check", 44, 72);
-    ctx.font = "26px system-ui, sans-serif";
-    ctx.fillStyle = "rgba(255,255,255,0.85)";
-    if (loc) ctx.fillText(`📍 ${loc}`, 44, 112);
-    ctx.fillText(`✨ ${temp}`, loc ? 300 : 44, 112);
+    ctx.fillText("Fit Check", 48, 76);
+    ctx.font = "bold 30px system-ui, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,0.75)";
+    ctx.fillText("Get Ready With Me", 48, 120);
+    if (loc) {
+      ctx.font = "22px system-ui, sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      ctx.fillText(`📍 ${loc}`, 48, 152);
+    }
 
     rafRef.current = requestAnimationFrame(drawFrame);
   }, [filterIdx, facingMode, settings.location?.name]);
@@ -391,7 +412,10 @@ export default function Cam() {
             <div className="w-7 h-7 rounded-lg bg-[#FF9500]/20 border border-[#FF9500]/40 flex items-center justify-center">
               <span className="text-[#FF9500] font-black text-sm leading-none">F</span>
             </div>
-            <span className="text-white font-black text-sm tracking-tight">Fit Check</span>
+            <div>
+              <span className="text-white font-black text-sm tracking-tight leading-none block">Fit Check</span>
+              <span className="text-white/50 text-[9px] uppercase tracking-widest font-semibold leading-tight block">Get Ready With Me</span>
+            </div>
           </div>
 
           <button
