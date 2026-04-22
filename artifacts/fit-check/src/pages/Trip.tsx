@@ -26,7 +26,7 @@ function formatDisplayDate(dateStr: string) {
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
-function buildPackingList(days: TripDayForecast[], style: string) {
+function buildPackingList(days: TripDayForecast[], style: string, gender: string = "unspecified") {
   const layers = new Set<string>();
   const tops = new Set<string>();
   const bottoms = new Set<string>();
@@ -52,6 +52,7 @@ function buildPackingList(days: TripDayForecast[], style: string) {
       humidity: 50,
       isDay: true,
       style: style as any,
+      gender: gender as any,
     });
 
     if (rec.outerwear) layers.add(rec.outerwear);
@@ -106,7 +107,7 @@ export default function Trip() {
     }
   }
 
-  const packing = forecast ? buildPackingList(forecast, settings.style) : null;
+  const packing = forecast ? buildPackingList(forecast, settings.style, settings.gender) : null;
   const nightsBefore = forecast ? Math.max(0, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000)) : 0;
 
   return (
@@ -229,6 +230,7 @@ export default function Trip() {
                 humidity: 50,
                 isDay: true,
                 style: settings.style as any,
+                gender: settings.gender,
               });
               const info = getWeatherInfo(day.weatherCode);
               const isExpanded = expandedDay === i;

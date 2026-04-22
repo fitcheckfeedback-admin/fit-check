@@ -2,6 +2,7 @@
 
 export type Category = "tops" | "bottoms" | "outerwear" | "shoes" | "accessories";
 export type StylePreference = "Casual" | "Streetwear" | "Athletic" | "Workwear" | "Minimal";
+export type GenderPreference = "male" | "female" | "unspecified";
 export type ThemePreference = "light" | "dark" | "system";
 
 export const STYLE_TYPES = [
@@ -59,6 +60,7 @@ export interface FitCheckSettings {
   units: "f" | "c";
   style: StylePreference;
   styleTypes: string[];
+  gender: GenderPreference;
   closet: ClosetData;
   theme: ThemePreference;
   voiceName: string | null;
@@ -72,6 +74,7 @@ const DEFAULT_SETTINGS: FitCheckSettings = {
   location: null,
   units: "f",
   style: "Casual",
+  gender: "unspecified",
   closet: {
     tops: [],
     bottoms: [],
@@ -136,7 +139,9 @@ export function getSettings(): FitCheckSettings {
     const styleTypesRaw = localStorage.getItem("fitcheck.styleTypes");
     const styleTypes: string[] = styleTypesRaw ? JSON.parse(styleTypesRaw) : [];
 
-    return { onboarded, location, units, style, styleTypes, closet, theme, voiceName, notificationsEnabled, morningAlertTime, savedFits };
+    const gender = (localStorage.getItem("fitcheck.gender") as GenderPreference) || "unspecified";
+
+    return { onboarded, location, units, style, styleTypes, gender, closet, theme, voiceName, notificationsEnabled, morningAlertTime, savedFits };
   } catch (e) {
     return DEFAULT_SETTINGS;
   }
@@ -148,6 +153,7 @@ export function saveSettings(settings: Partial<FitCheckSettings>) {
   if (settings.units !== undefined) localStorage.setItem("fitcheck.units", settings.units);
   if (settings.style !== undefined) localStorage.setItem("fitcheck.style", settings.style);
   if (settings.styleTypes !== undefined) localStorage.setItem("fitcheck.styleTypes", JSON.stringify(settings.styleTypes));
+  if (settings.gender !== undefined) localStorage.setItem("fitcheck.gender", settings.gender);
   if (settings.closet !== undefined) localStorage.setItem("fitcheck.closet", JSON.stringify(settings.closet));
   if (settings.theme !== undefined) localStorage.setItem("fitcheck.theme", settings.theme);
   if (settings.notificationsEnabled !== undefined) localStorage.setItem("fitcheck.notificationsEnabled", String(settings.notificationsEnabled));

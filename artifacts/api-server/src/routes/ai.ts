@@ -19,11 +19,18 @@ interface StylistRequest {
   };
   closetItems: ClosetItemInfo[];
   style: string;
+  gender?: string;
+}
+
+function genderLabel(gender?: string): string {
+  if (gender === "female") return "women's (suggest dresses, skirts, blouses where appropriate)";
+  if (gender === "male") return "men's (suggest shirts, trousers, jackets where appropriate)";
+  return "gender-neutral";
 }
 
 router.post("/ai/stylist", async (req, res) => {
   try {
-    const { weather, closetItems, style } = req.body as StylistRequest;
+    const { weather, closetItems, style, gender } = req.body as StylistRequest;
 
     if (!weather || !closetItems || !style) {
       return res.status(400).json({ error: "Missing required fields" });
@@ -41,6 +48,8 @@ router.post("/ai/stylist", async (req, res) => {
 
     const hasItems = closetItems.length > 0;
 
+    const wardrobeType = genderLabel(gender);
+
     const prompt = hasItems
       ? `You are a personal stylist AI. Based on the weather and the user's actual closet, recommend a specific outfit by naming exact items from their wardrobe.
 
@@ -55,19 +64,21 @@ USER'S CLOSET:
 ${closetSummary}
 
 USER'S STYLE PREFERENCE: ${style}
+WARDROBE TYPE: ${wardrobeType}
 
-Give a specific outfit recommendation using ONLY items from their closet above. Be concise and direct. Format:
+Give a specific outfit recommendation using ONLY items from their closet above. Tailor the suggestion to the wardrobe type. Be concise and direct. Format:
 - Main outfit: [specific items by name]
 - Outerwear: [specific item or "none needed"]
 - Footwear: [specific item]
 - Accessories: [specific items or "none"]
 - Stylist note: [one sentence of style advice]`
-      : `You are a personal stylist AI. The user's closet is empty, but based on their weather and style, give general outfit advice.
+      : `You are a personal stylist AI. The user's closet is empty, but based on their weather, style, and wardrobe type, give general outfit advice.
 
 WEATHER: ${Math.round(weather.tempF)}°F, ${weather.condition}, ${weather.precipChance}% rain chance
 STYLE: ${style}
+WARDROBE TYPE: ${wardrobeType}
 
-Give a brief, specific outfit suggestion in 2-3 sentences.`;
+Give a brief, specific outfit suggestion in 2-3 sentences, appropriate for the wardrobe type.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-5.1",

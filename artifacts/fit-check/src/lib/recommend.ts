@@ -1,4 +1,4 @@
-import { StylePreference } from "./storage";
+import { StylePreference, GenderPreference } from "./storage";
 import { getWeatherInfo } from "./weather-codes";
 import { HourlyForecast } from "./weather";
 import { WeatherAlert, detectAlerts } from "./weatherAlerts";
@@ -12,6 +12,7 @@ export interface RecommendationInput {
   humidity: number;
   isDay: boolean;
   style: StylePreference;
+  gender?: GenderPreference;
 }
 
 export interface Recommendation {
@@ -28,7 +29,7 @@ function getRandom<T>(arr: T[]): T {
 }
 
 export function generateRecommendation(input: RecommendationInput): Recommendation {
-  let { temperatureF, precipChance, weatherCode, windMph, humidity, isDay, style } = input;
+  let { temperatureF, precipChance, weatherCode, windMph, humidity, isDay, style, gender = "unspecified" } = input;
 
   if (!isDay) {
     temperatureF -= 5;
@@ -43,9 +44,11 @@ export function generateRecommendation(input: RecommendationInput): Recommendati
   const wmoInfo = getWeatherInfo(weatherCode);
 
   if (temperatureF < 40) {
-    mainOutfit = getStyleCopy("heavy coat, sweater, pants", style);
-    outerwear = getRandom(["A heavy parka", "Thick winter coat", "Insulated jacket"]);
-    accessories.push("Warm socks", "Sturdy shoes");
+    mainOutfit = getStyleCopy("heavy coat, sweater, pants", style, gender);
+    outerwear = gender === "female"
+      ? getRandom(["A heavy wrap coat", "Thick wool overcoat", "Insulated puffer coat"])
+      : getRandom(["A heavy parka", "Thick winter coat", "Insulated jacket"]);
+    accessories.push("Warm socks", gender === "female" ? "Ankle or knee-high boots" : "Sturdy shoes");
     if (temperatureF < 25) {
       accessories.push("Beanie", "Gloves", "Scarf");
       warnings.push("Bitterly cold. Layer up heavily to stay safe.");
@@ -54,19 +57,21 @@ export function generateRecommendation(input: RecommendationInput): Recommendati
       warnings.push("Pretty chilly out there. Keep wrapped up.");
     }
   } else if (temperatureF < 56) {
-    mainOutfit = getStyleCopy("jacket, long sleeve, pants", style);
-    outerwear = getRandom(["A dependable jacket", "Your favorite hoodie", "A solid mid-layer"]);
-    accessories.push("Closed-toe shoes");
+    mainOutfit = getStyleCopy("jacket, long sleeve, pants", style, gender);
+    outerwear = gender === "female"
+      ? getRandom(["A denim jacket or blazer", "Your favorite cardigan", "A chic mid-layer"])
+      : getRandom(["A dependable jacket", "Your favorite hoodie", "A solid mid-layer"]);
+    accessories.push(gender === "female" ? "Ankle boots or clean sneakers" : "Closed-toe shoes");
   } else if (temperatureF < 70) {
-    mainOutfit = getStyleCopy("light long sleeve or tee, jeans", style);
-    if (temperatureF < 62) outerwear = "Light overshirt or cardigan";
+    mainOutfit = getStyleCopy("light long sleeve or tee, jeans", style, gender);
+    if (temperatureF < 62) outerwear = gender === "female" ? "Light cardigan or denim jacket" : "Light overshirt or cardigan";
     accessories.push("Sneakers");
   } else if (temperatureF < 81) {
-    mainOutfit = getStyleCopy("tee, shorts", style);
-    accessories.push("Comfortable sneakers");
+    mainOutfit = getStyleCopy("tee, shorts", style, gender);
+    accessories.push(gender === "female" ? "Clean sneakers or sandals" : "Comfortable sneakers");
   } else {
-    mainOutfit = getStyleCopy("tank or breathable shirt, shorts", style);
-    accessories.push("Breathable shoes or sandals");
+    mainOutfit = getStyleCopy("tank or breathable shirt, shorts", style, gender);
+    accessories.push(gender === "female" ? "Sandals or lightweight sneakers" : "Breathable shoes or sandals");
     warnings.push("It's getting hot. Remember to hydrate.");
     if (isDay) accessories.push("Sunglasses");
     fitScore -= 10;
@@ -113,7 +118,125 @@ export function generateRecommendation(input: RecommendationInput): Recommendati
   return { mainOutfit, outerwear, accessories, warnings, fitScore, alerts };
 }
 
-function getStyleCopy(base: string, style: StylePreference): string {
+function getStyleCopy(base: string, style: StylePreference, gender: GenderPreference = "unspecified"): string {
+  const femaleMap: Record<string, Record<StylePreference, string[]>> = {
+    "heavy coat, sweater, pants": {
+      Casual: [
+        "A chunky oversized sweater, warm leggings, and your coziest coat.",
+        "A heavy knit cardigan layered over a long sleeve with thermal leggings."
+      ],
+      Streetwear: [
+        "Oversized puffer coat, a graphic hoodie, and wide-leg cargo pants.",
+        "A bold oversized jacket over a crewneck and baggy joggers."
+      ],
+      Athletic: [
+        "A high-neck fleece, thermal running tights, and a heavy athletic jacket.",
+        "Warm base layer, insulated leggings, and a performance puffer."
+      ],
+      Workwear: [
+        "A structured wool coat over a turtleneck blouse and tailored trousers.",
+        "A belted heavy coat over a silk blouse and wide-leg work trousers."
+      ],
+      Minimal: [
+        "A long structured topcoat over a fine merino turtleneck and slim trousers.",
+        "Monochromatic wool sweater with tailored pants and a wrap coat."
+      ]
+    },
+    "jacket, long sleeve, pants": {
+      Casual: [
+        "A denim jacket or cardigan over a long sleeve tee and comfortable jeans.",
+        "Your favorite jacket layered over a simple long sleeve and relaxed jeans."
+      ],
+      Streetwear: [
+        "A cropped bomber over a vintage tee and wide-leg denim.",
+        "Oversized zip-up hoodie, graphic long sleeve, and trendy cargo pants."
+      ],
+      Athletic: [
+        "A fitted track jacket and high-waist athletic leggings.",
+        "A performance zip-up with seamless athletic pants."
+      ],
+      Workwear: [
+        "A blazer over a silk blouse and tailored straight pants.",
+        "A structured blazer, crisp button-down blouse, and wide-leg trousers."
+      ],
+      Minimal: [
+        "A clean longline cardigan over a simple scoop neck and tailored pants.",
+        "A sleek unbranded jacket, fitted top, and straight-cut trousers."
+      ]
+    },
+    "light long sleeve or tee, jeans": {
+      Casual: [
+        "A flowy blouse or everyday tee with your go-to jeans or leggings.",
+        "A light long sleeve tucked into comfortable high-waist jeans."
+      ],
+      Streetwear: [
+        "An oversized vintage tee, optional flannel, and perfectly distressed jeans.",
+        "A boxy graphic tee with high-waist wide-leg jeans and clean sneakers."
+      ],
+      Athletic: [
+        "A moisture-wicking long sleeve and high-waist athletic leggings.",
+        "A racerback top with flexible training tights."
+      ],
+      Workwear: [
+        "A light button-down blouse tucked into straight-cut tailored trousers.",
+        "A refined blouse and tailored ankle pants."
+      ],
+      Minimal: [
+        "A crisp fitted tee, a light cardigan if needed, and slim dark jeans.",
+        "A premium fitted tee and tailored high-waist jeans."
+      ]
+    },
+    "tee, shorts": {
+      Casual: [
+        "A soft tee and casual shorts, or an easy breezy midi skirt.",
+        "A simple tee with relaxed shorts or a flowy skirt."
+      ],
+      Streetwear: [
+        "A crop top, cuffed denim shorts, and chunky sneakers.",
+        "A graphic crop tee with biker shorts and bold kicks."
+      ],
+      Athletic: [
+        "A breathable sports crop top and running shorts or bike shorts.",
+        "A moisture-wicking training tank and athletic shorts."
+      ],
+      Workwear: [
+        "A lightweight shell blouse and tailored bermuda shorts.",
+        "A flowy linen button-down and crisp city shorts."
+      ],
+      Minimal: [
+        "A clean fitted crop tee and structured shorts or a simple midi skirt.",
+        "A monochromatic short sleeve and minimalist high-waist shorts."
+      ]
+    },
+    "tank or breathable shirt, shorts": {
+      Casual: [
+        "A breezy sundress or a thin tank with breathable shorts.",
+        "The lightest flowy dress or an easy tank and loose shorts."
+      ],
+      Streetwear: [
+        "A mesh top or barely-there tank, bike shorts, and minimalist sneakers.",
+        "An oversized thin tee knotted at the waist with lightweight shorts."
+      ],
+      Athletic: [
+        "A high-performance cooling crop tank and ultralight running shorts.",
+        "A barely-there sports bra and minimal running shorts."
+      ],
+      Workwear: [
+        "A sleeveless linen blouse and tailored wide-leg shorts.",
+        "A light chambray sleeveless top and flowy utility shorts."
+      ],
+      Minimal: [
+        "A clean linen sundress or a simple tank with minimal structured shorts.",
+        "A fine cotton sundress or a linen tank and crisp shorts."
+      ]
+    }
+  };
+
+  if (gender === "female") {
+    const options = femaleMap[base]?.[style];
+    return options ? getRandom(options) : base;
+  }
+
   const map: Record<string, Record<StylePreference, string[]>> = {
     "heavy coat, sweater, pants": {
       Casual: [
@@ -239,7 +362,8 @@ function average(arr: number[]): number {
 export function generateTimeOfDayRecs(
   hourlyForecast: HourlyForecast, 
   style: StylePreference, 
-  units: "f" | "c"
+  units: "f" | "c",
+  gender: GenderPreference = "unspecified"
 ) {
   const indices = {
     morning: [] as number[],
@@ -263,7 +387,8 @@ export function generateTimeOfDayRecs(
       windMph: hourlyForecast.wind_speed_10m[0],
       humidity: hourlyForecast.relative_humidity_2m[0],
       isDay: true,
-      style
+      style,
+      gender
     });
 
     const temp = average(idxs.map(i => hourlyForecast.temperature_2m[i]));
@@ -294,7 +419,8 @@ export function generateTimeOfDayRecs(
       windMph: wind,
       humidity: hum,
       isDay,
-      style
+      style,
+      gender
     });
   };
 

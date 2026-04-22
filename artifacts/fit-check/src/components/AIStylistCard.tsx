@@ -14,9 +14,10 @@ interface AIStylistCardProps {
   };
   closetItems: { name: string; category: string }[];
   style: string;
+  gender?: string;
 }
 
-export function AIStylistCard({ weather, closetItems, style }: AIStylistCardProps) {
+export function AIStylistCard({ weather, closetItems, style, gender = "unspecified" }: AIStylistCardProps) {
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +32,7 @@ export function AIStylistCard({ weather, closetItems, style }: AIStylistCardProp
       const res = await fetch("/api/ai/stylist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ weather, closetItems, style }),
+        body: JSON.stringify({ weather, closetItems, style, gender }),
       });
       if (!res.ok) throw new Error("Request failed");
       const data = await res.json();

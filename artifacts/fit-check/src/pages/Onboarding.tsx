@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { MapPin, ArrowRight, Plus, X, Check, Sparkles } from "lucide-react";
+import { MapPin, ArrowRight, Plus, X, Check, Sparkles, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { CitySearch } from "@/components/CitySearch";
 import { trackEvent } from "@/lib/analytics";
-import { STYLE_TYPES } from "@/lib/storage";
+import { STYLE_TYPES, GenderPreference } from "@/lib/storage";
 import { reverseGeocode } from "@/lib/weather";
 
-type Step = "welcome" | "search" | "style";
+type Step = "welcome" | "search" | "style" | "gender";
 
 export default function Onboarding() {
   const [, navigate] = useLocation();
@@ -22,6 +22,7 @@ export default function Onboarding() {
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
   const [customInput, setCustomInput] = useState("");
   const [customStyles, setCustomStyles] = useState<string[]>([]);
+  const [selectedGender, setSelectedGender] = useState<GenderPreference>("unspecified");
 
   const handleUseLocation = async () => {
     try {
@@ -70,13 +71,23 @@ export default function Onboarding() {
 
   const handleFinish = () => {
     const allStyles = [...new Set([...selectedStyles])];
-    updateSettings({ styleTypes: allStyles, onboarded: true });
+    updateSettings({ styleTypes: allStyles });
     trackEvent("style_changed", { styleTypes: allStyles });
-    navigate("/");
+    setStep("gender");
   };
 
   const handleSkipStyle = () => {
-    updateSettings({ onboarded: true });
+    setStep("gender");
+  };
+
+  const handleFinishGender = () => {
+    updateSettings({ gender: selectedGender, onboarded: true });
+    trackEvent("gender_set", { gender: selectedGender });
+    navigate("/");
+  };
+
+  const handleSkipGender = () => {
+    updateSettings({ gender: "unspecified", onboarded: true });
     navigate("/");
   };
 
@@ -294,6 +305,76 @@ export default function Onboarding() {
               </Button>
               <button
                 onClick={handleSkipStyle}
+                className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
+              >
+                Skip for now
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ── Gender picker ── */}
+        {step === "gender" && (
+          <motion.div
+            key="gender"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -40 }}
+            transition={{ duration: 0.4 }}
+            className="flex-1 flex flex-col min-h-[100dvh]"
+          >
+            <div className="px-5 pt-12 pb-4">
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <User className="w-4 h-4 text-primary" />
+                </div>
+                <h2 className="text-2xl font-display font-bold">Your Wardrobe</h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                This helps us suggest the right clothing options for you.
+              </p>
+            </div>
+
+            <div className="flex-1 px-5 space-y-3 pt-2">
+              {([
+                { value: "female", label: "Women's", emoji: "👗", desc: "Dresses, skirts, blouses & more" },
+                { value: "male", label: "Men's", emoji: "👔", desc: "Shirts, trousers, jackets & more" },
+                { value: "unspecified", label: "No preference", emoji: "✨", desc: "Gender-neutral suggestions" },
+              ] as { value: GenderPreference; label: string; emoji: string; desc: string }[]).map(opt => (
+                <motion.button
+                  key={opt.value}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setSelectedGender(opt.value)}
+                  className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all ${
+                    selectedGender === opt.value
+                      ? "border-primary bg-primary/8"
+                      : "border-border/60 bg-card hover:border-primary/40"
+                  }`}
+                >
+                  <span className="text-3xl">{opt.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-base leading-tight">{opt.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
+                  </div>
+                  {selectedGender === opt.value && (
+                    <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0">
+                      <Check className="w-3.5 h-3.5 text-primary-foreground" />
+                    </div>
+                  )}
+                </motion.button>
+              ))}
+            </div>
+
+            <div className="px-5 py-5 border-t border-border/30 bg-background space-y-3 pb-10 mt-6">
+              <Button
+                size="lg"
+                className="w-full h-14 text-base rounded-2xl shadow-lg shadow-primary/20"
+                onClick={handleFinishGender}
+              >
+                Let's go
+              </Button>
+              <button
+                onClick={handleSkipGender}
                 className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
               >
                 Skip for now

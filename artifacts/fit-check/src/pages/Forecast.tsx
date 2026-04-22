@@ -105,7 +105,8 @@ export default function Forecast() {
             windMph: 5,
             humidity: 50,
             isDay: true,
-            style: settings.style
+            style: settings.style,
+            gender: settings.gender,
           });
 
           // Calc width for the range bar

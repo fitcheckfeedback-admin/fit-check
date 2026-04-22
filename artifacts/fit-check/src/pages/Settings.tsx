@@ -3,8 +3,8 @@ import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/analytics";
-import { STYLE_TYPES } from "@/lib/storage";
-import { MapPin, RefreshCw, Sun, Moon, Laptop, Thermometer, Trash2, Copy, Mic, Play, BellRing, CheckCircle2, Sparkles, Plus, X } from "lucide-react";
+import { STYLE_TYPES, GenderPreference } from "@/lib/storage";
+import { MapPin, RefreshCw, Sun, Moon, Laptop, Thermometer, Trash2, Copy, Mic, Play, BellRing, CheckCircle2, Sparkles, Plus, X, User, Check } from "lucide-react";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useLocation } from "wouter";
 import { CitySearch } from "@/components/CitySearch";
@@ -323,6 +323,46 @@ export default function Settings() {
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
+      </section>
+
+      {/* Gender / Wardrobe */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider pl-2">Wardrobe Style</h2>
+        <div className="bg-card rounded-[2rem] border shadow-sm p-5 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="p-1.5 bg-primary/10 rounded-xl text-primary">
+              <User className="w-4 h-4" />
+            </div>
+            <p className="text-sm font-bold">Clothing suggestions for</p>
+          </div>
+          <div className="flex gap-2">
+            {([
+              { value: "female", label: "Women's", emoji: "👗" },
+              { value: "male", label: "Men's", emoji: "👔" },
+              { value: "unspecified", label: "Any", emoji: "✨" },
+            ] as { value: GenderPreference; label: string; emoji: string }[]).map(opt => {
+              const active = (settings.gender ?? "unspecified") === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => {
+                    updateSettings({ gender: opt.value });
+                    trackEvent("gender_changed", { gender: opt.value });
+                  }}
+                  className={`flex-1 flex flex-col items-center gap-1 py-3 px-2 rounded-2xl border-2 text-center transition-all text-sm font-semibold ${
+                    active
+                      ? "border-primary bg-primary/8 text-primary"
+                      : "border-border/60 bg-background text-foreground/70 hover:border-primary/40"
+                  }`}
+                >
+                  <span className="text-xl">{opt.emoji}</span>
+                  <span className="text-xs">{opt.label}</span>
+                  {active && <Check className="w-3 h-3" />}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </section>
 

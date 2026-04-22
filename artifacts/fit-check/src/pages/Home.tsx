@@ -142,7 +142,8 @@ export default function Home() {
         windMph: weather.current.wind_speed_10m,
         humidity: weather.current.relative_humidity_2m,
         isDay,
-        style: settings.style
+        style: settings.style,
+        gender: settings.gender,
       });
 
   // Tomorrow's data
@@ -160,7 +161,8 @@ export default function Home() {
     windMph: weather.current.wind_speed_10m,
     humidity: weather.current.relative_humidity_2m,
     isDay: true,
-    style: settings.style
+    style: settings.style,
+    gender: settings.gender,
   });
 
   // Active (today or tomorrow) variables
@@ -413,6 +415,7 @@ export default function Home() {
             }}
             closetItems={allClosetItems}
             style={settings.style}
+            gender={settings.gender}
           />
         </motion.section>
 
