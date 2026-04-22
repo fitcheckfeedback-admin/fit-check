@@ -62,3 +62,31 @@ export async function fetchForecast(lat: number, lon: number): Promise<WeatherFo
   if (!res.ok) throw new Error("Failed to fetch weather forecast");
   return res.json();
 }
+
+export interface TripDayForecast {
+  date: string;
+  weatherCode: number;
+  highF: number;
+  lowF: number;
+  avgF: number;
+  precipChance: number;
+  sunrise: string;
+  sunset: string;
+}
+
+export async function fetchTripForecast(lat: number, lon: number, startDate: string, endDate: string): Promise<TripDayForecast[]> {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&start_date=${startDate}&end_date=${endDate}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to fetch trip forecast");
+  const data = await res.json();
+  return (data.daily.time as string[]).map((date: string, i: number) => ({
+    date,
+    weatherCode: data.daily.weather_code[i],
+    highF: data.daily.temperature_2m_max[i],
+    lowF: data.daily.temperature_2m_min[i],
+    avgF: (data.daily.temperature_2m_max[i] + data.daily.temperature_2m_min[i]) / 2,
+    precipChance: data.daily.precipitation_probability_max[i] ?? 0,
+    sunrise: data.daily.sunrise[i] ?? "",
+    sunset: data.daily.sunset[i] ?? "",
+  }));
+}

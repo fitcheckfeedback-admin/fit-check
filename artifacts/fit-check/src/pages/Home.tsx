@@ -13,7 +13,7 @@ import { SavedFit } from "@/lib/storage";
 import { getWeatherInfo } from "@/lib/weather-codes";
 import { pickClosetItems } from "@/lib/closetMatch";
 import { useClosetImage } from "@/hooks/useClosetImage";
-import { MapPin, Droplets, Wind, Sunset, Sunrise, Search, Shirt, Scissors, Layers, Footprints, Bell, Bookmark, ChevronRight, X, Share2, Gem } from "lucide-react";
+import { MapPin, Droplets, Wind, Sunset, Sunrise, Search, Shirt, Scissors, Layers, Footprints, Bell, Bookmark, ChevronRight, X, Share2, Gem, Plane, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatTemp, formatTime } from "@/lib/format";
 import { useState, useEffect, useRef } from "react";
@@ -27,6 +27,7 @@ import { useQuery } from "@tanstack/react-query";
 import { FitCardShareSheet } from "@/components/FitCardShareSheet";
 import { generateHashtags } from "@/lib/fitCardHashtags";
 import { FitCardData } from "@/lib/fitCardCaption";
+import { AIStylistCard } from "@/components/AIStylistCard";
 
 function ClosetMatchThumbnail({ item, label, icon: Icon }: { item: import("@/lib/storage").ClosetItem; label: string; icon: any }) {
   const { src } = useClosetImage(item.imageId);
@@ -198,6 +199,14 @@ export default function Home() {
 
   const highF = activeHighF;
   const lowF = activeLowF;
+
+  const allClosetItems = [
+    ...settings.closet.tops.map(i => ({ name: i.name, category: "tops" })),
+    ...settings.closet.bottoms.map(i => ({ name: i.name, category: "bottoms" })),
+    ...settings.closet.outerwear.map(i => ({ name: i.name, category: "outerwear" })),
+    ...settings.closet.shoes.map(i => ({ name: i.name, category: "shoes" })),
+    ...settings.closet.accessories.map(i => ({ name: i.name, category: "accessories" })),
+  ];
 
   const shareDate = isTomorrow
     ? new Date(Date.now() + 86400000).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
@@ -392,6 +401,22 @@ export default function Home() {
           )}
         </motion.section>
 
+        {/* AI Stylist */}
+        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+          <AIStylistCard
+            weather={{
+              tempF: activeTemp,
+              feelsLikeF: activeFeelsLike,
+              condition: wmoInfo.label,
+              windMph: weather.current.wind_speed_10m,
+              precipChance: isTomorrow ? tomorrowMaxPrecip : weather.hourly.precipitation_probability[0],
+              isDay: activeIsDay,
+            }}
+            closetItems={allClosetItems}
+            style={settings.style}
+          />
+        </motion.section>
+
         {/* Saved Fits Section */}
         {allSavedFits.length > 0 && (
           <motion.section
@@ -561,6 +586,31 @@ export default function Home() {
               <span className="font-semibold text-lg">{formatTime(weather.daily.sunset[0])}</span>
             </div>
           </div>
+        </motion.section>
+
+        {/* Trip Planner promo */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <button
+            onClick={() => setLocation('/trip')}
+            className="w-full rounded-3xl p-5 flex items-center gap-4 shadow-sm text-left"
+            style={{ background: "linear-gradient(135deg, #1a0f00 0%, #2a1800 100%)", border: "1px solid rgba(255,149,0,0.2)" }}
+          >
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+              style={{ background: "linear-gradient(135deg, #FF9500, #FF6B00)" }}>
+              <Plane className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-display font-black text-white text-base leading-tight">Trip Planner</p>
+              <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>
+                Day-by-day outfits & packing list for any destination
+              </p>
+            </div>
+            <ChevronRight className="w-5 h-5 shrink-0" style={{ color: "rgba(255,149,0,0.6)" }} />
+          </button>
         </motion.section>
       </div>
       

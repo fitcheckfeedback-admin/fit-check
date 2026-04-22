@@ -30,4 +30,21 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
 
+## Premium Features
+
+### AI Stylist
+- Orange gradient card on the Home screen (below the main outfit section)
+- POSTs to `POST /api/ai/stylist` on the API server
+- Sends current weather data + all closet items (flattened from settings.closet) + style preference
+- API route at `artifacts/api-server/src/routes/ai.ts` uses `@workspace/integrations-openai-ai-server` (gpt-5.1)
+- Component: `artifacts/fit-check/src/components/AIStylistCard.tsx`
+
+### Trip Planner
+- Accessible from a dark "Trip Planner" card at the bottom of the Home screen
+- Full page at `/trip` route — `artifacts/fit-check/src/pages/Trip.tsx`
+- Uses `fetchTripForecast()` from `artifacts/fit-check/src/lib/weather.ts` (Open-Meteo API with start_date/end_date)
+- Shows expandable day-by-day weather cards with outfit recommendations
+- Generates a categorized packing list (tops/bottoms/layers/shoes/extras) from all trip days
+- City search via `CitySearch` component with date range pickers
+
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.

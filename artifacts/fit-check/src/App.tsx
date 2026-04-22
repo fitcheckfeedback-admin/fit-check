@@ -19,6 +19,7 @@ import Settings from "@/pages/Settings";
 import Reminders from "@/pages/Reminders";
 import Analytics from "@/pages/Analytics";
 import Cam from "@/pages/Cam";
+import Trip from "@/pages/Trip";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ function Router() {
       <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
       <Route path="/reminders" component={() => <ProtectedRoute component={Reminders} />} />
       <Route path="/cam" component={() => <ProtectedRoute component={Cam} hideNav />} />
+      <Route path="/trip" component={() => <ProtectedRoute component={Trip} />} />
       <Route path="/analytics" component={Analytics} />
       <Route component={() => (
         <AppShell hideNav>
