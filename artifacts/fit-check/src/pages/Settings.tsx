@@ -3,7 +3,8 @@ import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/analytics";
-import { MapPin, RefreshCw, Sun, Moon, Laptop, Thermometer, Trash2, Copy, Mic, Play, BellRing, CheckCircle2 } from "lucide-react";
+import { STYLE_TYPES } from "@/lib/storage";
+import { MapPin, RefreshCw, Sun, Moon, Laptop, Thermometer, Trash2, Copy, Mic, Play, BellRing, CheckCircle2, Sparkles, Plus, X } from "lucide-react";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useLocation } from "wouter";
 import { CitySearch } from "@/components/CitySearch";
@@ -32,6 +33,8 @@ export default function Settings() {
   const { getCurrentPosition, loading } = useGeolocation();
   const [, setLocation] = useLocation();
   const [showCitySearch, setShowCitySearch] = useState(false);
+  const [showStylePicker, setShowStylePicker] = useState(false);
+  const [customStyleInput, setCustomStyleInput] = useState("");
   const { toast } = useToast();
   const { speak, isSpeaking, cancelSpeech } = useVoiceAssistant();
   const { ranked: rankedVoices, loading: voicesLoading } = useVoices();
@@ -72,6 +75,26 @@ export default function Settings() {
     });
     trackEvent("location_set", { city: cityName, lat: city.latitude, lon: city.longitude, method: "search" });
     setShowCitySearch(false);
+  };
+
+  const toggleStyleType = (s: string) => {
+    const current = settings.styleTypes ?? [];
+    const updated = current.includes(s) ? current.filter(x => x !== s) : [...current, s];
+    updateSettings({ styleTypes: updated });
+    trackEvent("style_changed", { styleTypes: updated });
+  };
+
+  const addCustomStyleType = () => {
+    const trimmed = customStyleInput.trim();
+    if (!trimmed) return;
+    const normalized = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+    const current = settings.styleTypes ?? [];
+    if (!current.includes(normalized)) {
+      const updated = [...current, normalized];
+      updateSettings({ styleTypes: updated });
+      trackEvent("style_changed", { styleTypes: updated });
+    }
+    setCustomStyleInput("");
   };
 
   const handleToggleNotifications = async (checked: boolean) => {
@@ -194,6 +217,107 @@ export default function Settings() {
                 >
                   Search City
                 </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </section>
+
+      {/* Style Types */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider pl-2">My Style</h2>
+        <div className="bg-card rounded-[2rem] border shadow-sm overflow-hidden">
+          {/* Current styles summary */}
+          <div className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-primary/10 rounded-xl text-primary">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <p className="text-sm font-bold">Style Vibes</p>
+              </div>
+              <button
+                onClick={() => setShowStylePicker(v => !v)}
+                className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
+              >
+                {showStylePicker ? "Done" : "Edit"}
+              </button>
+            </div>
+
+            {(settings.styleTypes ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No styles selected.{" "}
+                <button onClick={() => setShowStylePicker(true)} className="text-primary font-semibold underline-offset-2 hover:underline">
+                  Add some
+                </button>
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {(settings.styleTypes ?? []).map(s => (
+                  <span key={s} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                    {s}
+                    {showStylePicker && (
+                      <button onClick={() => toggleStyleType(s)} className="opacity-60 hover:opacity-100 ml-0.5">
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Expanded picker */}
+          <AnimatePresence>
+            {showStylePicker && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden border-t border-border/40"
+              >
+                <div className="p-5 space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    {[...STYLE_TYPES].map(s => {
+                      const active = (settings.styleTypes ?? []).includes(s);
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => toggleStyleType(s)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all ${
+                            active
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border/60 bg-background text-foreground/70 hover:border-primary/40"
+                          }`}
+                        >
+                          {s}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Custom style input */}
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Add your own</p>
+                    <div className="flex gap-2">
+                      <input
+                        value={customStyleInput}
+                        onChange={e => setCustomStyleInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addCustomStyleType(); } }}
+                        placeholder="e.g. Cottagecore, Y2K..."
+                        className="flex-1 h-10 px-3 rounded-xl border-2 border-border/60 bg-background text-sm focus:border-primary focus:outline-none transition-colors"
+                      />
+                      <button
+                        onClick={addCustomStyleType}
+                        disabled={!customStyleInput.trim()}
+                        className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40 shrink-0"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

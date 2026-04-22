@@ -4,6 +4,18 @@ export type Category = "tops" | "bottoms" | "outerwear" | "shoes";
 export type StylePreference = "Casual" | "Streetwear" | "Athletic" | "Workwear" | "Minimal";
 export type ThemePreference = "light" | "dark" | "system";
 
+export const STYLE_TYPES = [
+  "00s", "20s", "30s", "40s", "50s", "60s", "70s", "80s", "90s",
+  "Androgynous", "Artsy", "Ballerina", "Basic", "Beach", "Biker", "Boho",
+  "Business Casual", "Casual", "Comfy", "Country", "Dark / Light Academia",
+  "Eclectic", "Edgy", "Elegant", "Ethereal", "Feminine", "Folk", "Formal",
+  "French", "Fun", "Funky", "Garconne", "Geek Chic", "Girl Next Door",
+  "Glam", "Goth", "Granola", "Grunge", "Hipster", "Kooky", "Lagenlook",
+  "Masculine", "Military", "Minimalist", "Modest", "Prairie", "Preppy",
+  "Punk", "Racy", "Rocker", "Romantic", "Skateboard", "Sporty", "Street",
+  "Traditional", "Vintage",
+] as const;
+
 export type WeatherTag = "hot" | "warm" | "mild" | "cool" | "cold" | "rainy" | "snowy" | "windy" | "stormy" | "sunny";
 
 export interface SavedFit {
@@ -45,6 +57,7 @@ export interface FitCheckSettings {
   location: LocationData | null;
   units: "f" | "c";
   style: StylePreference;
+  styleTypes: string[];
   closet: ClosetData;
   theme: ThemePreference;
   voiceName: string | null;
@@ -64,6 +77,7 @@ const DEFAULT_SETTINGS: FitCheckSettings = {
     outerwear: [],
     shoes: []
   },
+  styleTypes: [],
   theme: "system",
   voiceName: null,
   notificationsEnabled: false,
@@ -116,7 +130,10 @@ export function getSettings(): FitCheckSettings {
     const savedFitsRaw = localStorage.getItem("fitcheck.savedFits");
     const savedFits: SavedFit[] = savedFitsRaw ? JSON.parse(savedFitsRaw) : [];
 
-    return { onboarded, location, units, style, closet, theme, voiceName, notificationsEnabled, morningAlertTime, savedFits };
+    const styleTypesRaw = localStorage.getItem("fitcheck.styleTypes");
+    const styleTypes: string[] = styleTypesRaw ? JSON.parse(styleTypesRaw) : [];
+
+    return { onboarded, location, units, style, styleTypes, closet, theme, voiceName, notificationsEnabled, morningAlertTime, savedFits };
   } catch (e) {
     return DEFAULT_SETTINGS;
   }
@@ -127,6 +144,7 @@ export function saveSettings(settings: Partial<FitCheckSettings>) {
   if (settings.location !== undefined) localStorage.setItem("fitcheck.location", JSON.stringify(settings.location));
   if (settings.units !== undefined) localStorage.setItem("fitcheck.units", settings.units);
   if (settings.style !== undefined) localStorage.setItem("fitcheck.style", settings.style);
+  if (settings.styleTypes !== undefined) localStorage.setItem("fitcheck.styleTypes", JSON.stringify(settings.styleTypes));
   if (settings.closet !== undefined) localStorage.setItem("fitcheck.closet", JSON.stringify(settings.closet));
   if (settings.theme !== undefined) localStorage.setItem("fitcheck.theme", settings.theme);
   if (settings.notificationsEnabled !== undefined) localStorage.setItem("fitcheck.notificationsEnabled", String(settings.notificationsEnabled));
