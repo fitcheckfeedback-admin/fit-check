@@ -9,7 +9,7 @@ import { CitySearch } from "@/components/CitySearch";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { useVoiceAssistant } from "@/hooks/useVoiceAssistant";
-import { CLOUD_VOICES, DEFAULT_VOICE } from "@/lib/cloudTTS";
+import { useVoices } from "@/hooks/useVoices";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,8 +30,9 @@ export default function Settings() {
   const [showCitySearch, setShowCitySearch] = useState(false);
   const { toast } = useToast();
   const { speak, isSpeaking, cancelSpeech } = useVoiceAssistant();
+  const { ranked: rankedVoices, loading: voicesLoading } = useVoices();
   
-  const handleTestVoice = (voiceId?: string) => {
+  const handleTestVoice = (voiceId?: string | null) => {
     if (isSpeaking) {
       cancelSpeech();
       return;
@@ -222,47 +223,97 @@ export default function Settings() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-2">
-            {CLOUD_VOICES.map(v => {
-              const isActive = (settings.voiceName ?? DEFAULT_VOICE) === v.id;
-              return (
-                <button
-                  key={v.id}
-                  type="button"
-                  onClick={() => updateSettings({ voiceName: v.id })}
-                  className={cn(
-                    "flex items-center gap-3 p-3 rounded-2xl border-2 text-left transition-all",
-                    isActive 
-                      ? "border-primary bg-primary/5" 
-                      : "border-transparent bg-muted/30 hover:bg-muted/50"
-                  )}
-                >
-                  <div className={cn(
-                    "w-9 h-9 rounded-full flex items-center justify-center font-display font-bold text-sm shrink-0",
-                    isActive ? "bg-primary text-primary-foreground" : "bg-background text-foreground"
-                  )}>
-                    {v.label[0]}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm leading-tight">{v.label}</p>
-                    <p className="text-xs text-muted-foreground truncate">{v.desc}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); handleTestVoice(v.id); }}
-                    className="w-9 h-9 rounded-full bg-background border flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors shrink-0"
-                    aria-label={`Preview ${v.label}`}
+          {voicesLoading || rankedVoices.length === 0 ? (
+            <p className="text-sm text-muted-foreground bg-muted/30 rounded-xl p-4 text-center">
+              Loading voices from your device...
+            </p>
+          ) : (
+            <div className="space-y-2 max-h-96 overflow-y-auto pr-1 -mr-1">
+              {/* Auto option */}
+              {(() => {
+                const isActive = !settings.voiceName;
+                return (
+                  <div
+                    onClick={() => updateSettings({ voiceName: null })}
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition-all",
+                      isActive ? "border-primary bg-primary/5" : "border-transparent bg-muted/30 hover:bg-muted/50"
+                    )}
                   >
-                    <Play className="w-4 h-4" />
-                  </button>
-                </button>
-              );
-            })}
-          </div>
+                    <div className={cn(
+                      "w-9 h-9 rounded-full flex items-center justify-center font-display font-bold text-sm shrink-0",
+                      isActive ? "bg-primary text-primary-foreground" : "bg-background text-foreground"
+                    )}>
+                      A
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm leading-tight">Auto</p>
+                      <p className="text-xs text-muted-foreground truncate">Best voice your device has</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleTestVoice(null); }}
+                      className="w-9 h-9 rounded-full bg-background border flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors shrink-0"
+                      aria-label="Preview"
+                    >
+                      <Play className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })()}
+
+              {rankedVoices.map(rv => {
+                const isActive = settings.voiceName === rv.voice.name;
+                return (
+                  <div
+                    key={rv.voice.name}
+                    onClick={() => updateSettings({ voiceName: rv.voice.name })}
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition-all",
+                      isActive ? "border-primary bg-primary/5" : "border-transparent bg-muted/30 hover:bg-muted/50"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-9 h-9 rounded-full flex items-center justify-center font-display font-bold text-sm shrink-0",
+                      isActive ? "bg-primary text-primary-foreground" : "bg-background text-foreground"
+                    )}>
+                      {rv.label[0]?.toUpperCase() ?? "?"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-sm leading-tight truncate">{rv.label}</p>
+                        {rv.quality === "premium" && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 shrink-0">
+                            Premium
+                          </span>
+                        )}
+                        {rv.quality === "enhanced" && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-400 shrink-0">
+                            Enhanced
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{rv.sublabel}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleTestVoice(rv.voice.name); }}
+                      className="w-9 h-9 rounded-full bg-background border flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors shrink-0"
+                      aria-label={`Preview ${rv.label}`}
+                    >
+                      <Play className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
           
-          <p className="text-xs text-muted-foreground pt-1">
-            Powered by AI for natural, life-like speech.
-          </p>
+          <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              <strong className="text-foreground">Tip:</strong> The most natural voices are marked Premium. On iPhone, download more in Settings → Accessibility → Spoken Content → Voices (look for "Siri" or "Enhanced" voices). On Mac, check System Settings → Accessibility → Spoken Content.
+            </p>
+          </div>
         </div>
       </section>
 

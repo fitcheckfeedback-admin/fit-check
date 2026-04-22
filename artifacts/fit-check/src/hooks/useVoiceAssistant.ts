@@ -109,37 +109,39 @@ export function useVoiceAssistant() {
   }, [isSupported]);
 
   const speak = useCallback(async (text: string, voiceName?: string | null) => {
-    // Try cloud TTS first for life-like voices; fall back to browser if it fails
-    try {
-      const { speakWithCloud, isCloudVoice, DEFAULT_VOICE } = await import('@/lib/cloudTTS');
-      const voice = isCloudVoice(voiceName) ? voiceName : DEFAULT_VOICE;
-      await speakWithCloud(text, {
-        voice,
-        onStart: () => setIsSpeaking(true),
-        onEnd: () => setIsSpeaking(false),
-        onError: () => setIsSpeaking(false),
-      });
-      return;
-    } catch (err) {
-      console.warn('Cloud TTS unavailable, falling back to browser voice:', err);
+    if (!window.speechSynthesis) return;
+    
+    const { findVoiceByName, pickAutoVoice } = await import('@/lib/voicePicker');
+    
+    window.speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    const setVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length === 0) return;
+      const chosen = findVoiceByName(voices, voiceName) ?? pickAutoVoice(voices);
+      if (chosen) utterance.voice = chosen;
+    };
+
+    setVoice();
+    if (window.speechSynthesis.getVoices().length === 0) {
+      window.speechSynthesis.addEventListener('voiceschanged', setVoice, { once: true });
     }
 
-    // Fallback: Web Speech API
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    const voices = window.speechSynthesis.getVoices();
-    if (voices.length > 0) {
-      utterance.voice = voices.find(v => v.lang === 'en-US') || voices[0];
-    }
+    // Slightly slower & lower pitch makes browser voices feel more natural
+    utterance.rate = 0.97;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
     utterance.onerror = () => setIsSpeaking(false);
+
     window.speechSynthesis.speak(utterance);
   }, []);
 
   const cancelSpeech = useCallback(() => {
-    import('@/lib/cloudTTS').then(({ stopCloudSpeech }) => stopCloudSpeech());
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
