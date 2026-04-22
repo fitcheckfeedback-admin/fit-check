@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import {
-  Plus, Shirt, Footprints, Layers,
+  Plus, Shirt, Footprints,
   Image as ImageIcon, Trash2, ArrowLeft, MoreVertical, ChevronRight, Gem
 } from "lucide-react";
 import { PantsIcon } from "@/components/icons/PantsIcon";
+import { JacketIcon } from "@/components/icons/JacketIcon";
 import { ClosetItem, Category } from "@/lib/storage";
 import { motion, AnimatePresence } from "framer-motion";
 import { useClosetImage } from "@/hooks/useClosetImage";
@@ -43,7 +44,7 @@ const CATEGORIES: {
     id: "outerwear",
     label: "Outerwear",
     fullLabel: "Outerwear",
-    icon: Layers,
+    icon: JacketIcon,
     bg: "from-stone-400/30 to-stone-600/10",
     iconColor: "text-stone-600 dark:text-stone-400",
     emptyMsg: "Add your jackets, coats, and layers",
