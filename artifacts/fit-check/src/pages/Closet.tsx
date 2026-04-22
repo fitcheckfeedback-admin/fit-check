@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import {
-  Plus, Shirt, Footprints, Layers, Scissors,
+  Plus, Shirt, Footprints, Layers,
   Image as ImageIcon, Trash2, ArrowLeft, MoreVertical, ChevronRight, Gem
 } from "lucide-react";
+import { PantsIcon } from "@/components/icons/PantsIcon";
 import { ClosetItem, Category } from "@/lib/storage";
 import { motion, AnimatePresence } from "framer-motion";
 import { useClosetImage } from "@/hooks/useClosetImage";
@@ -33,7 +34,7 @@ const CATEGORIES: {
     id: "bottoms",
     label: "Bottoms",
     fullLabel: "Bottoms & Pants",
-    icon: Scissors,
+    icon: PantsIcon,
     bg: "from-sky-400/30 to-sky-600/10",
     iconColor: "text-sky-600 dark:text-sky-400",
     emptyMsg: "Add your jeans, pants, and shorts",

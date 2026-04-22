@@ -12,7 +12,8 @@ import { SavedFit } from "@/lib/storage";
 import { getWeatherInfo } from "@/lib/weather-codes";
 import { pickClosetItems } from "@/lib/closetMatch";
 import { useClosetImage } from "@/hooks/useClosetImage";
-import { MapPin, Search, Shirt, Scissors, Layers, Footprints, Bell, Bookmark, ChevronRight, X, Share2, Gem, Plane } from "lucide-react";
+import { MapPin, Search, Shirt, Layers, Footprints, Bell, Bookmark, ChevronRight, X, Share2, Gem, Plane } from "lucide-react";
+import { PantsIcon } from "@/components/icons/PantsIcon";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatTemp } from "@/lib/format";
 import { useState, useEffect, useRef } from "react";
@@ -188,7 +189,7 @@ export default function Home() {
   const closetMatchResult = pickClosetItems(activeRec, settings.closet, settings.style);
   const matchedItems = [
     { cat: "tops", label: "Top", icon: Shirt, item: closetMatchResult.tops },
-    { cat: "bottoms", label: "Bottom", icon: Scissors, item: closetMatchResult.bottoms },
+    { cat: "bottoms", label: "Bottom", icon: PantsIcon, item: closetMatchResult.bottoms },
     { cat: "outerwear", label: "Layer", icon: Layers, item: closetMatchResult.outerwear },
     { cat: "shoes", label: "Shoes", icon: Footprints, item: closetMatchResult.shoes },
     { cat: "accessories", label: "Accessory", icon: Gem, item: closetMatchResult.accessories },
