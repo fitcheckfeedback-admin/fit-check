@@ -13,7 +13,7 @@ import { SavedFit } from "@/lib/storage";
 import { getWeatherInfo } from "@/lib/weather-codes";
 import { pickClosetItems } from "@/lib/closetMatch";
 import { useClosetImage } from "@/hooks/useClosetImage";
-import { MapPin, Droplets, Wind, Sunset, Sunrise, Search, Shirt, Scissors, Layers, Footprints, Bell, Bookmark, ChevronRight, X, Share2 } from "lucide-react";
+import { MapPin, Droplets, Wind, Sunset, Sunrise, Search, Shirt, Scissors, Layers, Footprints, Bell, Bookmark, ChevronRight, X, Share2, Gem } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatTemp, formatTime } from "@/lib/format";
 import { useState, useEffect, useRef } from "react";
@@ -162,7 +162,8 @@ export default function Home() {
     { cat: "tops", label: "Top", icon: Shirt, item: closetMatchResult.tops },
     { cat: "bottoms", label: "Bottom", icon: Scissors, item: closetMatchResult.bottoms },
     { cat: "outerwear", label: "Layer", icon: Layers, item: closetMatchResult.outerwear },
-    { cat: "shoes", label: "Shoes", icon: Footprints, item: closetMatchResult.shoes }
+    { cat: "shoes", label: "Shoes", icon: Footprints, item: closetMatchResult.shoes },
+    { cat: "accessories", label: "Accessory", icon: Gem, item: closetMatchResult.accessories },
   ].filter(x => x.item !== undefined);
 
   const highF = weather.daily.temperature_2m_max[0];

@@ -13,7 +13,8 @@ const CATEGORIES: { id: Category; label: string }[] = [
   { id: "tops", label: "Tops" },
   { id: "bottoms", label: "Bottoms" },
   { id: "outerwear", label: "Outerwear" },
-  { id: "shoes", label: "Shoes" }
+  { id: "shoes", label: "Shoes" },
+  { id: "accessories", label: "Accessories" },
 ];
 
 const STYLES: StylePreference[] = ["Casual", "Streetwear", "Athletic", "Workwear", "Minimal"];

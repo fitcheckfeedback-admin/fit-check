@@ -1,6 +1,6 @@
 // src/lib/storage.ts
 
-export type Category = "tops" | "bottoms" | "outerwear" | "shoes";
+export type Category = "tops" | "bottoms" | "outerwear" | "shoes" | "accessories";
 export type StylePreference = "Casual" | "Streetwear" | "Athletic" | "Workwear" | "Minimal";
 export type ThemePreference = "light" | "dark" | "system";
 
@@ -50,6 +50,7 @@ export interface ClosetData {
   bottoms: ClosetItem[];
   outerwear: ClosetItem[];
   shoes: ClosetItem[];
+  accessories: ClosetItem[];
 }
 
 export interface FitCheckSettings {
@@ -75,7 +76,8 @@ const DEFAULT_SETTINGS: FitCheckSettings = {
     tops: [],
     bottoms: [],
     outerwear: [],
-    shoes: []
+    shoes: [],
+    accessories: []
   },
   styleTypes: [],
   theme: "system",
@@ -119,7 +121,8 @@ export function getSettings(): FitCheckSettings {
         tops: migrateCategory(parsed.tops, "tops"),
         bottoms: migrateCategory(parsed.bottoms, "bottoms"),
         outerwear: migrateCategory(parsed.outerwear, "outerwear"),
-        shoes: migrateCategory(parsed.shoes, "shoes")
+        shoes: migrateCategory(parsed.shoes, "shoes"),
+        accessories: migrateCategory(parsed.accessories ?? [], "accessories"),
       };
     }
     const theme = (localStorage.getItem("fitcheck.theme") as ThemePreference) || "system";

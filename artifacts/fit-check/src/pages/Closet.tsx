@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import {
   Plus, Shirt, Footprints, Layers, Scissors,
-  Image as ImageIcon, Trash2, ArrowLeft, MoreVertical, ChevronRight
+  Image as ImageIcon, Trash2, ArrowLeft, MoreVertical, ChevronRight, Gem
 } from "lucide-react";
 import { ClosetItem, Category } from "@/lib/storage";
 import { motion, AnimatePresence } from "framer-motion";
@@ -55,6 +55,15 @@ const CATEGORIES: {
     bg: "from-rose-400/30 to-rose-600/10",
     iconColor: "text-rose-600 dark:text-rose-400",
     emptyMsg: "Add your everyday kicks",
+  },
+  {
+    id: "accessories",
+    label: "Accessories",
+    fullLabel: "Accessories",
+    icon: Gem,
+    bg: "from-violet-400/30 to-violet-600/10",
+    iconColor: "text-violet-600 dark:text-violet-400",
+    emptyMsg: "Add hats, bags, scarves, jewelry, and more",
   },
 ];
 
@@ -379,13 +388,14 @@ export default function Closet() {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          {CATEGORIES.map(cat => (
-            <CategoryCard
-              key={cat.id}
-              cat={cat}
-              items={settings.closet[cat.id]}
-              onClick={() => setActiveCategory(cat.id)}
-            />
+          {CATEGORIES.map((cat, i) => (
+            <div key={cat.id} className={i === CATEGORIES.length - 1 && CATEGORIES.length % 2 !== 0 ? "col-span-2" : ""}>
+              <CategoryCard
+                cat={cat}
+                items={settings.closet[cat.id] ?? []}
+                onClick={() => setActiveCategory(cat.id)}
+              />
+            </div>
           ))}
         </div>
       </motion.div>
