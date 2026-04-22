@@ -63,16 +63,35 @@ function Router() {
   );
 }
 
-function App() {
+function AppTracker() {
+  const { settings } = useFitCheckSettings();
+
   useEffect(() => {
-    trackEvent("app_open", { referrer: document.referrer || undefined });
-  }, []);
+    // Fire once per session with location attached (runs after settings load)
+    const key = "fitcheck.sessionTracked";
+    if (!sessionStorage.getItem(key)) {
+      sessionStorage.setItem(key, "1");
+      const loc = settings.location;
+      trackEvent("app_open", {
+        referrer: document.referrer || undefined,
+        city: loc ? loc.name : undefined,
+        lat: loc ? loc.lat : undefined,
+        lon: loc ? loc.lon : undefined,
+      });
+    }
+  }, [settings.location]);
+
+  return null;
+}
+
+function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <AppTracker />
             <Router />
           </WouterRouter>
           <Toaster />

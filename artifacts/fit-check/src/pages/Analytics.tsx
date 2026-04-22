@@ -319,27 +319,37 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
           </motion.div>
         )}
 
-        {/* Location distribution */}
-        {topCities.length > 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card border border-border rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-1">
-              <MapPin className="w-4 h-4 text-amber-500" />
-              <h2 className="text-sm font-bold">Top Cities</h2>
+        {/* Location distribution — always visible */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card border border-border rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-1">
+            <MapPin className="w-4 h-4 text-amber-500" />
+            <h2 className="text-sm font-bold">Top Cities</h2>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">Ranked by unique users</p>
+
+          {topCities.length === 0 ? (
+            <div className="py-6 text-center space-y-1">
+              <MapPin className="w-8 h-8 text-muted-foreground/30 mx-auto" />
+              <p className="text-sm font-medium text-muted-foreground">No city data yet</p>
+              <p className="text-xs text-muted-foreground/70">Cities will appear here as users open the app with a location set.</p>
             </div>
-            <p className="text-xs text-muted-foreground mb-4">Ranked by unique users</p>
+          ) : (
             <div className="space-y-3">
               {topCities.map((loc, i) => {
                 const pct = Math.round((Number(loc.uniqueDevices) / maxCityUsers) * 100);
                 return (
                   <div key={loc.city}>
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-muted-foreground w-4">{i + 1}</span>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-xs font-bold text-muted-foreground w-5 text-right shrink-0">{i + 1}</span>
                         <span className="text-xs font-semibold text-foreground">{loc.city}</span>
                       </div>
-                      <span className="text-xs text-muted-foreground">{Number(loc.uniqueDevices).toLocaleString()} users</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs font-bold text-foreground">{Number(loc.uniqueDevices).toLocaleString()}</span>
+                        <span className="text-[10px] text-muted-foreground">users</span>
+                      </div>
                     </div>
-                    <div className="h-1.5 bg-muted rounded-full overflow-hidden ml-6">
+                    <div className="h-1.5 bg-muted rounded-full overflow-hidden ml-7">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${pct}%` }}
@@ -351,8 +361,8 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                 );
               })}
             </div>
-          </motion.div>
-        )}
+          )}
+        </motion.div>
 
         {/* Recent events feed */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card border border-border rounded-2xl p-5">
@@ -373,14 +383,16 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                       {new Date(evt.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] text-muted-foreground font-mono truncate">
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <span className="text-[10px] text-muted-foreground font-mono">
                       {evt.deviceId.slice(0, 8)}…
                     </span>
-                    {evt.metadata && (evt.metadata as Record<string, unknown>).city && (
-                      <span className="text-[10px] text-blue-500">
+                    {evt.metadata && (evt.metadata as Record<string, unknown>).city ? (
+                      <span className="text-[10px] font-semibold text-blue-500">
                         {String((evt.metadata as Record<string, unknown>).city)}
                       </span>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground/50 italic">no location</span>
                     )}
                     {evt.metadata && (evt.metadata as Record<string, unknown>).page && (
                       <span className="text-[10px] text-purple-500">
