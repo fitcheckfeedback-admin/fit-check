@@ -13,6 +13,7 @@ export interface FitCardData {
   date: string;
   hashtags: string[];
   units: "f" | "c";
+  userPhoto?: string;
 }
 
 export function buildCaption(data: FitCardData, hashtags: string[]): string {
