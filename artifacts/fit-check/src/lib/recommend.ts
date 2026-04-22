@@ -1,6 +1,7 @@
 import { StylePreference } from "./storage";
 import { getWeatherInfo } from "./weather-codes";
 import { HourlyForecast } from "./weather";
+import { WeatherAlert, detectAlerts } from "./weatherAlerts";
 
 export interface RecommendationInput {
   temperatureF: number;
@@ -19,6 +20,7 @@ export interface Recommendation {
   accessories: string[];
   warnings: string[];
   fitScore: number;
+  alerts: WeatherAlert[];
 }
 
 function getRandom<T>(arr: T[]): T {
@@ -106,7 +108,9 @@ export function generateRecommendation(input: RecommendationInput): Recommendati
 
   fitScore = Math.max(0, Math.min(100, fitScore));
 
-  return { mainOutfit, outerwear, accessories, warnings, fitScore };
+  const alerts = detectAlerts(input);
+
+  return { mainOutfit, outerwear, accessories, warnings, fitScore, alerts };
 }
 
 function getStyleCopy(base: string, style: StylePreference): string {

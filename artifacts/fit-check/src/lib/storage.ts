@@ -4,6 +4,20 @@ export type Category = "tops" | "bottoms" | "outerwear" | "shoes";
 export type StylePreference = "Casual" | "Streetwear" | "Athletic" | "Workwear" | "Minimal";
 export type ThemePreference = "light" | "dark" | "system";
 
+export type WeatherTag = "hot" | "warm" | "mild" | "cool" | "cold" | "rainy" | "snowy" | "windy" | "stormy" | "sunny";
+
+export interface SavedFit {
+  id: string;
+  label: string;
+  mainOutfit: string;
+  outerwear?: string;
+  accessories: string[];
+  style: StylePreference;
+  fitScore: number;
+  weatherTags: WeatherTag[];
+  savedAt: number;
+}
+
 export interface LocationData {
   name: string;
   lat: number;
@@ -36,6 +50,7 @@ export interface FitCheckSettings {
   voiceName: string | null;
   notificationsEnabled: boolean;
   morningAlertTime: string;
+  savedFits: SavedFit[];
 }
 
 const DEFAULT_SETTINGS: FitCheckSettings = {
@@ -52,7 +67,8 @@ const DEFAULT_SETTINGS: FitCheckSettings = {
   theme: "system",
   voiceName: null,
   notificationsEnabled: false,
-  morningAlertTime: "08:00"
+  morningAlertTime: "08:00",
+  savedFits: []
 };
 
 export function getSettings(): FitCheckSettings {
@@ -96,8 +112,11 @@ export function getSettings(): FitCheckSettings {
     const voiceName = localStorage.getItem("fitcheck.voiceName") || null;
     const notificationsEnabled = localStorage.getItem("fitcheck.notificationsEnabled") === "true";
     const morningAlertTime = localStorage.getItem("fitcheck.morningAlertTime") || "08:00";
+    
+    const savedFitsRaw = localStorage.getItem("fitcheck.savedFits");
+    const savedFits: SavedFit[] = savedFitsRaw ? JSON.parse(savedFitsRaw) : [];
 
-    return { onboarded, location, units, style, closet, theme, voiceName, notificationsEnabled, morningAlertTime };
+    return { onboarded, location, units, style, closet, theme, voiceName, notificationsEnabled, morningAlertTime, savedFits };
   } catch (e) {
     return DEFAULT_SETTINGS;
   }
@@ -112,6 +131,7 @@ export function saveSettings(settings: Partial<FitCheckSettings>) {
   if (settings.theme !== undefined) localStorage.setItem("fitcheck.theme", settings.theme);
   if (settings.notificationsEnabled !== undefined) localStorage.setItem("fitcheck.notificationsEnabled", String(settings.notificationsEnabled));
   if (settings.morningAlertTime !== undefined) localStorage.setItem("fitcheck.morningAlertTime", settings.morningAlertTime);
+  if (settings.savedFits !== undefined) localStorage.setItem("fitcheck.savedFits", JSON.stringify(settings.savedFits));
   if (settings.voiceName !== undefined) {
     if (settings.voiceName === null) {
       localStorage.removeItem("fitcheck.voiceName");

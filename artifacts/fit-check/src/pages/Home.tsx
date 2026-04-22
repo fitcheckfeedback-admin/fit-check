@@ -4,17 +4,21 @@ import { TempDisplay } from "@/components/TempDisplay";
 import { WeatherScene } from "@/components/WeatherScene";
 import { WeatherBackground } from "@/components/WeatherBackground";
 import { OutfitCard } from "@/components/OutfitCard";
+import { WeatherAlertBanner } from "@/components/WeatherAlertBanner";
 import { TimeOfDayTabs } from "@/components/TimeOfDayTabs";
 import { CitySearch } from "@/components/CitySearch";
 import { generateRecommendation, generateTimeOfDayRecs } from "@/lib/recommend";
+import { getWeatherTags, matchSavedFits } from "@/lib/savedFitsMatch";
+import { SavedFit } from "@/lib/storage";
 import { getWeatherInfo } from "@/lib/weather-codes";
 import { pickClosetItems } from "@/lib/closetMatch";
 import { useClosetImage } from "@/hooks/useClosetImage";
-import { MapPin, Droplets, Wind, Sunset, Sunrise, Search, Shirt, Scissors, Layers, Footprints, Bell } from "lucide-react";
+import { MapPin, Droplets, Wind, Sunset, Sunrise, Search, Shirt, Scissors, Layers, Footprints, Bell, Bookmark, ChevronRight, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatTemp, formatTime } from "@/lib/format";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { useLocation } from "wouter";
 import { getOrCreateDeviceId } from "@/lib/deviceId";
@@ -45,6 +49,7 @@ export default function Home() {
   const { settings, updateSettings } = useFitCheckSettings();
   const { data: weather, isLoading, isError } = useWeather(settings.location);
   const [showSearch, setShowSearch] = useState(false);
+  const [appliedFit, setAppliedFit] = useState<SavedFit | null>(null);
   const [, setLocation] = useLocation();
   const deviceId = getOrCreateDeviceId();
 
@@ -96,7 +101,27 @@ export default function Home() {
   const wmoInfo = getWeatherInfo(weather.current.weather_code);
   const isDay = weather.current.is_day === 1;
   
-  const todayRec = generateRecommendation({
+  const todayRec = appliedFit 
+    ? {
+        mainOutfit: appliedFit.mainOutfit,
+        outerwear: appliedFit.outerwear,
+        accessories: appliedFit.accessories,
+        warnings: [],
+        fitScore: appliedFit.fitScore,
+        alerts: []
+      }
+    : generateRecommendation({
+        temperatureF: weather.current.temperature_2m,
+        feelsLikeF: weather.current.apparent_temperature,
+        precipChance: weather.hourly.precipitation_probability[0],
+        weatherCode: weather.current.weather_code,
+        windMph: weather.current.wind_speed_10m,
+        humidity: weather.current.relative_humidity_2m,
+        isDay,
+        style: settings.style
+      });
+
+  const currentTags = getWeatherTags({
     temperatureF: weather.current.temperature_2m,
     feelsLikeF: weather.current.apparent_temperature,
     precipChance: weather.hourly.precipitation_probability[0],
@@ -106,6 +131,9 @@ export default function Home() {
     isDay,
     style: settings.style
   });
+
+  const matchingFits = matchSavedFits(settings.savedFits || [], currentTags);
+  const allSavedFits = settings.savedFits || [];
 
   const timeOfDayRecs = generateTimeOfDayRecs(weather.hourly, settings.style, settings.units);
 
@@ -222,18 +250,33 @@ export default function Home() {
       </motion.section>
 
       <div className="p-6 space-y-8 -mt-6 relative z-20">
+        {!appliedFit && todayRec.alerts?.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+            <WeatherAlertBanner alerts={todayRec.alerts} />
+          </motion.div>
+        )}
+
         <motion.section 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <div className="flex items-center gap-2 mb-4 px-1">
-            <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-              <div className="w-2 h-2 rounded-full bg-primary" />
+          <div className="flex items-center justify-between mb-4 px-1">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-primary" />
+              </div>
+              <h2 className="text-2xl font-display font-bold">
+                {appliedFit ? "Applied Fit" : "Today's Fit"}
+              </h2>
             </div>
-            <h2 className="text-2xl font-display font-bold">Today's Fit</h2>
+            {appliedFit && (
+              <Button variant="ghost" size="sm" onClick={() => setAppliedFit(null)} className="h-8 px-2 text-muted-foreground hover:text-foreground">
+                <X className="w-4 h-4 mr-1" /> Clear
+              </Button>
+            )}
           </div>
-          <OutfitCard recommendation={todayRec} />
+          <OutfitCard recommendation={todayRec} weatherTags={currentTags} />
           
           {matchedItems.length > 0 && (
             <motion.div 
@@ -258,6 +301,101 @@ export default function Home() {
             </motion.div>
           )}
         </motion.section>
+
+        {/* Saved Fits Section */}
+        {allSavedFits.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <div className="flex items-center justify-between mb-4 px-1">
+              <div className="flex items-center gap-2">
+                <Bookmark className="w-5 h-5 text-primary" />
+                <h2 className="text-xl font-display font-bold">Saved Fits</h2>
+              </div>
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="link" size="sm" className="h-8 px-2 text-muted-foreground font-semibold">
+                    See all <ChevronRight className="w-4 h-4 ml-0.5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-[85vh] rounded-t-[2rem] p-0 flex flex-col">
+                  <SheetHeader className="p-6 border-b text-left">
+                    <SheetTitle className="text-2xl font-display font-bold flex items-center gap-2">
+                      <Bookmark className="w-5 h-5 text-primary" />
+                      Saved Fits
+                    </SheetTitle>
+                  </SheetHeader>
+                  <div className="flex-1 overflow-y-auto p-6 space-y-4 hide-scrollbar">
+                    {allSavedFits.map(fit => (
+                      <div key={fit.id} className="bg-card border rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <h4 className="font-bold text-lg leading-tight">{fit.label}</h4>
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{fit.mainOutfit}</p>
+                          </div>
+                          <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            className="shrink-0 rounded-xl font-bold"
+                            onClick={() => {
+                              setAppliedFit(fit);
+                              // Close sheet logic can be handled by Radix automatically if wrapped, but we'll just let them swipe it away or we can trigger it.
+                              // A simple way is to close the sheet by clicking a custom close or letting them close it.
+                              document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+                            }}
+                          >
+                            Apply
+                          </Button>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {fit.weatherTags.map(tag => (
+                            <span key={tag} className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-muted rounded-md text-muted-foreground">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+
+            {matchingFits.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest px-1">
+                  Matches today's weather
+                </h3>
+                <div className="flex overflow-x-auto hide-scrollbar gap-4 pb-2 snap-x">
+                  {matchingFits.map((fit, i) => (
+                    <motion.div
+                      key={fit.id}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 + i * 0.1 }}
+                      className="snap-start shrink-0 w-64 bg-card border rounded-2xl p-4 shadow-sm relative overflow-hidden"
+                      onClick={() => setAppliedFit(fit)}
+                      role="button"
+                    >
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-bl-full pointer-events-none" />
+                      <h4 className="font-bold truncate text-foreground/90">{fit.label}</h4>
+                      <p className="text-sm text-muted-foreground truncate mt-1">{fit.mainOutfit}</p>
+                      <div className="flex flex-wrap gap-1.5 mt-3">
+                        {fit.weatherTags.slice(0, 3).map(tag => (
+                          <span key={tag} className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-muted rounded-md text-muted-foreground">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </motion.section>
+        )}
 
         {/* Hourly Strip */}
         <motion.section
