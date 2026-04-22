@@ -218,19 +218,21 @@ export default function Home() {
         className="relative pt-12 pb-16 px-6 overflow-hidden rounded-b-[2.5rem] shadow-sm z-10"
       >
         <WeatherBackground weatherCode={weather.current.weather_code} isDay={isDay} />
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/15 to-transparent pointer-events-none mix-blend-overlay dark:mix-blend-color-dodge z-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/8 to-transparent pointer-events-none z-10 dark:mix-blend-color-dodge dark:from-primary/20" />
         
-        <div className="absolute top-4 left-6 z-20 flex flex-col">
-          <div className="flex items-center gap-3 relative">
-            <motion.div
-              animate={{ opacity: [0.5, 0.8, 0.5], scale: [1, 1.1, 1] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute -inset-4 brand-glow -z-10 rounded-full"
+        <div className="absolute top-4 left-5 z-20">
+          <div
+            className="flex items-center gap-2.5 px-3 py-2 rounded-2xl"
+            style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(12px)", boxShadow: "0 2px 12px rgba(0,0,0,0.07)" }}
+          >
+            <img
+              src="/logo.png"
+              alt="Fit Check"
+              className="h-9 w-auto drop-shadow-sm"
             />
-            <img src="/logo.png" alt="Fit Check" className="w-12 h-12 rounded-xl shadow-lg relative z-10" />
-            <div className="flex flex-col justify-center">
-              <span className="font-display font-black text-2xl tracking-tight brand-gradient-text leading-none mt-1">Fit Check</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/60 leading-tight">Today's fit, sorted</span>
+            <div className="flex flex-col justify-center leading-none">
+              <span className="font-display font-black text-xl tracking-tight brand-gradient-text">Fit Check</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-foreground/50 mt-0.5">Today's fit, sorted</span>
             </div>
           </div>
         </div>

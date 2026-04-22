@@ -4,6 +4,12 @@
 
 pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
 
+## Fit Check — Visual Theme
+
+**Aurora Minimal** — warm cream/peach palette. Hero background uses warm cream gradients (not weather-blue). Cards are white with soft shadows on a warm off-white page.
+- `WeatherBackground.tsx` — daytime categories now use warm cream/amber inline-style gradients (clear/partly-cloudy/cloudy/rain/snow/thunderstorm all warm-toned)
+- Home.tsx hero logo — frosted glass pill (rgba white backdrop-blur) with `h-9 w-auto` logo at natural proportions, no forced square crop
+
 ## Stack
 
 - **Monorepo tool**: pnpm workspaces
