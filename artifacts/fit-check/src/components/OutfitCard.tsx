@@ -10,6 +10,7 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "./ui/label";
+import { trackEvent } from "@/lib/analytics";
 
 interface OutfitCardProps {
   recommendation: Recommendation;
@@ -51,6 +52,7 @@ export function OutfitCard({ recommendation, weatherTags = [] }: OutfitCardProps
     updateSettings({ savedFits: [newFit, ...currentFits] });
     setPopoverOpen(false);
     toast({ title: "Fit saved!", description: "Added to your saved combos." });
+    trackEvent("fit_saved", { style: settings.style, fitScore });
   };
 
   const handleUnsave = () => {

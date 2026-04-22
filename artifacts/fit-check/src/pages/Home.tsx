@@ -16,7 +16,8 @@ import { useClosetImage } from "@/hooks/useClosetImage";
 import { MapPin, Droplets, Wind, Sunset, Sunrise, Search, Shirt, Scissors, Layers, Footprints, Bell, Bookmark, ChevronRight, X, Share2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatTemp, formatTime } from "@/lib/format";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { trackEvent } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { VoiceAssistant } from "@/components/VoiceAssistant";
@@ -56,6 +57,21 @@ export default function Home() {
   const [appliedFit, setAppliedFit] = useState<SavedFit | null>(null);
   const [, setLocation] = useLocation();
   const deviceId = getOrCreateDeviceId();
+  const trackedWeatherRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (weather && settings.location) {
+      const key = `${settings.location.name}-${weather.current.weather_code}`;
+      if (trackedWeatherRef.current !== key) {
+        trackedWeatherRef.current = key;
+        trackEvent("outfit_generated", {
+          weatherCode: weather.current.weather_code,
+          tempF: Math.round(weather.current.temperature_2m),
+          style: settings.style,
+        });
+      }
+    }
+  }, [weather, settings.location, settings.style]);
 
   const { data: reminders = [] } = useQuery({
     queryKey: ['reminders', deviceId],

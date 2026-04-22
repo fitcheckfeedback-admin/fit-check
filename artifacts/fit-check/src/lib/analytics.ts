@@ -1,24 +1,60 @@
 import { getOrCreateDeviceId } from "./deviceId";
 
-const API_BASE = `${import.meta.env.BASE_URL}api`.replace(/\/+/g, "/").replace(/^\/api/, "/api");
-
 export type EventType =
   | "app_open"
+  | "page_view"
   | "outfit_generated"
   | "fit_card_opened"
   | "fit_card_shared"
   | "fit_card_saved"
+  | "fit_saved"
+  | "fit_unsaved"
   | "wardrobe_item_added"
-  | "page_view";
+  | "reminder_created"
+  | "forecast_viewed"
+  | "voice_used"
+  | "location_set"
+  | "style_changed"
+  | "settings_opened";
 
-export function trackEvent(eventType: EventType, metadata?: Record<string, unknown>): void {
+function getLocationContext(): { city?: string; lat?: number; lon?: number } {
+  try {
+    const raw = localStorage.getItem("fitcheck.location");
+    if (!raw) return {};
+    const loc = JSON.parse(raw);
+    return {
+      city: loc?.name ?? undefined,
+      lat: loc?.lat ?? undefined,
+      lon: loc?.lon ?? undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
+export function trackEvent(
+  eventType: EventType,
+  metadata?: Record<string, unknown>
+): void {
   const deviceId = getOrCreateDeviceId();
-  // Fire-and-forget — never block the UI
-  fetch(`/api/analytics/event`, {
+  const location = getLocationContext();
+
+  fetch("/api/analytics/event", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ deviceId, eventType, metadata }),
+    body: JSON.stringify({
+      deviceId,
+      eventType,
+      metadata: {
+        ...location,
+        ...metadata,
+      },
+    }),
   }).catch(() => {
-    // Silently ignore — analytics should never break the app
+    // Silently ignore — analytics must never break the app
   });
+}
+
+export function trackPageView(page: string): void {
+  trackEvent("page_view", { page });
 }

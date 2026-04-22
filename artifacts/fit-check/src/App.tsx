@@ -6,7 +6,8 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { AppShell } from "@/components/AppShell";
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { useEffect } from "react";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent, trackPageView } from "@/lib/analytics";
+import { useLocation } from "wouter";
 
 // Pages
 import Onboarding from "@/pages/Onboarding";
@@ -22,7 +23,14 @@ const queryClient = new QueryClient();
 
 function ProtectedRoute({ component: Component, ...rest }: any) {
   const { settings } = useFitCheckSettings();
-  
+  const [pathname] = useLocation();
+
+  useEffect(() => {
+    if (settings.onboarded) {
+      trackPageView(pathname || "/");
+    }
+  }, [pathname, settings.onboarded]);
+
   if (!settings.onboarded) {
     return <Redirect to="/onboarding" />;
   }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { getOrCreateDeviceId } from "@/lib/deviceId";
+import { trackEvent } from "@/lib/analytics";
 import { Bell, Plus, Trash2, Calendar, Clock, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ export default function Reminders() {
       setDate("");
       setTime("");
       toast({ title: "Reminder added" });
+      trackEvent("reminder_created");
     },
     onError: () => {
       toast({ title: "Error adding reminder", variant: "destructive" });
