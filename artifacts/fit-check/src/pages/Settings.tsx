@@ -51,15 +51,17 @@ export default function Settings() {
   const handleUpdateLocation = async () => {
     try {
       const pos = await getCurrentPosition();
-      const cityName = await reverseGeocode(pos.lat, pos.lon);
+      const resolvedCity = await reverseGeocode(pos.lat, pos.lon);
       updateSettings({
         location: {
           lat: pos.lat,
           lon: pos.lon,
-          name: cityName,
+          name: resolvedCity ?? "Current Location",
         }
       });
-      trackEvent("location_set", { city: cityName, lat: pos.lat, lon: pos.lon, method: "gps" });
+      if (resolvedCity) {
+        trackEvent("location_set", { city: resolvedCity, lat: pos.lat, lon: pos.lon, method: "gps" });
+      }
     } catch (e) {
       console.error(e);
       setShowCitySearch(true);

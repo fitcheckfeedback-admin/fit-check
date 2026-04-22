@@ -27,11 +27,13 @@ export default function Onboarding() {
   const handleUseLocation = async () => {
     try {
       const pos = await getCurrentPosition();
-      const cityName = await reverseGeocode(pos.lat, pos.lon);
-      const loc = { lat: pos.lat, lon: pos.lon, name: cityName };
+      const resolvedCity = await reverseGeocode(pos.lat, pos.lon);
+      const loc = { lat: pos.lat, lon: pos.lon, name: resolvedCity ?? "Current Location" };
       setPendingLocation(loc);
       updateSettings({ location: loc });
-      trackEvent("location_set", { city: cityName, lat: pos.lat, lon: pos.lon, method: "gps" });
+      if (resolvedCity) {
+        trackEvent("location_set", { city: resolvedCity, lat: pos.lat, lon: pos.lon, method: "gps" });
+      }
       setStep("style");
     } catch {
       setStep("search");

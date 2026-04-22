@@ -74,22 +74,29 @@ export interface TripDayForecast {
   sunset: string;
 }
 
-export async function reverseGeocode(lat: number, lon: number): Promise<string> {
+export async function reverseGeocode(lat: number, lon: number): Promise<string | null> {
   try {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`,
       { headers: { "Accept-Language": "en" } }
     );
-    if (!res.ok) return "Current Location";
+    if (!res.ok) return null;
     const data = await res.json();
     const a = data.address ?? {};
-    const city = a.city || a.town || a.village || a.suburb || a.county || a.state || "";
-    const state = a.state_code || a.state || "";
-    if (city && state && a.country_code === "us") return `${city}, ${state}`;
+    const city = a.city || a.town || a.village || a.suburb || a.county || "";
+    const stateCode = a.state_code || "";
+    const stateName = a.state || "";
+    const country = a.country || "";
+    const isUS = a.country_code === "us";
+
+    if (city && isUS && stateCode) return `${city}, ${stateCode}`;
+    if (city && isUS && stateName) return `${city}, ${stateName}`;
+    if (city && country) return `${city}, ${country}`;
     if (city) return city;
-    return "Current Location";
+    if (stateName && country) return `${stateName}, ${country}`;
+    return null;
   } catch {
-    return "Current Location";
+    return null;
   }
 }
 
