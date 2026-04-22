@@ -458,9 +458,7 @@ export default function Home() {
                     <span className={`text-xs font-medium ${isNow ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
                       {isNow ? 'Now' : hourDate.toLocaleTimeString([], {hour: 'numeric'})}
                     </span>
-                    <div className="w-8 h-8">
-                       <WeatherScene weatherCode={code} isDay={isDayHour} />
-                    </div>
+                    <WeatherScene weatherCode={code} isDay={isDayHour} className="w-8 h-8" />
                     <span className="font-semibold">{formatTemp(temp, settings.units)}</span>
                     {pop > 0 ? (
                       <span className="text-[10px] font-bold text-blue-500 flex items-center"><Droplets className="w-2.5 h-2.5 mr-0.5" />{pop}%</span>

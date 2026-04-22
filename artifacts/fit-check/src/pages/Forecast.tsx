@@ -127,9 +127,7 @@ export default function Forecast() {
                 className="w-full px-5 py-4 flex items-center justify-between text-left outline-none"
               >
                 <div className="flex items-center gap-4 flex-1">
-                  <div className="w-12 h-12 shrink-0">
-                    <WeatherScene weatherCode={code} isDay={true} />
-                  </div>
+                  <WeatherScene weatherCode={code} isDay={true} className="w-12 h-12 shrink-0" />
                   <div className="w-24">
                     <p className="font-bold text-base">{getDayName(dateStr)}</p>
                     {precip > 20 && (
