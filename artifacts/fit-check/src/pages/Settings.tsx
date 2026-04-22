@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/analytics";
 import { STYLE_TYPES, GenderPreference } from "@/lib/storage";
-import { MapPin, RefreshCw, Sun, Moon, Laptop, Thermometer, Trash2, Copy, Mic, Play, BellRing, CheckCircle2, Sparkles, Plus, X, User, Check } from "lucide-react";
+import { MapPin, RefreshCw, Sun, Moon, Laptop, Thermometer, Trash2, Copy, Mic, Play, BellRing, CheckCircle2, Sparkles, Plus, X, User, Check, MessageSquare } from "lucide-react";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useLocation } from "wouter";
 import { CitySearch } from "@/components/CitySearch";
@@ -617,6 +617,32 @@ export default function Settings() {
             <li>Add the action "Open URL" and paste the URL above.</li>
             <li>Tap the settings icon and add to Siri with phrase "What should I wear?"</li>
           </ol>
+        </div>
+      </section>
+
+      {/* Feedback */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider pl-2">Feedback</h2>
+        <div className="bg-card rounded-[2rem] border shadow-sm p-5 space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-primary/10 rounded-xl text-primary shrink-0 mt-0.5">
+              <MessageSquare className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">Share your thoughts</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Got a suggestion, spotted a bug, or just want to say hi? We'd love to hear from you.
+              </p>
+            </div>
+          </div>
+          <a
+            href="mailto:fitcheckfeedback@gmail.com?subject=Fit%20Check%20Feedback"
+            className="flex items-center justify-center gap-2 w-full h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+            onClick={() => trackEvent("feedback_tapped", {})}
+          >
+            <MessageSquare className="w-4 h-4" />
+            Send Feedback
+          </a>
         </div>
       </section>
 
