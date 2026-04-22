@@ -7,6 +7,7 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { WeatherScene } from "@/components/WeatherScene";
 import { CitySearch } from "@/components/CitySearch";
+import { trackEvent } from "@/lib/analytics";
 
 export default function Onboarding() {
   const [, setLocation] = useLocation();
@@ -26,6 +27,7 @@ export default function Onboarding() {
         },
         onboarded: true
       });
+      trackEvent("location_set", { city: "Current Location", lat: pos.lat, lon: pos.lon, method: "gps" });
       setLocation("/");
     } catch (e) {
       console.error(e);
@@ -34,14 +36,16 @@ export default function Onboarding() {
   };
 
   const handleSelectCity = (city: any) => {
+    const cityName = `${city.name}${city.admin1 ? `, ${city.admin1}` : ''}`;
     updateSettings({
       location: {
         lat: city.latitude,
         lon: city.longitude,
-        name: `${city.name}${city.admin1 ? `, ${city.admin1}` : ''}`
+        name: cityName
       },
       onboarded: true
     });
+    trackEvent("location_set", { city: cityName, lat: city.latitude, lon: city.longitude, method: "search" });
     setLocation("/");
   };
 

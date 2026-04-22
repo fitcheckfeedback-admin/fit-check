@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { trackEvent } from "@/lib/analytics";
 import { MapPin, RefreshCw, Sun, Moon, Laptop, Thermometer, Trash2, Copy, Mic, Play, BellRing, CheckCircle2 } from "lucide-react";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useLocation } from "wouter";
@@ -53,6 +54,7 @@ export default function Settings() {
           name: "Current Location"
         }
       });
+      trackEvent("location_set", { city: "Current Location", lat: pos.lat, lon: pos.lon, method: "gps" });
     } catch (e) {
       console.error(e);
       setShowCitySearch(true);
@@ -60,13 +62,15 @@ export default function Settings() {
   };
 
   const handleSelectCity = (city: any) => {
+    const cityName = `${city.name}${city.admin1 ? `, ${city.admin1}` : ''}`;
     updateSettings({
       location: {
         lat: city.latitude,
         lon: city.longitude,
-        name: `${city.name}${city.admin1 ? `, ${city.admin1}` : ''}`
+        name: cityName
       }
     });
+    trackEvent("location_set", { city: cityName, lat: city.latitude, lon: city.longitude, method: "search" });
     setShowCitySearch(false);
   };
 
