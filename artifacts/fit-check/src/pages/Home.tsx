@@ -55,6 +55,7 @@ export default function Home() {
   const [showSearch, setShowSearch] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [appliedFit, setAppliedFit] = useState<SavedFit | null>(null);
+  const [viewDay, setViewDay] = useState<"today" | "tomorrow">("today");
   const [, setLocation] = useLocation();
   const deviceId = getOrCreateDeviceId();
   const trackedWeatherRef = useRef<string | null>(null);
@@ -118,9 +119,10 @@ export default function Home() {
     );
   }
 
-  const wmoInfo = getWeatherInfo(weather.current.weather_code);
   const isDay = weather.current.is_day === 1;
-  
+  const isTomorrow = viewDay === "tomorrow";
+
+  // Today's data
   const todayRec = appliedFit 
     ? {
         mainOutfit: appliedFit.mainOutfit,
@@ -141,14 +143,42 @@ export default function Home() {
         style: settings.style
       });
 
-  const currentTags = getWeatherTags({
-    temperatureF: weather.current.temperature_2m,
-    feelsLikeF: weather.current.apparent_temperature,
-    precipChance: weather.hourly.precipitation_probability[0],
-    weatherCode: weather.current.weather_code,
+  // Tomorrow's data
+  const tomorrowCode = weather.daily.weather_code[1] ?? weather.daily.weather_code[0];
+  const tomorrowHighF = weather.daily.temperature_2m_max[1] ?? weather.daily.temperature_2m_max[0];
+  const tomorrowLowF = weather.daily.temperature_2m_min[1] ?? weather.daily.temperature_2m_min[0];
+  const tomorrowAvgF = (tomorrowHighF + tomorrowLowF) / 2;
+  const tomorrowPrecipHourly = weather.hourly.precipitation_probability.slice(24, 48);
+  const tomorrowMaxPrecip = tomorrowPrecipHourly.length ? Math.max(...tomorrowPrecipHourly) : 0;
+  const tomorrowRec = generateRecommendation({
+    temperatureF: tomorrowAvgF,
+    feelsLikeF: tomorrowAvgF,
+    precipChance: tomorrowMaxPrecip,
+    weatherCode: tomorrowCode,
     windMph: weather.current.wind_speed_10m,
     humidity: weather.current.relative_humidity_2m,
-    isDay,
+    isDay: true,
+    style: settings.style
+  });
+
+  // Active (today or tomorrow) variables
+  const activeRec = isTomorrow ? tomorrowRec : todayRec;
+  const activeWeatherCode = isTomorrow ? tomorrowCode : weather.current.weather_code;
+  const activeIsDay = isTomorrow ? true : isDay;
+  const activeHighF = isTomorrow ? tomorrowHighF : weather.daily.temperature_2m_max[0];
+  const activeLowF = isTomorrow ? tomorrowLowF : weather.daily.temperature_2m_min[0];
+  const activeTemp = isTomorrow ? tomorrowAvgF : weather.current.temperature_2m;
+  const activeFeelsLike = isTomorrow ? tomorrowAvgF : weather.current.apparent_temperature;
+  const wmoInfo = getWeatherInfo(activeWeatherCode);
+
+  const currentTags = getWeatherTags({
+    temperatureF: activeTemp,
+    feelsLikeF: activeFeelsLike,
+    precipChance: isTomorrow ? tomorrowMaxPrecip : weather.hourly.precipitation_probability[0],
+    weatherCode: activeWeatherCode,
+    windMph: weather.current.wind_speed_10m,
+    humidity: weather.current.relative_humidity_2m,
+    isDay: activeIsDay,
     style: settings.style
   });
 
@@ -157,7 +187,7 @@ export default function Home() {
 
   const timeOfDayRecs = generateTimeOfDayRecs(weather.hourly, settings.style, settings.units);
 
-  const closetMatchResult = pickClosetItems(todayRec, settings.closet, settings.style);
+  const closetMatchResult = pickClosetItems(activeRec, settings.closet, settings.style);
   const matchedItems = [
     { cat: "tops", label: "Top", icon: Shirt, item: closetMatchResult.tops },
     { cat: "bottoms", label: "Bottom", icon: Scissors, item: closetMatchResult.bottoms },
@@ -166,20 +196,24 @@ export default function Home() {
     { cat: "accessories", label: "Accessory", icon: Gem, item: closetMatchResult.accessories },
   ].filter(x => x.item !== undefined);
 
-  const highF = weather.daily.temperature_2m_max[0];
-  const lowF = weather.daily.temperature_2m_min[0];
+  const highF = activeHighF;
+  const lowF = activeLowF;
+
+  const shareDate = isTomorrow
+    ? new Date(Date.now() + 86400000).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+    : new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
   const shareData: FitCardData | null = weather ? {
-    mainOutfit: todayRec.mainOutfit,
-    outerwear: todayRec.outerwear,
-    accessories: todayRec.accessories,
-    fitScore: todayRec.fitScore,
+    mainOutfit: activeRec.mainOutfit,
+    outerwear: activeRec.outerwear,
+    accessories: activeRec.accessories,
+    fitScore: activeRec.fitScore,
     style: settings.style,
-    temperatureF: weather.current.temperature_2m,
+    temperatureF: activeTemp,
     weatherLabel: wmoInfo.label,
     location: settings.location.name,
-    date: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }),
-    hashtags: generateHashtags({ style: settings.style, weatherTags: currentTags, alerts: todayRec.alerts, location: settings.location.name }),
+    date: shareDate,
+    hashtags: generateHashtags({ style: settings.style, weatherTags: currentTags, alerts: activeRec.alerts, location: settings.location.name }),
     units: settings.units
   } : null;
 
@@ -217,7 +251,7 @@ export default function Home() {
         animate={{ opacity: 1, y: 0 }}
         className="relative pt-12 pb-16 px-6 overflow-hidden rounded-b-[2.5rem] shadow-sm z-10"
       >
-        <WeatherBackground weatherCode={weather.current.weather_code} isDay={isDay} />
+        <WeatherBackground weatherCode={activeWeatherCode} isDay={activeIsDay} />
         <div className="absolute inset-0 bg-gradient-to-b from-primary/8 to-transparent pointer-events-none z-10 dark:mix-blend-color-dodge dark:from-primary/20" />
         
         <div className="absolute top-4 left-5 z-20">
@@ -267,9 +301,9 @@ export default function Home() {
               animate={{ scale: 1, rotate: 0 }}
               transition={{ type: "spring", stiffness: 200, damping: 20 }}
             >
-              <WeatherScene weatherCode={weather.current.weather_code} isDay={isDay} className="w-24 h-24 drop-shadow-xl" />
+              <WeatherScene weatherCode={activeWeatherCode} isDay={activeIsDay} className="w-24 h-24 drop-shadow-xl" />
             </motion.div>
-            <TempDisplay tempF={weather.current.temperature_2m} units={settings.units} />
+            <TempDisplay tempF={activeTemp} units={settings.units} />
             <p className="text-lg font-display font-medium tracking-wide text-foreground/90">{wmoInfo.label}</p>
           </div>
           
@@ -278,15 +312,32 @@ export default function Home() {
             <span className="w-1 h-1 rounded-full bg-foreground/30" />
             <span>L: {formatTemp(lowF, settings.units)}</span>
             <span className="w-1 h-1 rounded-full bg-foreground/30" />
-            <span>Feels {formatTemp(weather.current.apparent_temperature, settings.units)}</span>
+            <span>Feels {formatTemp(activeFeelsLike, settings.units)}</span>
+          </div>
+
+          {/* Day toggle */}
+          <div className="mt-5 flex items-center gap-1 p-1 rounded-full" style={{ background: "rgba(255,255,255,0.35)", backdropFilter: "blur(8px)" }}>
+            {(["today", "tomorrow"] as const).map(day => (
+              <button
+                key={day}
+                onClick={() => { setViewDay(day); setAppliedFit(null); }}
+                className="px-5 py-1.5 rounded-full text-sm font-bold transition-all"
+                style={viewDay === day
+                  ? { background: "white", color: "hsl(32 100% 56%)", boxShadow: "0 1px 6px rgba(0,0,0,0.12)" }
+                  : { color: "rgba(0,0,0,0.45)" }
+                }
+              >
+                {day === "today" ? "Today" : "Tomorrow"}
+              </button>
+            ))}
           </div>
         </div>
       </motion.section>
 
       <div className="p-6 space-y-8 -mt-6 relative z-20">
-        {!appliedFit && todayRec.alerts?.length > 0 && (
+        {!appliedFit && !isTomorrow && activeRec.alerts?.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-            <WeatherAlertBanner alerts={todayRec.alerts} />
+            <WeatherAlertBanner alerts={activeRec.alerts} />
           </motion.div>
         )}
 
@@ -301,7 +352,7 @@ export default function Home() {
                 <div className="w-2 h-2 rounded-full bg-primary" />
               </div>
               <h2 className="text-2xl font-display font-bold">
-                {appliedFit ? "Applied Fit" : "Today's Fit"}
+                {appliedFit ? "Applied Fit" : isTomorrow ? "Tomorrow's Fit" : "Today's Fit"}
               </h2>
             </div>
             <div className="flex items-center gap-2">
@@ -315,7 +366,7 @@ export default function Home() {
               </Button>
             </div>
           </div>
-          <OutfitCard recommendation={todayRec} weatherTags={currentTags} />
+          <OutfitCard recommendation={activeRec} weatherTags={currentTags} />
           
           {matchedItems.length > 0 && (
             <motion.div 
@@ -327,7 +378,7 @@ export default function Home() {
               <div className="flex items-center justify-between mb-4 relative z-10">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                  Wear Today
+                  {isTomorrow ? "Plan for Tomorrow" : "Wear Today"}
                 </h3>
               </div>
               <div className="flex overflow-x-auto hide-scrollbar gap-4 pb-1 relative z-10 snap-x">
@@ -405,7 +456,7 @@ export default function Home() {
             {matchingFits.length > 0 && (
               <div className="space-y-3">
                 <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest px-1">
-                  Matches today's weather
+                  {isTomorrow ? "Matches tomorrow's weather" : "Matches today's weather"}
                 </h3>
                 <div className="flex overflow-x-auto hide-scrollbar gap-4 pb-2 snap-x">
                   {matchingFits.map((fit, i) => (
@@ -444,32 +495,32 @@ export default function Home() {
         >
           <div className="bg-card border rounded-3xl p-4 shadow-sm">
             <div className="flex overflow-x-auto hide-scrollbar gap-4 pb-2 snap-x">
-              {weather.hourly.time.slice(0, 24).map((time, i) => {
-                // only show every 2 hours or if it's the first few
-                if (i > 4 && i % 2 !== 0) return null;
-                
-                const hourDate = new Date(time);
-                const isNow = i === 0;
-                const temp = weather.hourly.temperature_2m[i];
-                const pop = weather.hourly.precipitation_probability[i];
-                const code = weather.hourly.weather_code[i];
-                const isDayHour = hourDate.getHours() >= 6 && hourDate.getHours() <= 18;
-
-                return (
-                  <div key={time} className={`flex flex-col items-center justify-between space-y-3 snap-start shrink-0 w-14 ${isNow ? 'bg-primary/10 p-2 -mx-2 rounded-2xl' : ''}`}>
-                    <span className={`text-xs font-medium ${isNow ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
-                      {isNow ? 'Now' : hourDate.toLocaleTimeString([], {hour: 'numeric'})}
-                    </span>
-                    <WeatherScene weatherCode={code} isDay={isDayHour} className="w-8 h-8" />
-                    <span className="font-semibold">{formatTemp(temp, settings.units)}</span>
-                    {pop > 0 ? (
-                      <span className="text-[10px] font-bold text-blue-500 flex items-center"><Droplets className="w-2.5 h-2.5 mr-0.5" />{pop}%</span>
-                    ) : (
-                      <span className="text-[10px] font-medium text-transparent">-</span>
-                    )}
-                  </div>
-                );
-              })}
+              {(() => {
+                const offset = isTomorrow ? 24 : 0;
+                return weather.hourly.time.slice(offset, offset + 24).map((time, i) => {
+                  if (i > 4 && i % 2 !== 0) return null;
+                  const hourDate = new Date(time);
+                  const isNow = !isTomorrow && i === 0;
+                  const temp = weather.hourly.temperature_2m[offset + i];
+                  const pop = weather.hourly.precipitation_probability[offset + i];
+                  const code = weather.hourly.weather_code[offset + i];
+                  const isDayHour = hourDate.getHours() >= 6 && hourDate.getHours() <= 18;
+                  return (
+                    <div key={time} className={`flex flex-col items-center justify-between space-y-3 snap-start shrink-0 w-14 ${isNow ? 'bg-primary/10 p-2 -mx-2 rounded-2xl' : ''}`}>
+                      <span className={`text-xs font-medium ${isNow ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
+                        {isNow ? 'Now' : hourDate.toLocaleTimeString([], { hour: 'numeric' })}
+                      </span>
+                      <WeatherScene weatherCode={code} isDay={isDayHour} className="w-8 h-8" />
+                      <span className="font-semibold">{formatTemp(temp, settings.units)}</span>
+                      {pop > 0 ? (
+                        <span className="text-[10px] font-bold text-blue-500 flex items-center"><Droplets className="w-2.5 h-2.5 mr-0.5" />{pop}%</span>
+                      ) : (
+                        <span className="text-[10px] font-medium text-transparent">-</span>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </div>
         </motion.section>
@@ -479,7 +530,7 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <h2 className="text-2xl font-display font-bold mb-4 px-1">Later Today</h2>
+          <h2 className="text-2xl font-display font-bold mb-4 px-1">{isTomorrow ? "Tomorrow's Hours" : "Later Today"}</h2>
           <TimeOfDayTabs {...timeOfDayRecs} />
         </motion.section>
 
@@ -513,10 +564,10 @@ export default function Home() {
         </motion.section>
       </div>
       
-      {weather && todayRec && (
+      {weather && activeRec && (
         <VoiceAssistant 
           weatherData={weather} 
-          recommendation={todayRec} 
+          recommendation={activeRec} 
           settings={settings} 
           autoStart={new URLSearchParams(window.location.search).get('voice') === '1'}
           onCloseAutoStart={() => {
