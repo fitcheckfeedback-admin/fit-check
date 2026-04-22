@@ -219,6 +219,41 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
 
       <div className="p-6 space-y-8 max-w-4xl mx-auto pb-16">
 
+        {/* Lifetime unique user counter — prominent live display */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-transparent border border-amber-500/20 rounded-3xl p-6"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+                </span>
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Live · All-time unique users</span>
+              </div>
+              <motion.div
+                key={data.allTime.uniqueDevices}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                className="text-6xl font-black tracking-tighter text-foreground"
+              >
+                {Number(data.allTime.uniqueDevices).toLocaleString()}
+              </motion.div>
+              <p className="text-sm text-muted-foreground mt-2">
+                {Number(data.allTime.totalEvents).toLocaleString()} lifetime events · refreshes every 30s
+              </p>
+            </div>
+            <div className="p-3 bg-amber-500/15 rounded-2xl">
+              <Users className="w-7 h-7 text-amber-500" />
+            </div>
+          </div>
+          <div className="absolute bottom-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
+        </motion.div>
+
         {/* Stat cards */}
         <div className="grid grid-cols-2 gap-4">
           <StatCard
