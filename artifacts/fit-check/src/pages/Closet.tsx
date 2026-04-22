@@ -152,9 +152,10 @@ export default function Closet() {
       animate={{ opacity: 1 }}
       className="p-6 space-y-8 pb-32"
     >
-      <div className="flex items-center gap-3 mb-2">
+      <div className="flex items-center gap-4 mb-2">
+        <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-xl shadow-sm" />
         <div>
-          <h1 className="text-4xl font-display font-bold">My Closet</h1>
+          <h1 className="text-4xl font-display font-bold">My <span className="brand-gradient-text">Closet</span></h1>
           <p className="text-muted-foreground font-medium mt-1">Snap photos of your pieces to see them in your daily fits.</p>
         </div>
       </div>

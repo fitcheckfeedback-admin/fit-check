@@ -140,13 +140,24 @@ export default function Home() {
         className="relative pt-12 pb-16 px-6 overflow-hidden rounded-b-[2.5rem] shadow-sm z-10"
       >
         <WeatherBackground weatherCode={weather.current.weather_code} isDay={isDay} />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/15 to-transparent pointer-events-none mix-blend-overlay dark:mix-blend-color-dodge z-10" />
         
-        <div className="absolute top-6 left-6 z-20 flex items-center gap-2">
-          <img src="/logo.png" alt="Fit Check" className="w-8 h-8 rounded-lg shadow-sm" />
-          <span className="font-display font-bold text-foreground/90 tracking-tight">Fit Check</span>
+        <div className="absolute top-4 left-6 z-20 flex flex-col">
+          <div className="flex items-center gap-3 relative">
+            <motion.div
+              animate={{ opacity: [0.5, 0.8, 0.5], scale: [1, 1.1, 1] }}
+              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute -inset-4 brand-glow -z-10 rounded-full"
+            />
+            <img src="/logo.png" alt="Fit Check" className="w-12 h-12 rounded-xl shadow-lg relative z-10" />
+            <div className="flex flex-col justify-center">
+              <span className="font-display font-black text-2xl tracking-tight brand-gradient-text leading-none mt-1">Fit Check</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/60 leading-tight">Today's fit, sorted</span>
+            </div>
+          </div>
         </div>
 
-        <div className="relative z-10 flex flex-col items-center text-center mt-6">
+        <div className="relative z-10 flex flex-col items-center text-center mt-14">
           <button 
             onClick={() => setShowSearch(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-background/20 hover:bg-background/30 backdrop-blur-md rounded-full text-foreground/90 font-medium text-sm transition-colors mb-8"
@@ -187,7 +198,12 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <h2 className="text-2xl font-display font-bold mb-4 px-1">Today's Fit</h2>
+          <div className="flex items-center gap-2 mb-4 px-1">
+            <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+              <div className="w-2 h-2 rounded-full bg-primary" />
+            </div>
+            <h2 className="text-2xl font-display font-bold">Today's Fit</h2>
+          </div>
           <OutfitCard recommendation={todayRec} />
           
           {matchedItems.length > 0 && (

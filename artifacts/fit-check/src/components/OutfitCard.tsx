@@ -11,9 +11,10 @@ export function OutfitCard({ recommendation }: OutfitCardProps) {
   const { mainOutfit, outerwear, accessories, warnings, fitScore } = recommendation;
 
   return (
-    <div className="bg-card rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-border/60 relative overflow-hidden group hover:border-primary/30 transition-colors">
+    <div className="bg-card rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border-2 border-primary/20 relative overflow-hidden group hover:border-primary/50 transition-colors">
       {/* Decorative gradient blur based on score */}
-      <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary/40 via-primary to-primary/40 opacity-50" />
 
       <div className="absolute top-5 right-5">
         <FitScoreBadge score={fitScore} />

@@ -56,9 +56,12 @@ export default function Style() {
       animate={{ opacity: 1 }}
       className="p-6 space-y-8 pb-12"
     >
-      <div>
-        <h1 className="text-4xl font-display font-bold mb-2">Your Vibe</h1>
-        <p className="text-muted-foreground font-medium">Select a style to tailor your outfit recommendations.</p>
+      <div className="flex items-center gap-4 mb-2">
+        <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-xl shadow-sm" />
+        <div>
+          <h1 className="text-4xl font-display font-bold">Your <span className="brand-gradient-text border-b-[3px] border-primary/30 pb-0.5">Vibe</span></h1>
+          <p className="text-muted-foreground font-medium">Select a style to tailor your outfit recommendations.</p>
+        </div>
       </div>
 
       <div className="grid gap-4">

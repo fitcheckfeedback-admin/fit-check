@@ -25,13 +25,20 @@ export function BottomNav() {
             const isActive = location === path;
             return (
               <Link key={path} href={path} className="relative flex flex-col items-center justify-center w-full pt-2 pb-1 group outline-none">
+                {isActive && (
+                  <motion.div 
+                    layoutId="bottom-nav-bg"
+                    className="absolute inset-y-1 inset-x-3 bg-primary/15 rounded-2xl -z-10"
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                )}
                 <motion.div 
                   whileTap={{ scale: 0.9 }}
-                  className="flex flex-col items-center"
+                  className="flex flex-col items-center z-10"
                 >
                   <Icon 
                     className={cn(
-                      "w-6 h-6 transition-colors duration-300",
+                      "w-6 h-6 transition-colors duration-300 drop-shadow-sm",
                       isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
                     )} 
                     strokeWidth={isActive ? 2.5 : 2} 
@@ -44,7 +51,7 @@ export function BottomNav() {
                 {isActive && (
                   <motion.div 
                     layoutId="bottom-nav-indicator"
-                    className="absolute -top-2 w-12 h-1 bg-primary rounded-b-full"
+                    className="absolute -top-2 w-12 h-1 bg-primary rounded-b-full shadow-[0_0_8px_hsl(var(--primary)/0.6)]"
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   />
                 )}
