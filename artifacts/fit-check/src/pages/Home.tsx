@@ -13,7 +13,7 @@ import { SavedFit } from "@/lib/storage";
 import { getWeatherInfo } from "@/lib/weather-codes";
 import { pickClosetItems } from "@/lib/closetMatch";
 import { useClosetImage } from "@/hooks/useClosetImage";
-import { MapPin, Droplets, Wind, Sunset, Sunrise, Search, Shirt, Scissors, Layers, Footprints, Bell, Bookmark, ChevronRight, X } from "lucide-react";
+import { MapPin, Droplets, Wind, Sunset, Sunrise, Search, Shirt, Scissors, Layers, Footprints, Bell, Bookmark, ChevronRight, X, Share2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatTemp, formatTime } from "@/lib/format";
 import { useState } from "react";
@@ -23,6 +23,9 @@ import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { useLocation } from "wouter";
 import { getOrCreateDeviceId } from "@/lib/deviceId";
 import { useQuery } from "@tanstack/react-query";
+import { FitCardShareSheet } from "@/components/FitCardShareSheet";
+import { generateHashtags } from "@/lib/fitCardHashtags";
+import { FitCardData } from "@/lib/fitCardCaption";
 
 function ClosetMatchThumbnail({ item, label, icon: Icon }: { item: import("@/lib/storage").ClosetItem; label: string; icon: any }) {
   const { src } = useClosetImage(item.imageId);
@@ -49,6 +52,7 @@ export default function Home() {
   const { settings, updateSettings } = useFitCheckSettings();
   const { data: weather, isLoading, isError } = useWeather(settings.location);
   const [showSearch, setShowSearch] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const [appliedFit, setAppliedFit] = useState<SavedFit | null>(null);
   const [, setLocation] = useLocation();
   const deviceId = getOrCreateDeviceId();
@@ -147,6 +151,20 @@ export default function Home() {
 
   const highF = weather.daily.temperature_2m_max[0];
   const lowF = weather.daily.temperature_2m_min[0];
+
+  const shareData: FitCardData | null = weather ? {
+    mainOutfit: todayRec.mainOutfit,
+    outerwear: todayRec.outerwear,
+    accessories: todayRec.accessories,
+    fitScore: todayRec.fitScore,
+    style: settings.style,
+    temperatureF: weather.current.temperature_2m,
+    weatherLabel: wmoInfo.label,
+    location: settings.location.name,
+    date: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }),
+    hashtags: generateHashtags({ style: settings.style, weatherTags: currentTags, alerts: todayRec.alerts, location: settings.location.name }),
+    units: settings.units
+  } : null;
 
   return (
     <div className="flex-1 flex flex-col relative pb-28">
@@ -270,11 +288,16 @@ export default function Home() {
                 {appliedFit ? "Applied Fit" : "Today's Fit"}
               </h2>
             </div>
-            {appliedFit && (
-              <Button variant="ghost" size="sm" onClick={() => setAppliedFit(null)} className="h-8 px-2 text-muted-foreground hover:text-foreground">
-                <X className="w-4 h-4 mr-1" /> Clear
+            <div className="flex items-center gap-2">
+              {appliedFit && (
+                <Button variant="ghost" size="sm" onClick={() => setAppliedFit(null)} className="h-8 px-2 text-muted-foreground hover:text-foreground">
+                  <X className="w-4 h-4 mr-1" /> Clear
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={() => setShowShare(true)} className="h-8 px-3 rounded-full font-bold">
+                <Share2 className="w-4 h-4 mr-1.5" /> Share
               </Button>
-            )}
+            </div>
           </div>
           <OutfitCard recommendation={todayRec} weatherTags={currentTags} />
           
@@ -489,6 +512,12 @@ export default function Home() {
           }}
         />
       )}
+
+      <FitCardShareSheet 
+        open={showShare} 
+        onOpenChange={setShowShare} 
+        data={shareData} 
+      />
     </div>
   );
 }
