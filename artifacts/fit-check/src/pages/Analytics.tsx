@@ -289,6 +289,75 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
 
       <div className="p-6 space-y-8 max-w-4xl mx-auto pb-16">
 
+        {/* Data Filters — shown first so it's easy to find */}
+        {(() => {
+          const isMyDeviceExcluded = excludedDevices.some(d => d.deviceId === myDeviceId);
+          return (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card border border-border rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <ShieldCheck className="w-4 h-4 text-blue-500" />
+                <h2 className="text-sm font-bold">Data Filters</h2>
+                {excludedDevices.length > 0 && (
+                  <span className="ml-auto text-xs font-semibold text-blue-600 bg-blue-500/10 px-2.5 py-1 rounded-full">
+                    {excludedDevices.length} device{excludedDevices.length !== 1 ? "s" : ""} hidden
+                  </span>
+                )}
+              </div>
+
+              {/* My device row */}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 mb-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${isMyDeviceExcluded ? "bg-blue-500" : "bg-green-500"}`} />
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-foreground">This Device (You)</p>
+                    <p className="text-[11px] text-muted-foreground font-mono truncate">{myDeviceId}</p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant={isMyDeviceExcluded ? "outline" : "default"}
+                  disabled={devWorking}
+                  onClick={() => isMyDeviceExcluded ? unexcludeDevice(myDeviceId) : excludeDevice(myDeviceId, "Owner device")}
+                  className="shrink-0 ml-3 h-8 text-xs font-bold rounded-lg gap-1.5"
+                >
+                  {isMyDeviceExcluded
+                    ? <><Eye className="w-3 h-3" /> Include</>
+                    : <><EyeOff className="w-3 h-3" /> Exclude</>
+                  }
+                </Button>
+              </div>
+
+              {/* Other excluded devices */}
+              {excludedDevices.filter(d => d.deviceId !== myDeviceId).length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-1">Other excluded devices</p>
+                  {excludedDevices.filter(d => d.deviceId !== myDeviceId).map(d => (
+                    <div key={d.deviceId} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-foreground truncate font-mono">{d.deviceId.slice(0, 20)}…</p>
+                        {d.note && <p className="text-[11px] text-muted-foreground">{d.note}</p>}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={devWorking}
+                        onClick={() => unexcludeDevice(d.deviceId)}
+                        className="shrink-0 ml-2 h-7 text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        <Eye className="w-3 h-3 mr-1" /> Re-include
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
+                Excluded devices are hidden from all counts, charts, and recent activity — so your own testing never skews the numbers.
+              </p>
+            </motion.div>
+          );
+        })()}
+
         {/* Lifetime unique user counter — prominent live display */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -475,75 +544,6 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
             </div>
           )}
         </motion.div>
-
-        {/* Excluded Devices */}
-        {(() => {
-          const isMyDeviceExcluded = excludedDevices.some(d => d.deviceId === myDeviceId);
-          return (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card border border-border rounded-2xl p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <ShieldCheck className="w-4 h-4 text-blue-500" />
-                <h2 className="text-sm font-bold">Data Filters</h2>
-                {excludedDevices.length > 0 && (
-                  <span className="ml-auto text-xs font-semibold text-blue-600 bg-blue-500/10 px-2.5 py-1 rounded-full">
-                    {excludedDevices.length} device{excludedDevices.length !== 1 ? "s" : ""} hidden
-                  </span>
-                )}
-              </div>
-
-              {/* My device row */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 mb-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${isMyDeviceExcluded ? "bg-blue-500" : "bg-green-500"}`} />
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-foreground">This Device (You)</p>
-                    <p className="text-[11px] text-muted-foreground font-mono truncate">{myDeviceId}</p>
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  variant={isMyDeviceExcluded ? "outline" : "default"}
-                  disabled={devWorking}
-                  onClick={() => isMyDeviceExcluded ? unexcludeDevice(myDeviceId) : excludeDevice(myDeviceId, "Owner device")}
-                  className="shrink-0 ml-3 h-8 text-xs font-bold rounded-lg gap-1.5"
-                >
-                  {isMyDeviceExcluded
-                    ? <><Eye className="w-3 h-3" /> Include</>
-                    : <><EyeOff className="w-3 h-3" /> Exclude</>
-                  }
-                </Button>
-              </div>
-
-              {/* Other excluded devices */}
-              {excludedDevices.filter(d => d.deviceId !== myDeviceId).length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-1">Other excluded devices</p>
-                  {excludedDevices.filter(d => d.deviceId !== myDeviceId).map(d => (
-                    <div key={d.deviceId} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold text-foreground truncate font-mono">{d.deviceId.slice(0, 20)}…</p>
-                        {d.note && <p className="text-[11px] text-muted-foreground">{d.note}</p>}
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={devWorking}
-                        onClick={() => unexcludeDevice(d.deviceId)}
-                        className="shrink-0 ml-2 h-7 text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        <Eye className="w-3 h-3 mr-1" /> Re-include
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
-                Excluded devices are hidden from all counts, charts, and recent activity — so your own testing never skews the numbers.
-              </p>
-            </motion.div>
-          );
-        })()}
 
         {/* Broadcast push notification */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card border border-border rounded-2xl p-5">
