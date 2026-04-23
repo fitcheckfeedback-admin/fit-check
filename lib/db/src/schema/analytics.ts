@@ -9,3 +9,11 @@ export const analyticsEventsTable = pgTable("analytics_events", {
 });
 
 export type AnalyticsEvent = typeof analyticsEventsTable.$inferSelect;
+
+export const excludedDevicesTable = pgTable("excluded_devices", {
+  deviceId: text("device_id").primaryKey(),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ExcludedDevice = typeof excludedDevicesTable.$inferSelect;

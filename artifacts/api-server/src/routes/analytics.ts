@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db, analyticsEventsTable } from "@workspace/db";
-import { desc, gte, sql, count, countDistinct } from "drizzle-orm";
+import { db, analyticsEventsTable, excludedDevicesTable } from "@workspace/db";
+import { desc, gte, sql, count, countDistinct, notInArray, and, eq } from "drizzle-orm";
 import crypto from "crypto";
 
 const router = Router();
@@ -16,6 +16,11 @@ function isAuthorized(req: { headers: Record<string, string | string[] | undefin
   if (!auth || typeof auth !== "string") return false;
   const token = auth.replace(/^Bearer\s+/i, "").trim();
   return token === getToken();
+}
+
+async function getExcludedIds(): Promise<string[]> {
+  const rows = await db.select({ deviceId: excludedDevicesTable.deviceId }).from(excludedDevicesTable);
+  return rows.map(r => r.deviceId);
 }
 
 // POST /api/analytics/auth — validate password, return token
@@ -43,11 +48,46 @@ router.post("/analytics/event", async (req, res) => {
   res.status(201).json({ ok: true });
 });
 
+// GET /api/analytics/excluded-devices — list excluded devices
+router.get("/analytics/excluded-devices", async (req, res) => {
+  if (!isAuthorized(req)) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const rows = await db.select().from(excludedDevicesTable).orderBy(desc(excludedDevicesTable.createdAt));
+  res.json(rows);
+});
+
+// POST /api/analytics/excluded-devices — add a device
+router.post("/analytics/excluded-devices", async (req, res) => {
+  if (!isAuthorized(req)) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const { deviceId, note } = req.body;
+  if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
+  await db.insert(excludedDevicesTable).values({ deviceId, note: note ?? null }).onConflictDoNothing();
+  res.status(201).json({ ok: true });
+});
+
+// DELETE /api/analytics/excluded-devices/:deviceId — remove exclusion
+router.delete("/analytics/excluded-devices/:deviceId", async (req, res) => {
+  if (!isAuthorized(req)) { res.status(401).json({ error: "Unauthorized" }); return; }
+  await db.delete(excludedDevicesTable).where(eq(excludedDevicesTable.deviceId, req.params.deviceId));
+  res.json({ ok: true });
+});
+
 // GET /api/analytics/summary — requires auth token
 router.get("/analytics/summary", async (req, res) => {
   if (!isAuthorized(req)) {
     res.status(401).json({ error: "Unauthorized" });
     return;
+  }
+
+  const excludedIds = await getExcludedIds();
+  const excluded = excludedIds.length > 0
+    ? (col: typeof analyticsEventsTable.deviceId) => notInArray(col, excludedIds)
+    : null;
+
+  function withExclusion(baseCondition?: ReturnType<typeof gte>) {
+    if (!excluded && !baseCondition) return undefined;
+    if (!excluded) return baseCondition;
+    if (!baseCondition) return excluded(analyticsEventsTable.deviceId);
+    return and(baseCondition, excluded(analyticsEventsTable.deviceId));
   }
 
   const now = new Date();
@@ -59,22 +99,23 @@ router.get("/analytics/summary", async (req, res) => {
 
   const [allTime] = await db
     .select({ totalEvents: count(), uniqueDevices: countDistinct(analyticsEventsTable.deviceId) })
-    .from(analyticsEventsTable);
+    .from(analyticsEventsTable)
+    .where(withExclusion());
 
   const [today] = await db
     .select({ totalEvents: count(), uniqueDevices: countDistinct(analyticsEventsTable.deviceId) })
     .from(analyticsEventsTable)
-    .where(gte(analyticsEventsTable.createdAt, todayStart));
+    .where(withExclusion(gte(analyticsEventsTable.createdAt, todayStart)));
 
   const [last7dStats] = await db
     .select({ totalEvents: count(), uniqueDevices: countDistinct(analyticsEventsTable.deviceId) })
     .from(analyticsEventsTable)
-    .where(gte(analyticsEventsTable.createdAt, last7d));
+    .where(withExclusion(gte(analyticsEventsTable.createdAt, last7d)));
 
   const [last30dStats] = await db
     .select({ totalEvents: count(), uniqueDevices: countDistinct(analyticsEventsTable.deviceId) })
     .from(analyticsEventsTable)
-    .where(gte(analyticsEventsTable.createdAt, last30d));
+    .where(withExclusion(gte(analyticsEventsTable.createdAt, last30d)));
 
   const perDay = await db
     .select({
@@ -83,7 +124,7 @@ router.get("/analytics/summary", async (req, res) => {
       uniqueDevices: countDistinct(analyticsEventsTable.deviceId),
     })
     .from(analyticsEventsTable)
-    .where(gte(analyticsEventsTable.createdAt, last30d))
+    .where(withExclusion(gte(analyticsEventsTable.createdAt, last30d)))
     .groupBy(sql`DATE(${analyticsEventsTable.createdAt})`)
     .orderBy(sql`DATE(${analyticsEventsTable.createdAt})`);
 
@@ -94,20 +135,21 @@ router.get("/analytics/summary", async (req, res) => {
       uniqueDevices: countDistinct(analyticsEventsTable.deviceId),
     })
     .from(analyticsEventsTable)
-    .where(gte(analyticsEventsTable.createdAt, last24h))
+    .where(withExclusion(gte(analyticsEventsTable.createdAt, last24h)))
     .groupBy(sql`EXTRACT(HOUR FROM ${analyticsEventsTable.createdAt})`)
     .orderBy(sql`EXTRACT(HOUR FROM ${analyticsEventsTable.createdAt})`);
 
   const featurePopularity = await db
     .select({ feature: analyticsEventsTable.eventType, count: count() })
     .from(analyticsEventsTable)
+    .where(withExclusion())
     .groupBy(analyticsEventsTable.eventType)
     .orderBy(desc(count()));
 
   const featurePopularity7d = await db
     .select({ feature: analyticsEventsTable.eventType, count: count() })
     .from(analyticsEventsTable)
-    .where(gte(analyticsEventsTable.createdAt, last7d))
+    .where(withExclusion(gte(analyticsEventsTable.createdAt, last7d)))
     .groupBy(analyticsEventsTable.eventType)
     .orderBy(desc(count()));
 
@@ -118,16 +160,32 @@ router.get("/analytics/summary", async (req, res) => {
       opens: count(),
     })
     .from(analyticsEventsTable)
-    .where(sql`metadata->>'city' IS NOT NULL AND metadata->>'city' != 'Current Location' AND trim(metadata->>'city') != ''`)
+    .where(
+      excluded
+        ? and(
+            sql`metadata->>'city' IS NOT NULL AND metadata->>'city' != 'Current Location' AND trim(metadata->>'city') != ''`,
+            excluded(analyticsEventsTable.deviceId),
+          )
+        : sql`metadata->>'city' IS NOT NULL AND metadata->>'city' != 'Current Location' AND trim(metadata->>'city') != ''`
+    )
     .groupBy(sql`metadata->>'city'`)
     .orderBy(desc(countDistinct(analyticsEventsTable.deviceId)))
     .limit(100);
 
-  const recent = await db
+  const recentBase = db
     .select()
     .from(analyticsEventsTable)
     .orderBy(desc(analyticsEventsTable.createdAt))
     .limit(30);
+
+  const recent = excludedIds.length > 0
+    ? await db
+        .select()
+        .from(analyticsEventsTable)
+        .where(notInArray(analyticsEventsTable.deviceId, excludedIds))
+        .orderBy(desc(analyticsEventsTable.createdAt))
+        .limit(30)
+    : await recentBase;
 
   const totalFeatureCount = featurePopularity.reduce((s, r) => s + Number(r.count), 0);
   const featuresWithPct = featurePopularity.map(r => ({
@@ -146,6 +204,7 @@ router.get("/analytics/summary", async (req, res) => {
     featurePopularity7d,
     locationDistribution,
     recent,
+    excludedCount: excludedIds.length,
   });
 });
 
