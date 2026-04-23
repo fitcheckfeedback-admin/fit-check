@@ -78,6 +78,10 @@ export default function Onboarding() {
   const handleFinishGender = () => {
     updateSettings({ gender: selectedGender, onboarded: true });
     trackEvent("gender_set", { gender: selectedGender });
+    // Fire app_open here for new users — location is already in localStorage
+    // at this point so it will be included in the event automatically.
+    sessionStorage.setItem("fitcheck.sessionTracked", "1");
+    trackEvent("app_open", { referrer: document.referrer || undefined });
     navigate("/");
   };
 

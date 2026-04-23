@@ -71,6 +71,11 @@ function Router() {
 
 function AppTracker() {
   useEffect(() => {
+    // Only fire app_open for already-onboarded users who have location saved.
+    // New users will fire their app_open at the end of Onboarding instead.
+    const hasLocation = !!localStorage.getItem("fitcheck.location");
+    if (!hasLocation) return;
+
     const key = "fitcheck.sessionTracked";
     if (!sessionStorage.getItem(key)) {
       sessionStorage.setItem(key, "1");
