@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { BottomNav } from "./BottomNav";
 import { AnnouncementModal } from "./AnnouncementModal";
+import { AppTour } from "./AppTour";
 
 interface AppShellProps {
   children: ReactNode;
@@ -15,6 +16,7 @@ export function AppShell({ children, hideNav = false }: AppShellProps) {
           {children}
         </main>
         {!hideNav && <BottomNav />}
+        <AppTour />
         <AnnouncementModal />
       </div>
     </div>
