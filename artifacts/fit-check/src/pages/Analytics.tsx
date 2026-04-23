@@ -358,40 +358,97 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
           );
         })()}
 
-        {/* Lifetime unique user counter — prominent live display */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-transparent border border-amber-500/20 rounded-3xl p-6"
-        >
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
-                </span>
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Live · All-time unique users</span>
+        {/* Live counters — all-time + today side by side */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* All-time */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative overflow-hidden col-span-2 bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-transparent border border-amber-500/20 rounded-3xl p-6"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+                  </span>
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Live · All-time unique users</span>
+                </div>
+                <motion.div
+                  key={data.allTime.uniqueDevices}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="text-6xl font-black tracking-tighter text-foreground"
+                >
+                  {Number(data.allTime.uniqueDevices).toLocaleString()}
+                </motion.div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  {Number(data.allTime.totalEvents).toLocaleString()} lifetime events · refreshes every 30s
+                </p>
               </div>
-              <motion.div
-                key={data.allTime.uniqueDevices}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                className="text-6xl font-black tracking-tighter text-foreground"
-              >
-                {Number(data.allTime.uniqueDevices).toLocaleString()}
-              </motion.div>
-              <p className="text-sm text-muted-foreground mt-2">
-                {Number(data.allTime.totalEvents).toLocaleString()} lifetime events · refreshes every 30s
-              </p>
+              <div className="p-3 bg-amber-500/15 rounded-2xl">
+                <Users className="w-7 h-7 text-amber-500" />
+              </div>
             </div>
-            <div className="p-3 bg-amber-500/15 rounded-2xl">
-              <Users className="w-7 h-7 text-amber-500" />
+            <div className="absolute bottom-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
+          </motion.div>
+
+          {/* Today's unique users */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="relative overflow-hidden bg-gradient-to-br from-green-500/10 via-green-400/5 to-transparent border border-green-500/20 rounded-3xl p-5"
+          >
+            <div className="flex items-start justify-between mb-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-green-600/80">Today</span>
+              <div className="p-1.5 bg-green-500/15 rounded-xl">
+                <Zap className="w-4 h-4 text-green-500" />
+              </div>
             </div>
-          </div>
-          <div className="absolute bottom-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
-        </motion.div>
+            <motion.div
+              key={data.today.uniqueDevices}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className="text-5xl font-black tracking-tighter text-foreground"
+            >
+              {Number(data.today.uniqueDevices).toLocaleString()}
+            </motion.div>
+            <p className="text-xs text-muted-foreground mt-1.5">unique users today</p>
+            <p className="text-xs text-green-600/70 font-semibold mt-0.5">{Number(data.today.totalEvents).toLocaleString()} events</p>
+            <div className="absolute bottom-0 right-0 w-24 h-24 bg-green-500/5 rounded-full blur-2xl pointer-events-none" />
+          </motion.div>
+
+          {/* Yesterday comparison */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="relative overflow-hidden bg-gradient-to-br from-blue-500/10 via-blue-400/5 to-transparent border border-blue-500/20 rounded-3xl p-5"
+          >
+            <div className="flex items-start justify-between mb-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-blue-600/80">Last 7 days</span>
+              <div className="p-1.5 bg-blue-500/15 rounded-xl">
+                <TrendingUp className="w-4 h-4 text-blue-500" />
+              </div>
+            </div>
+            <motion.div
+              key={data.last7Days.uniqueDevices}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className="text-5xl font-black tracking-tighter text-foreground"
+            >
+              {Number(data.last7Days.uniqueDevices).toLocaleString()}
+            </motion.div>
+            <p className="text-xs text-muted-foreground mt-1.5">unique users</p>
+            <p className="text-xs text-blue-600/70 font-semibold mt-0.5">{Number(data.last7Days.totalEvents).toLocaleString()} events</p>
+            <div className="absolute bottom-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
+          </motion.div>
+        </div>
 
         {/* Stat cards */}
         <div className="grid grid-cols-2 gap-4">
@@ -401,20 +458,6 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
             sub={`${data.allTime.totalEvents.toLocaleString()} total events`}
             icon={Users}
             accent="bg-amber-500"
-          />
-          <StatCard
-            label="Today"
-            value={data.today.uniqueDevices}
-            sub={`${data.today.totalEvents} events today`}
-            icon={Zap}
-            accent="bg-green-500"
-          />
-          <StatCard
-            label="Last 7 days"
-            value={data.last7Days.uniqueDevices}
-            sub={`${data.last7Days.totalEvents.toLocaleString()} events`}
-            icon={TrendingUp}
-            accent="bg-blue-500"
           />
           <StatCard
             label="Last 30 days"
