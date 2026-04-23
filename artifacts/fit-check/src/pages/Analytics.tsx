@@ -4,7 +4,7 @@ import {
   LineChart, Line, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
-import { Users, TrendingUp, Calendar, Clock, MapPin, Zap, LogOut, Lock } from "lucide-react";
+import { Users, TrendingUp, Calendar, Clock, MapPin, Zap, LogOut, Lock, Bell, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -135,6 +135,36 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const [data, setData] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [subCount, setSubCount] = useState<number | null>(null);
+  const [bTitle, setBTitle] = useState("Love Fit Check? Share it! 👗");
+  const [bBody, setBBody] = useState("Help us grow the beta — send the link to a friend who loves fashion.");
+  const [bSending, setBSending] = useState(false);
+  const [bResult, setBResult] = useState<{ sent: number; failed: number } | null>(null);
+
+  const fetchSubCount = useCallback(async () => {
+    try {
+      const res = await fetch("/api/push/subscriber-count", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setSubCount((await res.json()).total);
+    } catch {}
+  }, [token]);
+
+  const sendBroadcast = async () => {
+    if (!bTitle.trim() || !bBody.trim()) return;
+    setBSending(true);
+    setBResult(null);
+    try {
+      const res = await fetch("/api/push/broadcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ title: bTitle, body: bBody, url: "/" }),
+      });
+      if (res.ok) setBResult(await res.json());
+    } finally {
+      setBSending(false);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -153,9 +183,10 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
 
   useEffect(() => {
     fetchData();
+    fetchSubCount();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
-  }, [fetchData]);
+  }, [fetchData, fetchSubCount]);
 
   if (loading) {
     return (
@@ -404,6 +435,59 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
               })}
             </div>
           )}
+        </motion.div>
+
+        {/* Broadcast push notification */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card border border-border rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Bell className="w-4 h-4 text-primary" />
+              <h2 className="text-sm font-bold">Broadcast Notification</h2>
+            </div>
+            <span className="text-xs font-semibold text-muted-foreground px-2.5 py-1 bg-muted rounded-full">
+              {subCount === null ? "…" : subCount} subscriber{subCount !== 1 ? "s" : ""}
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">Title</label>
+              <Input value={bTitle} onChange={e => setBTitle(e.target.value)} placeholder="Notification title" className="h-9 text-sm" />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">Message</label>
+              <textarea
+                value={bBody}
+                onChange={e => setBBody(e.target.value)}
+                placeholder="What do you want to say?"
+                rows={3}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+
+            {bResult && (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-green-500/10 border border-green-500/20">
+                <Send className="w-4 h-4 text-green-600 shrink-0" />
+                <p className="text-sm font-semibold text-green-700">
+                  Sent to {bResult.sent} subscriber{bResult.sent !== 1 ? "s" : ""}
+                  {bResult.failed > 0 ? ` (${bResult.failed} failed)` : ""}
+                </p>
+              </div>
+            )}
+
+            <Button
+              onClick={sendBroadcast}
+              disabled={bSending || !bTitle.trim() || !bBody.trim()}
+              className="w-full font-bold rounded-xl"
+              size="sm"
+            >
+              {bSending ? (
+                <span className="flex items-center gap-2"><span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Sending…</span>
+              ) : (
+                <span className="flex items-center gap-2"><Send className="w-3.5 h-3.5" /> Send to All Subscribers</span>
+              )}
+            </Button>
+          </div>
         </motion.div>
 
         {/* Recent events feed */}
