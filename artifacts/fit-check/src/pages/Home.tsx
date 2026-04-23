@@ -1,6 +1,5 @@
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { useWeather } from "@/hooks/useWeather";
-import { TempDisplay } from "@/components/TempDisplay";
 import { WeatherScene } from "@/components/WeatherScene";
 import { WeatherBackground } from "@/components/WeatherBackground";
 import { OutfitCard } from "@/components/OutfitCard";
@@ -255,98 +254,109 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* Hero Section with WeatherBackground */}
-      <motion.section 
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative pt-12 pb-16 px-6 overflow-hidden rounded-b-[2.5rem] shadow-sm z-10"
-      >
-        <WeatherBackground weatherCode={activeWeatherCode} isDay={activeIsDay} />
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/8 to-transparent pointer-events-none z-10 dark:mix-blend-color-dodge dark:from-primary/20" />
-        
-        <div className="absolute top-4 left-5 z-20">
-          <div
-            className="flex items-center gap-2.5 px-3 py-2 rounded-2xl"
-            style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(12px)", boxShadow: "0 2px 12px rgba(0,0,0,0.07)" }}
-          >
-            <img
-              src="/logo.png"
-              alt="Fit Check"
-              className="h-9 w-auto drop-shadow-sm"
-            />
-            <div className="flex flex-col justify-center leading-none">
-              <span className="font-display font-black text-xl tracking-tight brand-gradient-text">Fit Check</span>
-              <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-foreground/50 mt-0.5">Today's fit, sorted</span>
-            </div>
-          </div>
-        </div>
+      {/* ── Hero Section ── */}
+      {(() => {
+        const cat = wmoInfo.category;
+        const isDark = !activeIsDay || cat === "rain" || cat === "drizzle" || cat === "showers" || cat === "thunderstorm";
+        const textPrimary   = isDark ? "rgba(255,255,255,0.95)" : "rgba(15,15,15,0.92)";
+        const textSecondary = isDark ? "rgba(255,255,255,0.65)" : "rgba(15,15,15,0.55)";
+        const pillBg        = isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.08)";
+        const pillBorder    = isDark ? "rgba(255,255,255,0.2)"  : "rgba(0,0,0,0.08)";
+        const toggleBg      = isDark ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.08)";
+        const toggleInactive = isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.35)";
 
-        <div className="absolute top-6 right-6 z-20">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="rounded-full bg-background/20 hover:bg-background/40 backdrop-blur-md relative"
-            onClick={() => setLocation('/reminders')}
+        return (
+          <motion.section
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative px-5 pt-10 pb-5 overflow-hidden rounded-b-[2rem] shadow-lg z-10"
           >
-            <Bell className="w-5 h-5 text-foreground/90" />
-            {reminders.length > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-500 border border-background shadow-sm" />
-            )}
-          </Button>
-        </div>
+            <WeatherBackground weatherCode={activeWeatherCode} isDay={activeIsDay} />
 
-        <div className="relative z-10 flex flex-col items-center text-center mt-14">
-          <button 
-            onClick={() => setShowSearch(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-background/20 hover:bg-background/30 backdrop-blur-md rounded-full text-foreground/90 font-medium text-sm transition-colors mb-8"
-          >
-            <MapPin className="w-4 h-4" />
-            <span className="truncate max-w-[200px]">{settings.location.name}</span>
-            <Search className="w-3 h-3 ml-1 opacity-50" />
-          </button>
-          
-          <div className="flex flex-col items-center gap-1">
-            <motion.div
-              initial={{ scale: 0.8, rotate: -10 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: "spring", stiffness: 200, damping: 20 }}
-            >
-              <WeatherScene weatherCode={activeWeatherCode} isDay={activeIsDay} className="w-24 h-24 drop-shadow-xl" />
-            </motion.div>
-            <TempDisplay tempF={activeTemp} units={settings.units} />
-            <p className="text-lg font-display font-medium tracking-wide text-foreground/90">{wmoInfo.label}</p>
-          </div>
-          
-          <div className="flex items-center gap-4 mt-6 px-5 py-2.5 bg-background/20 backdrop-blur-md rounded-2xl text-sm text-foreground/90 font-medium border border-background/20 shadow-sm">
-            <span>H: {formatTemp(highF, settings.units)}</span>
-            <span className="w-1 h-1 rounded-full bg-foreground/30" />
-            <span>L: {formatTemp(lowF, settings.units)}</span>
-            <span className="w-1 h-1 rounded-full bg-foreground/30" />
-            <span>Feels {formatTemp(activeFeelsLike, settings.units)}</span>
-          </div>
-
-          {/* Day toggle */}
-          <div className="mt-5 flex items-center gap-1 p-1 rounded-full" style={{ background: "rgba(255,255,255,0.35)", backdropFilter: "blur(8px)" }}>
-            {(["today", "tomorrow"] as const).map(day => (
+            {/* Top row: location + bell */}
+            <div className="relative z-20 flex items-center justify-between mb-4">
               <button
-                key={day}
-                onClick={() => { setViewDay(day); setAppliedFit(null); }}
-                className="px-5 py-1.5 rounded-full text-sm font-bold transition-all"
-                style={viewDay === day
-                  ? { background: "white", color: "hsl(32 100% 56%)", boxShadow: "0 1px 6px rgba(0,0,0,0.12)" }
-                  : { color: "rgba(0,0,0,0.45)" }
-                }
+                onClick={() => setShowSearch(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-colors backdrop-blur-md border"
+                style={{ background: pillBg, borderColor: pillBorder, color: textPrimary }}
               >
-                {day === "today" ? "Today" : "Tomorrow"}
+                <MapPin className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate max-w-[180px]">{settings.location.name}</span>
+                <Search className="w-3 h-3 ml-0.5 opacity-50 shrink-0" />
               </button>
-            ))}
-          </div>
-        </div>
-      </motion.section>
 
-      <div className="p-6 space-y-8 -mt-6 relative z-20">
+              <button
+                className="relative w-9 h-9 flex items-center justify-center rounded-full backdrop-blur-md border transition-colors"
+                style={{ background: pillBg, borderColor: pillBorder }}
+                onClick={() => setLocation('/reminders')}
+              >
+                <Bell className="w-5 h-5" style={{ color: textPrimary }} />
+                {reminders.length > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400 shadow-sm" />
+                )}
+              </button>
+            </div>
+
+            {/* Main: icon left, temp+label right */}
+            <div className="relative z-10 flex items-center justify-between px-1">
+              <motion.div
+                initial={{ scale: 0.75, rotate: -12 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", stiffness: 220, damping: 18 }}
+              >
+                <WeatherScene weatherCode={activeWeatherCode} isDay={activeIsDay} className="w-28 h-28 drop-shadow-2xl" />
+              </motion.div>
+
+              <div className="flex flex-col items-end">
+                <div className="flex items-start" style={{ color: textPrimary }}>
+                  <span className="text-7xl font-display font-black tracking-tighter leading-none drop-shadow-sm">
+                    {formatTemp(activeTemp, settings.units).replace(/°[FC]/, '')}
+                  </span>
+                  <span className="text-3xl font-display font-bold mt-2 ml-1 opacity-70">
+                    {formatTemp(activeTemp, settings.units).match(/°[FC]/)?.[0]}
+                  </span>
+                </div>
+                <p className="text-base font-display font-semibold mt-0.5" style={{ color: textSecondary }}>
+                  {wmoInfo.label}
+                </p>
+                <div className="flex items-center gap-2.5 mt-1.5 text-xs font-semibold" style={{ color: textSecondary }}>
+                  <span>↑ {formatTemp(highF, settings.units)}</span>
+                  <span className="w-0.5 h-0.5 rounded-full opacity-50" style={{ background: textSecondary }} />
+                  <span>↓ {formatTemp(lowF, settings.units)}</span>
+                  <span className="w-0.5 h-0.5 rounded-full opacity-50" style={{ background: textSecondary }} />
+                  <span>Feels {formatTemp(activeFeelsLike, settings.units)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Day toggle */}
+            <div className="relative z-10 mt-4 flex justify-center">
+              <div
+                className="flex items-center gap-0.5 p-1 rounded-full backdrop-blur-md"
+                style={{ background: toggleBg }}
+              >
+                {(["today", "tomorrow"] as const).map(day => (
+                  <button
+                    key={day}
+                    onClick={() => { setViewDay(day); setAppliedFit(null); }}
+                    className="px-5 py-1 rounded-full text-xs font-bold transition-all"
+                    style={viewDay === day
+                      ? { background: "white", color: "hsl(32 100% 52%)", boxShadow: "0 1px 8px rgba(0,0,0,0.15)" }
+                      : { color: toggleInactive }
+                    }
+                  >
+                    {day === "today" ? "Today" : "Tomorrow"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.section>
+        );
+      })()}
+
+      <div className="px-5 pt-5 pb-6 space-y-5 relative z-20">
         {!appliedFit && !isTomorrow && activeRec.alerts?.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <WeatherAlertBanner alerts={activeRec.alerts} />
           </motion.div>
         )}
@@ -356,24 +366,19 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <div className="flex items-center justify-between mb-4 px-1">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                <div className="w-2 h-2 rounded-full bg-primary" />
-              </div>
-              <h2 className="text-2xl font-display font-bold">
-                {appliedFit ? "Applied Fit" : isTomorrow ? "Tomorrow's Fit" : "Today's Fit"}
-              </h2>
-            </div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xl font-display font-bold tracking-tight">
+              {appliedFit ? "Applied Fit" : isTomorrow ? "Tomorrow's Fit" : "Today's Fit"}
+            </h2>
             <div className="flex items-center gap-2">
               {appliedFit && (
-                <Button variant="ghost" size="sm" onClick={() => setAppliedFit(null)} className="h-8 px-2 text-muted-foreground hover:text-foreground">
-                  <X className="w-4 h-4 mr-1" /> Clear
-                </Button>
+                <button onClick={() => setAppliedFit(null)} className="flex items-center gap-1 text-xs font-semibold text-muted-foreground px-2.5 py-1.5 rounded-full bg-muted hover:bg-muted/80 transition-colors">
+                  <X className="w-3.5 h-3.5" /> Clear
+                </button>
               )}
-              <Button variant="outline" size="sm" onClick={() => setShowShare(true)} className="h-8 px-3 rounded-full font-bold">
-                <Share2 className="w-4 h-4 mr-1.5" /> Share
-              </Button>
+              <button onClick={() => setShowShare(true)} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors">
+                <Share2 className="w-3.5 h-3.5" /> Share
+              </button>
             </div>
           </div>
           <OutfitCard recommendation={activeRec} weatherTags={currentTags} />
