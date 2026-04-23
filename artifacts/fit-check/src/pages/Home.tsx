@@ -4,13 +4,12 @@ import { WeatherScene } from "@/components/WeatherScene";
 import { WeatherBackground } from "@/components/WeatherBackground";
 import { OutfitLookCard } from "@/components/OutfitLookCard";
 import { WeatherAlertBanner } from "@/components/WeatherAlertBanner";
-import { CitySearch } from "@/components/CitySearch";
 import { generateRecommendation } from "@/lib/recommend";
 import { getWeatherTags, matchSavedFits } from "@/lib/savedFitsMatch";
 import { SavedFit } from "@/lib/storage";
 import { getWeatherInfo } from "@/lib/weather-codes";
 import { pickClosetItems } from "@/lib/closetMatch";
-import { MapPin, Search, Bell, Bookmark, ChevronRight, X, Share2, Plane } from "lucide-react";
+import { MapPin, Search, Bell, Bookmark, ChevronRight, X, Share2, Plane, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatTemp } from "@/lib/format";
 import { useState, useEffect, useRef } from "react";
@@ -25,6 +24,82 @@ import { FitCardShareSheet } from "@/components/FitCardShareSheet";
 import { generateHashtags } from "@/lib/fitCardHashtags";
 import { FitCardData } from "@/lib/fitCardCaption";
 import { AIStylistCard } from "@/components/AIStylistCard";
+import { CitySearch } from "@/components/CitySearch";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { reverseGeocode } from "@/lib/weather";
+
+function LocationGate({ onLocation }: { onLocation: (loc: { lat: number; lon: number; name: string }) => void }) {
+  const { getCurrentPosition, loading } = useGeolocation();
+  const [denied, setDenied] = useState(false);
+
+  const request = async () => {
+    setDenied(false);
+    try {
+      const pos = await getCurrentPosition();
+      const name = await reverseGeocode(pos.lat, pos.lon) ?? "Current Location";
+      onLocation({ lat: pos.lat, lon: pos.lon, name });
+      trackEvent("location_set", { city: name, lat: pos.lat, lon: pos.lon, method: "gps" });
+    } catch {
+      setDenied(true);
+    }
+  };
+
+  // Auto-request on mount
+  useEffect(() => { request(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-6">
+      <div className={`w-20 h-20 rounded-full flex items-center justify-center ${denied ? "bg-destructive/10" : "bg-primary/10"}`}>
+        <MapPin className={`w-9 h-9 ${denied ? "text-destructive" : "text-primary"}`} />
+      </div>
+
+      {!denied ? (
+        <>
+          <div>
+            <h2 className="text-2xl font-display font-bold">Locating you…</h2>
+            <p className="text-muted-foreground mt-2 text-sm">
+              Tap <strong>Allow</strong> when your browser asks for location access.
+            </p>
+          </div>
+          <motion.div
+            animate={{ scale: [1, 1.15, 1] }}
+            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+            className="w-4 h-4 bg-primary rounded-full"
+          />
+        </>
+      ) : (
+        <>
+          <div>
+            <h2 className="text-2xl font-display font-bold">Location Required</h2>
+            <p className="text-muted-foreground mt-2 text-sm max-w-xs">
+              Fit Check needs your location to show real-time weather and what to wear today.
+            </p>
+            <p className="text-muted-foreground mt-3 text-sm max-w-xs">
+              If you denied access, enable <strong>Location</strong> in your browser's site settings, then tap Try Again.
+            </p>
+          </div>
+
+          <div className="w-full max-w-xs space-y-3">
+            <Button
+              size="lg"
+              className="w-full h-14 rounded-2xl font-bold"
+              onClick={request}
+              disabled={loading}
+            >
+              <RefreshCw className={`mr-2 h-5 w-5 ${loading ? "animate-spin" : ""}`} />
+              Try Again
+            </Button>
+            <div className="p-4 rounded-2xl bg-muted/50 text-left space-y-1.5">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">How to enable</p>
+              <p className="text-xs text-muted-foreground"><strong>iPhone:</strong> Settings → Safari → Location → Allow</p>
+              <p className="text-xs text-muted-foreground"><strong>Android:</strong> Settings → Apps → Browser → Permissions → Location</p>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function Home() {
   const { settings, updateSettings } = useFitCheckSettings();
@@ -72,28 +147,7 @@ export default function Home() {
   }
 
   if (isError || !settings.location) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-6">
-        <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center">
-          <MapPin className="w-8 h-8 text-muted-foreground" />
-        </div>
-        <div>
-          <h2 className="text-2xl font-display font-bold">Location needed</h2>
-          <p className="text-muted-foreground mt-2">Search for a city to see your fit check.</p>
-        </div>
-        <div className="w-full max-w-sm text-left">
-          <CitySearch onSelect={(city) => {
-            updateSettings({
-              location: {
-                lat: city.latitude,
-                lon: city.longitude,
-                name: `${city.name}${city.admin1 ? `, ${city.admin1}` : ''}`
-              }
-            });
-          }} />
-        </div>
-      </div>
-    );
+    return <LocationGate onLocation={(loc) => updateSettings({ location: loc })} />;
   }
 
   const isDay = weather.current.is_day === 1;

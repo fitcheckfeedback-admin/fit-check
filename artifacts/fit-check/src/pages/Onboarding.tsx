@@ -1,16 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { MapPin, ArrowRight, Plus, X, Check, Sparkles, User } from "lucide-react";
+import { MapPin, ArrowRight, RefreshCw, Sparkles, User, Check, Plus, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
-import { CitySearch } from "@/components/CitySearch";
 import { trackEvent } from "@/lib/analytics";
 import { STYLE_TYPES, GenderPreference } from "@/lib/storage";
 import { reverseGeocode } from "@/lib/weather";
 
-type Step = "welcome" | "search" | "style" | "gender";
+type Step = "welcome" | "requesting" | "denied" | "style" | "gender";
 
 export default function Onboarding() {
   const [, navigate] = useLocation();
@@ -18,35 +17,33 @@ export default function Onboarding() {
   const { getCurrentPosition, loading: geoLoading } = useGeolocation();
 
   const [step, setStep] = useState<Step>("welcome");
-  const [pendingLocation, setPendingLocation] = useState<{ lat: number; lon: number; name: string } | null>(null);
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
   const [customInput, setCustomInput] = useState("");
   const [customStyles, setCustomStyles] = useState<string[]>([]);
   const [selectedGender, setSelectedGender] = useState<GenderPreference>("unspecified");
 
-  const handleUseLocation = async () => {
+  // Auto-request location when landing on welcome
+  useEffect(() => {
+    if (step === "welcome") {
+      requestLocation();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const requestLocation = async () => {
+    setStep("requesting");
     try {
       const pos = await getCurrentPosition();
       const resolvedCity = await reverseGeocode(pos.lat, pos.lon);
       const loc = { lat: pos.lat, lon: pos.lon, name: resolvedCity ?? "Current Location" };
-      setPendingLocation(loc);
       updateSettings({ location: loc });
       if (resolvedCity) {
         trackEvent("location_set", { city: resolvedCity, lat: pos.lat, lon: pos.lon, method: "gps" });
       }
       setStep("style");
     } catch {
-      setStep("search");
+      setStep("denied");
     }
-  };
-
-  const handleSelectCity = (city: any) => {
-    const cityName = `${city.name}${city.admin1 ? `, ${city.admin1}` : ""}`;
-    const loc = { lat: city.latitude, lon: city.longitude, name: cityName };
-    setPendingLocation(loc);
-    updateSettings({ location: loc });
-    trackEvent("location_set", { city: cityName, lat: city.latitude, lon: city.longitude, method: "search" });
-    setStep("style");
   };
 
   const toggleStyle = (s: string) => {
@@ -78,18 +75,9 @@ export default function Onboarding() {
     setStep("gender");
   };
 
-  const handleSkipStyle = () => {
-    setStep("gender");
-  };
-
   const handleFinishGender = () => {
     updateSettings({ gender: selectedGender, onboarded: true });
     trackEvent("gender_set", { gender: selectedGender });
-    navigate("/");
-  };
-
-  const handleSkipGender = () => {
-    updateSettings({ gender: "unspecified", onboarded: true });
     navigate("/");
   };
 
@@ -100,8 +88,8 @@ export default function Onboarding() {
 
       <AnimatePresence mode="wait">
 
-        {/* ── Welcome ── */}
-        {step === "welcome" && (
+        {/* ── Welcome / auto-requesting ── */}
+        {(step === "welcome" || step === "requesting") && (
           <motion.div
             key="welcome"
             initial={{ opacity: 0, y: 20 }}
@@ -143,55 +131,72 @@ export default function Onboarding() {
             </div>
 
             <motion.div
-              className="w-full max-w-sm space-y-4"
+              className="w-full max-w-sm space-y-3"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1 }}
             >
-              <Button
-                size="lg"
-                className="w-full h-14 text-base rounded-2xl shadow-lg shadow-primary/20"
-                onClick={handleUseLocation}
-                disabled={geoLoading}
-              >
-                {geoLoading ? (
-                  <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
-                    <MapPin className="mr-2 h-5 w-5" />
-                  </motion.div>
-                ) : (
-                  <MapPin className="mr-2 h-5 w-5" />
-                )}
-                Use my location
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full h-14 text-base rounded-2xl border-2 bg-transparent hover:bg-accent group"
-                onClick={() => setStep("search")}
-                disabled={geoLoading}
-              >
-                Search by city
-                <ArrowRight className="ml-2 h-4 w-4 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-              </Button>
+              <div className="flex items-center gap-3 p-4 rounded-2xl bg-primary/8 border border-primary/20">
+                <motion.div
+                  animate={{ rotate: geoLoading ? 360 : 0 }}
+                  transition={{ repeat: geoLoading ? Infinity : 0, duration: 1, ease: "linear" }}
+                >
+                  <MapPin className="w-5 h-5 text-primary shrink-0" />
+                </motion.div>
+                <p className="text-sm text-left text-foreground/80">
+                  {geoLoading ? "Getting your location…" : "Requesting your location…"}
+                </p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Tap <strong>Allow</strong> when your browser asks for location access.
+              </p>
             </motion.div>
           </motion.div>
         )}
 
-        {/* ── City search ── */}
-        {step === "search" && (
+        {/* ── Location denied ── */}
+        {step === "denied" && (
           <motion.div
-            key="search"
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
+            key="denied"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, x: -40 }}
             transition={{ duration: 0.4 }}
-            className="flex-1 flex flex-col justify-center p-6 max-w-sm mx-auto w-full"
+            className="flex-1 flex flex-col items-center justify-center p-6 text-center"
           >
-            <div className="mb-6">
-              <h2 className="text-3xl font-display font-bold mb-2">Where are you?</h2>
-              <p className="text-muted-foreground">Find your city to get local weather.</p>
+            <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mb-6">
+              <MapPin className="w-9 h-9 text-destructive" />
             </div>
-            <CitySearch onSelect={handleSelectCity} onCancel={() => setStep("welcome")} autoFocus />
+
+            <h2 className="text-2xl font-display font-bold mb-2">Location Required</h2>
+            <p className="text-muted-foreground text-sm leading-relaxed mb-2 max-w-xs">
+              Fit Check needs your location to show real-time weather and suggest what to wear today.
+            </p>
+            <p className="text-muted-foreground text-sm leading-relaxed mb-8 max-w-xs">
+              If you denied access, open your browser's site settings and enable <strong>Location</strong>, then tap Try Again.
+            </p>
+
+            <div className="w-full max-w-sm space-y-3">
+              <Button
+                size="lg"
+                className="w-full h-14 text-base rounded-2xl shadow-lg shadow-primary/20"
+                onClick={requestLocation}
+                disabled={geoLoading}
+              >
+                <RefreshCw className={`mr-2 h-5 w-5 ${geoLoading ? "animate-spin" : ""}`} />
+                Try Again
+              </Button>
+
+              <div className="p-4 rounded-2xl bg-muted/50 text-left space-y-2">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">How to enable on mobile</p>
+                <p className="text-xs text-muted-foreground">
+                  <strong>iPhone:</strong> Settings → Safari → Location → Allow
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <strong>Android:</strong> Settings → Apps → Browser → Permissions → Location → Allow
+                </p>
+              </div>
+            </div>
           </motion.div>
         )}
 
@@ -205,7 +210,6 @@ export default function Onboarding() {
             transition={{ duration: 0.4 }}
             className="flex-1 flex flex-col min-h-[100dvh]"
           >
-            {/* Sticky header */}
             <div className="px-5 pt-12 pb-4 sticky top-0 bg-gradient-to-b from-background via-background to-transparent z-10">
               <div className="flex items-center gap-3 mb-1">
                 <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -230,7 +234,6 @@ export default function Onboarding() {
               )}
             </div>
 
-            {/* Scrollable style grid */}
             <div className="flex-1 overflow-y-auto px-5 pb-4">
               <div className="flex flex-wrap gap-2 pb-2">
                 {[...STYLE_TYPES].map(s => {
@@ -252,7 +255,6 @@ export default function Onboarding() {
                 })}
               </div>
 
-              {/* Custom styles */}
               {customStyles.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-1">
                   {customStyles.map(s => (
@@ -269,7 +271,6 @@ export default function Onboarding() {
                 </div>
               )}
 
-              {/* Custom input */}
               <div className="mt-4 mb-2">
                 <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
                   Don't see yours? Add it
@@ -293,7 +294,6 @@ export default function Onboarding() {
               </div>
             </div>
 
-            {/* Footer */}
             <div className="px-5 py-5 border-t border-border/30 bg-background space-y-3 pb-10">
               <Button
                 size="lg"
@@ -306,7 +306,7 @@ export default function Onboarding() {
                   : "Select at least one style"}
               </Button>
               <button
-                onClick={handleSkipStyle}
+                onClick={() => setStep("gender")}
                 className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
               >
                 Skip for now
@@ -374,13 +374,8 @@ export default function Onboarding() {
                 onClick={handleFinishGender}
               >
                 Let's go
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-              <button
-                onClick={handleSkipGender}
-                className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
-              >
-                Skip for now
-              </button>
             </div>
           </motion.div>
         )}
