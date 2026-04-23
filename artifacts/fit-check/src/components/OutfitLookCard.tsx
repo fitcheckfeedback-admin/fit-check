@@ -152,7 +152,7 @@ export function OutfitLookCard({ recommendation, closetMatch, weatherTags = [] }
   };
 
   return (
-    <div className="bg-card rounded-3xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.05)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-border/40">
+    <div className="bg-card rounded-3xl overflow-hidden shadow-sm">
 
       {/* ── Visual flat-lay ── */}
       <div className="relative p-3 pb-2">

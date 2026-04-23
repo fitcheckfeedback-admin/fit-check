@@ -238,7 +238,7 @@ export default function Home() {
           <motion.section
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative px-5 pt-10 pb-5 overflow-hidden rounded-b-[2rem] shadow-lg z-10"
+            className="relative px-5 pt-10 pb-14 overflow-hidden z-10"
           >
             <WeatherBackground weatherCode={activeWeatherCode} isDay={activeIsDay} />
 
@@ -319,11 +319,14 @@ export default function Home() {
                 ))}
               </div>
             </div>
+
+            {/* Gradient fade into page background */}
+            <div className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none z-30 bg-gradient-to-b from-transparent to-background" />
           </motion.section>
         );
       })()}
 
-      <div className="px-5 pt-5 pb-6 space-y-5 relative z-20">
+      <div className="px-4 -mt-10 pb-6 space-y-4 relative z-20">
         {!appliedFit && !isTomorrow && activeRec.alerts?.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <WeatherAlertBanner alerts={activeRec.alerts} />
