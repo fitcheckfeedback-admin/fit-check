@@ -159,7 +159,7 @@ export default function Settings() {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="p-6 space-y-8 pb-24"
+      className="p-6 space-y-8 pb-6"
     >
       <div className="flex items-center gap-4 mb-2">
         <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-xl shadow-sm" />

@@ -85,7 +85,7 @@ export default function Reminders() {
   const isFormValid = title.trim().length > 0 && date && time;
 
   return (
-    <div className="flex-1 flex flex-col p-6 space-y-6 pb-24">
+    <div className="flex-1 flex flex-col p-6 space-y-6 pb-6">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-4">
           <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-xl shadow-sm" />

@@ -239,7 +239,7 @@ function CategoryGallery({
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: "100%", opacity: 0 }}
       transition={{ type: "spring", stiffness: 340, damping: 34 }}
-      className="absolute inset-0 bg-background overflow-y-auto pb-32"
+      className="absolute inset-0 bg-background overflow-y-auto pb-6"
     >
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/40 px-5 py-4 flex items-center gap-3">
@@ -372,7 +372,7 @@ export default function Closet() {
     <div className="relative min-h-screen overflow-hidden">
       {/* Landing — always mounted so scroll position is preserved */}
       <motion.div
-        className="p-5 space-y-6 pb-32"
+        className="p-5 space-y-6 pb-6"
         animate={{ opacity: activeCategory ? 0 : 1, pointerEvents: activeCategory ? "none" : "auto" }}
         transition={{ duration: 0.15 }}
       >

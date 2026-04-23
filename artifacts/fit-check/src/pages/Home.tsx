@@ -196,7 +196,7 @@ export default function Home() {
   } : null;
 
   return (
-    <div className="flex-1 flex flex-col relative pb-28">
+    <div className="flex-1 flex flex-col relative pb-6">
       <AnimatePresence>
         {showSearch && (
           <motion.div 

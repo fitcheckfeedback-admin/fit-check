@@ -111,7 +111,7 @@ export default function Trip() {
   const nightsBefore = forecast ? Math.max(0, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000)) : 0;
 
   return (
-    <div className="flex-1 flex flex-col pb-28">
+    <div className="flex-1 flex flex-col pb-6">
       {/* Header */}
       <div className="relative px-5 pt-14 pb-6 overflow-hidden rounded-b-[2.5rem]"
         style={{ background: "linear-gradient(160deg, #fff4e6 0%, #fde8cc 40%, #ffe4d6 100%)" }}>
