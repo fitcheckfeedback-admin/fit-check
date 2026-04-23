@@ -40,7 +40,6 @@ export function AppTour() {
 
   useEffect(() => {
     if (!localStorage.getItem(SEEN_KEY)) {
-      // Short delay so the home screen renders first
       const t = setTimeout(() => setVisible(true), 800);
       return () => clearTimeout(t);
     }

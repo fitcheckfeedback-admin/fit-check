@@ -21,6 +21,7 @@ import Analytics from "@/pages/Analytics";
 import Cam from "@/pages/Cam";
 import Trip from "@/pages/Trip";
 import NotFound from "@/pages/not-found";
+import VideoTemplate from "@/components/video/VideoTemplate";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/onboarding" component={Onboarding} />
+      <Route path="/video-tour" component={VideoTemplate} />
       <Route path="/" component={() => <ProtectedRoute component={Home} />} />
       <Route path="/forecast" component={() => <ProtectedRoute component={Forecast} />} />
       <Route path="/style" component={() => <ProtectedRoute component={Style} />} />
@@ -69,7 +71,6 @@ function Router() {
 
 function AppTracker() {
   useEffect(() => {
-    // Fire once per session — trackEvent reads location from localStorage directly
     const key = "fitcheck.sessionTracked";
     if (!sessionStorage.getItem(key)) {
       sessionStorage.setItem(key, "1");
@@ -83,7 +84,6 @@ function AppTracker() {
 }
 
 function App() {
-
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
