@@ -148,7 +148,7 @@ function CategoryCard({
   );
 }
 
-// Individual photo card in gallery
+// Individual photo card in gallery — portrait style, name below
 function GalleryCard({
   item,
   onClick,
@@ -163,58 +163,53 @@ function GalleryCard({
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, scale: 0.9 }}
+      initial={{ opacity: 0, scale: 0.92 }}
       animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.85 }}
-      className="relative aspect-square rounded-2xl overflow-hidden border border-border/40 shadow-sm bg-card group cursor-pointer"
+      exit={{ opacity: 0, scale: 0.88 }}
+      className="flex flex-col gap-1.5 cursor-pointer group"
       onClick={onClick}
     >
-      {src ? (
-        <img src={src} alt={item.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-      ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-muted/30">
-          <ImageIcon className="w-7 h-7 text-muted-foreground/40 mb-1" />
+      {/* Photo area */}
+      <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-neutral-100 dark:bg-neutral-900 border border-border/30 shadow-sm">
+        {src ? (
+          <img
+            src={src}
+            alt={item.name}
+            className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-[1.03] p-1"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-1.5">
+            <ImageIcon className="w-8 h-8 text-muted-foreground/25" />
+            <span className="text-[10px] font-semibold text-muted-foreground/40">No photo</span>
+          </div>
+        )}
+
+        {/* Delete menu — unobtrusive top-right */}
+        <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-6 h-6 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 transition-colors">
+                <MoreVertical className="w-3 h-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-28 rounded-xl">
+              <DropdownMenuItem
+                onClick={onDelete}
+                className="text-destructive focus:text-destructive focus:bg-destructive/10 font-medium cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      )}
-
-      {/* Gradient scrim */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none" />
-
-      {/* Style dots */}
-      <div className="absolute top-2 left-2 flex gap-1 pointer-events-none">
-        {item.styles.slice(0, 2).map(s => (
-          <span
-            key={s}
-            className="w-5 h-5 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-[9px] font-bold text-white"
-          >
-            {s.charAt(0)}
-          </span>
-        ))}
       </div>
 
-      {/* Delete menu */}
-      <div className="absolute top-1.5 right-1.5" onClick={e => e.stopPropagation()}>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="w-6 h-6 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 transition-colors">
-              <MoreVertical className="w-3.5 h-3.5" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-28 rounded-xl">
-            <DropdownMenuItem
-              onClick={onDelete}
-              className="text-destructive focus:text-destructive focus:bg-destructive/10 font-medium cursor-pointer"
-            >
-              <Trash2 className="w-3.5 h-3.5 mr-2" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      {/* Name + category below card */}
+      <div className="px-0.5">
+        <p className="text-xs font-semibold text-foreground truncate leading-tight">{item.name}</p>
+        <p className="text-[10px] text-muted-foreground capitalize leading-tight mt-0.5">{item.category}</p>
       </div>
-
-      <p className="absolute bottom-2 left-2 right-2 text-white font-semibold text-xs leading-tight truncate drop-shadow pointer-events-none">
-        {item.name}
-      </p>
     </motion.div>
   );
 }

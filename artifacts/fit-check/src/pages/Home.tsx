@@ -2,7 +2,7 @@ import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { useWeather } from "@/hooks/useWeather";
 import { WeatherScene } from "@/components/WeatherScene";
 import { WeatherBackground } from "@/components/WeatherBackground";
-import { OutfitCard } from "@/components/OutfitCard";
+import { OutfitLookCard } from "@/components/OutfitLookCard";
 import { WeatherAlertBanner } from "@/components/WeatherAlertBanner";
 import { CitySearch } from "@/components/CitySearch";
 import { generateRecommendation } from "@/lib/recommend";
@@ -10,10 +10,7 @@ import { getWeatherTags, matchSavedFits } from "@/lib/savedFitsMatch";
 import { SavedFit } from "@/lib/storage";
 import { getWeatherInfo } from "@/lib/weather-codes";
 import { pickClosetItems } from "@/lib/closetMatch";
-import { useClosetImage } from "@/hooks/useClosetImage";
-import { MapPin, Search, Shirt, Footprints, Bell, Bookmark, ChevronRight, X, Share2, Gem, Plane } from "lucide-react";
-import { PantsIcon } from "@/components/icons/PantsIcon";
-import { JacketIcon } from "@/components/icons/JacketIcon";
+import { MapPin, Search, Bell, Bookmark, ChevronRight, X, Share2, Plane } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatTemp } from "@/lib/format";
 import { useState, useEffect, useRef } from "react";
@@ -28,27 +25,6 @@ import { FitCardShareSheet } from "@/components/FitCardShareSheet";
 import { generateHashtags } from "@/lib/fitCardHashtags";
 import { FitCardData } from "@/lib/fitCardCaption";
 import { AIStylistCard } from "@/components/AIStylistCard";
-
-function ClosetMatchThumbnail({ item, label, icon: Icon }: { item: import("@/lib/storage").ClosetItem; label: string; icon: any }) {
-  const { src } = useClosetImage(item.imageId);
-  return (
-    <div className="flex flex-col items-center gap-2 group shrink-0">
-      <div className="w-20 h-20 rounded-2xl bg-card border-2 border-border shadow-sm overflow-hidden relative">
-        {src ? (
-          <img src={src} alt={item.name} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-muted/30 text-muted-foreground">
-             <Icon className="w-8 h-8 opacity-50" />
-          </div>
-        )}
-      </div>
-      <div className="text-center w-20">
-        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-tight mb-0.5">{label}</p>
-        <p className="text-xs font-semibold text-foreground truncate" title={item.name}>{item.name}</p>
-      </div>
-    </div>
-  );
-}
 
 export default function Home() {
   const { settings, updateSettings } = useFitCheckSettings();
@@ -189,13 +165,6 @@ export default function Home() {
   const allSavedFits = settings.savedFits || [];
 
   const closetMatchResult = pickClosetItems(activeRec, settings.closet, settings.style);
-  const matchedItems = [
-    { cat: "tops", label: "Top", icon: Shirt, item: closetMatchResult.tops },
-    { cat: "bottoms", label: "Bottom", icon: PantsIcon, item: closetMatchResult.bottoms },
-    { cat: "outerwear", label: "Layer", icon: JacketIcon, item: closetMatchResult.outerwear },
-    { cat: "shoes", label: "Shoes", icon: Footprints, item: closetMatchResult.shoes },
-    { cat: "accessories", label: "Accessory", icon: Gem, item: closetMatchResult.accessories },
-  ].filter(x => x.item !== undefined);
 
   const highF = activeHighF;
   const lowF = activeLowF;
@@ -381,30 +350,11 @@ export default function Home() {
               </button>
             </div>
           </div>
-          <OutfitCard recommendation={activeRec} weatherTags={currentTags} />
-          
-          {matchedItems.length > 0 && (
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-6 bg-card border rounded-3xl p-5 shadow-sm overflow-hidden relative"
-            >
-              <div className="absolute -top-10 -left-10 w-32 h-32 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-              <div className="flex items-center justify-between mb-4 relative z-10">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                  {isTomorrow ? "Plan for Tomorrow" : "Wear Today"}
-                </h3>
-              </div>
-              <div className="flex overflow-x-auto hide-scrollbar gap-4 pb-1 relative z-10 snap-x">
-                {matchedItems.map((match, i) => (
-                  <div key={i} className="snap-start">
-                    <ClosetMatchThumbnail item={match.item!} label={match.label} icon={match.icon} />
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
+          <OutfitLookCard
+            recommendation={activeRec}
+            closetMatch={closetMatchResult}
+            weatherTags={currentTags}
+          />
         </motion.section>
 
         {/* AI Stylist */}
