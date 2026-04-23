@@ -6,7 +6,7 @@ import { CameraCapture } from "./CameraCapture";
 import { ClosetItem, Category, StylePreference } from "@/lib/storage";
 import { useClosetImage } from "@/hooks/useClosetImage";
 import { saveImage, deleteImage } from "@/lib/imageStore";
-import { Trash2, Camera, Image as ImageIcon } from "lucide-react";
+import { Trash2, Camera, Image as ImageIcon, Images } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const CATEGORIES: { id: Category; label: string }[] = [
@@ -141,12 +141,17 @@ export function ItemEditor({ open, onOpenChange, item, initialCategory = "tops",
                     className="relative w-full aspect-square max-w-[240px] rounded-3xl overflow-hidden border-2 border-border shadow-sm group"
                   >
                     <img src={currentDisplayUrl} alt="Item" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                      <CameraCapture onCapture={handleCapture} variant="secondary" className="rounded-xl">
-                        <Camera className="w-4 h-4 mr-2" /> Retake
-                      </CameraCapture>
-                      <Button variant="destructive" size="icon" onClick={removePhoto} className="rounded-xl">
-                        <Trash2 className="w-4 h-4" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-3">
+                      <div className="flex gap-2">
+                        <CameraCapture onCapture={handleCapture} variant="secondary" className="rounded-xl h-9 px-3 text-xs font-semibold">
+                          <Camera className="w-3.5 h-3.5 mr-1.5" /> Camera
+                        </CameraCapture>
+                        <CameraCapture onCapture={handleCapture} galleryOnly variant="secondary" className="rounded-xl h-9 px-3 text-xs font-semibold">
+                          <Images className="w-3.5 h-3.5 mr-1.5" /> Library
+                        </CameraCapture>
+                      </div>
+                      <Button variant="destructive" size="sm" onClick={removePhoto} className="rounded-xl h-9 px-3 text-xs font-semibold">
+                        <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Remove
                       </Button>
                     </div>
                   </motion.div>
@@ -160,10 +165,14 @@ export function ItemEditor({ open, onOpenChange, item, initialCategory = "tops",
                     <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                       <ImageIcon className="w-8 h-8" />
                     </div>
-                    <CameraCapture onCapture={handleCapture} className="rounded-xl shadow-sm">
-                      <Camera className="w-4 h-4 mr-2" /> Take Photo
-                    </CameraCapture>
-                    <span className="text-xs text-muted-foreground font-medium">or pick from gallery</span>
+                    <div className="flex gap-2">
+                      <CameraCapture onCapture={handleCapture} className="rounded-xl shadow-sm h-10 px-4 text-sm font-semibold">
+                        <Camera className="w-4 h-4 mr-1.5" /> Camera
+                      </CameraCapture>
+                      <CameraCapture onCapture={handleCapture} galleryOnly className="rounded-xl shadow-sm h-10 px-4 text-sm font-semibold">
+                        <Images className="w-4 h-4 mr-1.5" /> Library
+                      </CameraCapture>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>

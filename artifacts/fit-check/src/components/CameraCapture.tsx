@@ -8,9 +8,10 @@ interface CameraCaptureProps {
   className?: string;
   variant?: "outline" | "default" | "ghost" | "secondary";
   children?: React.ReactNode;
+  galleryOnly?: boolean;
 }
 
-export function CameraCapture({ onCapture, className, variant = "outline", children }: CameraCaptureProps) {
+export function CameraCapture({ onCapture, className, variant = "outline", children, galleryOnly = false }: CameraCaptureProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -35,7 +36,7 @@ export function CameraCapture({ onCapture, className, variant = "outline", child
       <input
         type="file"
         accept="image/*"
-        capture="environment"
+        {...(!galleryOnly && { capture: "environment" })}
         className="hidden"
         ref={inputRef}
         onChange={handleFileChange}
