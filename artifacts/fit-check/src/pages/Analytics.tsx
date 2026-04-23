@@ -4,7 +4,7 @@ import {
   LineChart, Line, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
-import { Users, TrendingUp, Calendar, Clock, MapPin, Zap, LogOut, Lock, Bell, Send, EyeOff, Eye, ShieldCheck } from "lucide-react";
+import { Users, TrendingUp, Calendar, Clock, MapPin, Zap, LogOut, Lock, Bell, Send, EyeOff, Eye, ShieldCheck, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -21,6 +21,17 @@ interface Summary {
   featurePopularity7d:{ feature: string; count: number }[];
   locationDistribution: { city: string; uniqueDevices: number; opens: number }[];
   recent: { id: string; deviceId: string; eventType: string; metadata: Record<string, unknown> | null; createdAt: string }[];
+  avgSessionSecondsAllTime: number | null;
+  avgSessionSecondsToday: number | null;
+}
+
+function formatDuration(seconds: number | null): string {
+  if (seconds === null || seconds <= 0) return "—";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  if (m === 0) return `${s}s`;
+  if (s === 0) return `${m}m`;
+  return `${m}m ${s}s`;
 }
 
 const FEATURE_LABELS: Record<string, string> = {
@@ -57,7 +68,9 @@ function StatCard({ label, value, sub, icon: Icon, accent }: {
           <Icon className="w-4 h-4 text-white" />
         </div>
       </div>
-      <div className="text-3xl font-bold text-foreground">{value.toLocaleString()}</div>
+      <div className="text-3xl font-bold text-foreground">
+        {typeof value === "number" ? value.toLocaleString() : value}
+      </div>
       {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
     </motion.div>
   );
@@ -465,6 +478,20 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
             sub={`${data.last30Days.totalEvents.toLocaleString()} events`}
             icon={Calendar}
             accent="bg-purple-500"
+          />
+          <StatCard
+            label="Avg session today"
+            value={formatDuration(data.avgSessionSecondsToday)}
+            sub="per user visit"
+            icon={Timer}
+            accent="bg-green-500"
+          />
+          <StatCard
+            label="Avg session all-time"
+            value={formatDuration(data.avgSessionSecondsAllTime)}
+            sub="per user visit"
+            icon={Clock}
+            accent="bg-slate-500"
           />
         </div>
 

@@ -15,7 +15,8 @@ export type EventType =
   | "voice_used"
   | "location_set"
   | "style_changed"
-  | "settings_opened";
+  | "settings_opened"
+  | "session_end";
 
 function getLocationContext(): { city?: string; lat?: number; lon?: number } {
   try {
@@ -56,4 +57,48 @@ export function trackEvent(
 
 export function trackPageView(page: string): void {
   trackEvent("page_view", { page });
+}
+
+// Session duration tracking — fires session_end when the user leaves or hides the app
+let _sessionStart = Date.now();
+let _sessionActive = true;
+
+function _sendSessionEnd() {
+  if (!_sessionActive) return;
+  const durationSeconds = Math.round((Date.now() - _sessionStart) / 1000);
+  if (durationSeconds < 3) return; // ignore page bounces
+  _sessionActive = false;
+
+  const deviceId = getOrCreateDeviceId();
+  const location = getLocationContext();
+  const payload = JSON.stringify({
+    deviceId,
+    eventType: "session_end",
+    metadata: { ...location, durationSeconds },
+  });
+
+  // sendBeacon is the only reliable way to fire on page unload
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon("/api/analytics/event", new Blob([payload], { type: "application/json" }));
+  } else {
+    fetch("/api/analytics/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: payload,
+      keepalive: true,
+    }).catch(() => {});
+  }
+}
+
+if (typeof window !== "undefined") {
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      _sendSessionEnd();
+    } else {
+      // User returned — start a fresh segment
+      _sessionStart = Date.now();
+      _sessionActive = true;
+    }
+  });
+  window.addEventListener("beforeunload", _sendSessionEnd);
 }

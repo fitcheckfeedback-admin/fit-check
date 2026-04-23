@@ -187,6 +187,43 @@ router.get("/analytics/summary", async (req, res) => {
         .limit(30)
     : await recentBase;
 
+  // Average session duration — all time
+  const [avgSessionAll] = await db
+    .select({
+      avgSeconds: sql<number>`ROUND(AVG((${analyticsEventsTable.metadata}->>'durationSeconds')::numeric))`.as("avgSeconds"),
+    })
+    .from(analyticsEventsTable)
+    .where(
+      excluded
+        ? and(
+            sql`${analyticsEventsTable.eventType} = 'session_end'`,
+            sql`${analyticsEventsTable.metadata}->>'durationSeconds' IS NOT NULL`,
+            excluded(analyticsEventsTable.deviceId),
+          )
+        : sql`${analyticsEventsTable.eventType} = 'session_end' AND ${analyticsEventsTable.metadata}->>'durationSeconds' IS NOT NULL`
+    );
+
+  // Average session duration — today
+  const [avgSessionToday] = await db
+    .select({
+      avgSeconds: sql<number>`ROUND(AVG((${analyticsEventsTable.metadata}->>'durationSeconds')::numeric))`.as("avgSeconds"),
+    })
+    .from(analyticsEventsTable)
+    .where(
+      excluded
+        ? and(
+            sql`${analyticsEventsTable.eventType} = 'session_end'`,
+            sql`${analyticsEventsTable.metadata}->>'durationSeconds' IS NOT NULL`,
+            gte(analyticsEventsTable.createdAt, todayStart),
+            excluded(analyticsEventsTable.deviceId),
+          )
+        : and(
+            sql`${analyticsEventsTable.eventType} = 'session_end'`,
+            sql`${analyticsEventsTable.metadata}->>'durationSeconds' IS NOT NULL`,
+            gte(analyticsEventsTable.createdAt, todayStart),
+          )
+    );
+
   const totalFeatureCount = featurePopularity.reduce((s, r) => s + Number(r.count), 0);
   const featuresWithPct = featurePopularity.map(r => ({
     ...r,
@@ -205,6 +242,8 @@ router.get("/analytics/summary", async (req, res) => {
     locationDistribution,
     recent,
     excludedCount: excludedIds.length,
+    avgSessionSecondsAllTime: avgSessionAll?.avgSeconds ? Number(avgSessionAll.avgSeconds) : null,
+    avgSessionSecondsToday: avgSessionToday?.avgSeconds ? Number(avgSessionToday.avgSeconds) : null,
   });
 });
 
