@@ -16,6 +16,48 @@ import { trackEvent } from "@/lib/analytics";
 import { JacketIcon } from "./icons/JacketIcon";
 import { PantsIcon } from "./icons/PantsIcon";
 
+function buildClosetDescription(match: ClosetMatchResult): string | null {
+  const { outerwear, tops, bottoms, shoes } = match;
+  const hasAny = outerwear || tops || bottoms || shoes;
+  if (!hasAny) return null;
+
+  if (outerwear && tops && bottoms) {
+    let desc = `Your ${outerwear.name} over your ${tops.name}, with your ${bottoms.name}`;
+    if (shoes) desc += ` and your ${shoes.name}`;
+    return desc;
+  }
+
+  if (outerwear && bottoms && !tops) {
+    let desc = `Your ${outerwear.name} with your ${bottoms.name}`;
+    if (shoes) desc += ` and your ${shoes.name}`;
+    return desc;
+  }
+
+  if (outerwear && tops && !bottoms) {
+    let desc = `Your ${outerwear.name} over your ${tops.name}`;
+    if (shoes) desc += ` with your ${shoes.name}`;
+    return desc;
+  }
+
+  if (tops && bottoms) {
+    let desc = `Your ${tops.name} with your ${bottoms.name}`;
+    if (shoes) desc += ` and your ${shoes.name}`;
+    return desc;
+  }
+
+  if (tops && shoes) {
+    return `Your ${tops.name} with your ${shoes.name}`;
+  }
+
+  if (bottoms && shoes) {
+    return `Your ${bottoms.name} with your ${shoes.name}`;
+  }
+
+  const available = [outerwear, tops, bottoms, shoes].filter(Boolean);
+  if (available.length === 1) return `Your ${available[0]!.name}`;
+  return available.map(i => `your ${i!.name}`).join(", ");
+}
+
 interface SlotProps {
   item: ClosetItem | undefined;
   label: string;
@@ -57,6 +99,7 @@ interface OutfitLookCardProps {
 
 export function OutfitLookCard({ recommendation, closetMatch, weatherTags = [] }: OutfitLookCardProps) {
   const { mainOutfit, outerwear, accessories, warnings, fitScore } = recommendation;
+  const closetDesc = buildClosetDescription(closetMatch);
   const { settings, updateSettings } = useFitCheckSettings();
   const { toast } = useToast();
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -142,9 +185,9 @@ export function OutfitLookCard({ recommendation, closetMatch, weatherTags = [] }
             <div className="absolute -top-8 -right-8 w-32 h-32 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
             <p className="text-xs font-bold text-primary/70 uppercase tracking-widest mb-2">Today's Fit</p>
             <p className="text-2xl font-display font-semibold leading-snug text-foreground/90">
-              {mainOutfit}
+              {closetDesc ?? mainOutfit}
             </p>
-            {outerwear && (
+            {!closetDesc && outerwear && (
               <p className="text-sm text-muted-foreground mt-2 font-medium">+ {outerwear}</p>
             )}
           </div>
@@ -184,8 +227,10 @@ export function OutfitLookCard({ recommendation, closetMatch, weatherTags = [] }
         <div className="px-4 pb-4 space-y-3">
           <div className="pt-1 border-t border-border/30">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1 mt-2">The Fit</p>
-            <p className="text-base font-display font-semibold leading-snug text-foreground/90">{mainOutfit}</p>
-            {outerwear && (
+            <p className="text-base font-display font-semibold leading-snug text-foreground/90">
+              {closetDesc ?? mainOutfit}
+            </p>
+            {!closetDesc && outerwear && (
               <p className="text-sm text-muted-foreground mt-1">+ {outerwear}</p>
             )}
           </div>
