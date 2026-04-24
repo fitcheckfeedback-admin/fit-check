@@ -201,40 +201,47 @@ function Home() {
           initial="hidden"
           animate="visible"
         >
-          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FF9500]/10 border border-[#FF9500]/25 text-[#FF9500] text-xs font-bold uppercase tracking-widest mb-8">
-            <Sparkles className="w-3 h-3" />
-            Weather-smart outfit planner
-          </motion.div>
-
+          {/* Hook headline — above the fold */}
           <motion.h1
             variants={fadeUp}
-            className="text-5xl font-black leading-[1.05] tracking-tight mb-6"
+            className="text-5xl sm:text-6xl font-black leading-[1.05] tracking-tight mb-5"
           >
-            Stop staring at<br />
-            your closet every<br />
-            <span className="text-[#FF9500]">morning.</span>
+            You own 40 outfits.<br />
+            <span className="text-[#FF9500]">You wear the same 5.</span>
           </motion.h1>
 
           <motion.p
             variants={fadeUp}
-            className="text-lg text-white/55 leading-relaxed mb-10 max-w-sm"
+            className="text-xl text-white/70 font-semibold leading-snug mb-2 max-w-xs"
           >
-            FIT✔️ checks your local weather and tells you exactly what to wear — outfit planned before you're out of bed.
+            We pick your outfit based on today's weather.
           </motion.p>
 
-          <motion.div variants={fadeUp} className="mb-14 w-full">
-            <OutfitCard />
-          </motion.div>
+          <motion.p
+            variants={fadeUp}
+            className="text-sm text-white/35 font-medium mb-10"
+          >
+            Takes 3 seconds. No guesswork.
+          </motion.p>
 
+          {/* Primary CTA — before the card */}
           <motion.a
             variants={fadeUp}
             href={APP_URL}
             onClick={() => track("landing_cta_click")}
-            className="w-full max-w-xs flex items-center justify-center gap-2 bg-[#FF9500] text-black font-black text-lg px-8 py-5 rounded-2xl shadow-xl shadow-[#FF9500]/30 hover:bg-orange-400 active:scale-95 transition-all"
+            className="w-full max-w-xs flex items-center justify-center gap-2 bg-[#FF9500] text-black font-black text-lg px-8 py-5 rounded-2xl shadow-xl shadow-[#FF9500]/30 hover:bg-orange-400 active:scale-95 transition-all mb-3"
           >
             Get My Daily Fit <ArrowRight className="w-5 h-5" />
           </motion.a>
-          <p className="text-xs text-white/30 mt-3 font-medium">Free forever · No account needed</p>
+
+          <motion.p variants={fadeUp} className="text-sm text-white/45 font-semibold mb-14 tracking-wide">
+            Free forever &nbsp;·&nbsp; No account needed
+          </motion.p>
+
+          {/* Visual proof — outfit card after CTA */}
+          <motion.div variants={fadeUp} className="w-full">
+            <OutfitCard />
+          </motion.div>
         </motion.div>
       </section>
 
@@ -247,15 +254,15 @@ function Home() {
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
         >
-          <motion.p variants={fadeUp} className="text-[#FF9500] text-xs font-black uppercase tracking-widest mb-4">Sound familiar?</motion.p>
+          <motion.p variants={fadeUp} className="text-[#FF9500] text-xs font-black uppercase tracking-widest mb-4">Every morning</motion.p>
           <motion.h2 variants={fadeUp} className="text-3xl font-black leading-tight mb-6">
-            You own 40 outfits.<br />You wear the same 5.
+            The same 10-minute<br />struggle. Every. Day.
           </motion.h2>
           <motion.p variants={fadeUp} className="text-white/50 text-base leading-relaxed">
-            Every morning starts with the same 10-minute struggle — checking weather, staring at clothes, second-guessing everything, then leaving in a rush wearing whatever's on top.
+            Check the weather. Stare at the closet. Second-guess everything. Leave in a rush wearing whatever's on top.
           </motion.p>
           <motion.p variants={fadeUp} className="text-white/80 font-bold text-lg mt-6">
-            FIT✔️ solves that in 3 seconds.
+            FIT✔️ ends that in 3 seconds.
           </motion.p>
         </motion.div>
       </section>
