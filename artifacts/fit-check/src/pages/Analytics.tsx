@@ -115,7 +115,7 @@ function LoginForm({ onLogin }: { onLogin: (token: string) => void }) {
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-bold text-foreground">Analytics</h1>
-            <p className="text-sm text-muted-foreground mt-1">Fit Check usage dashboard</p>
+            <p className="text-sm text-muted-foreground mt-1">FIT✔️ usage dashboard</p>
           </div>
         </div>
 
@@ -149,7 +149,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [subCount, setSubCount] = useState<number | null>(null);
-  const [bTitle, setBTitle] = useState("Love Fit Check? Share it! 👗");
+  const [bTitle, setBTitle] = useState("Love FIT✔️? Share it! 👗");
   const [bBody, setBBody] = useState("Help us grow the beta — send the link to a friend who loves fashion.");
   const [bSending, setBSending] = useState(false);
   const [bResult, setBResult] = useState<{ sent: number; failed: number } | null>(null);
@@ -288,7 +288,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
           <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded-xl" />
           <div>
             <h1 className="text-lg font-bold leading-none">Analytics</h1>
-            <p className="text-xs text-muted-foreground">Fit Check Dashboard</p>
+            <p className="text-xs text-muted-foreground">FIT✔️ Dashboard</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

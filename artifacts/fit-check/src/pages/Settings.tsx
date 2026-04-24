@@ -45,7 +45,7 @@ export default function Settings() {
       cancelSpeech();
       return;
     }
-    speak("Hi, I'm your Fit Check assistant. Today looks like a great day to layer up.", voiceId ?? settings.voiceName);
+    speak("Hi, I'm your FIT CHECK assistant. Today looks like a great day to layer up.", voiceId ?? settings.voiceName);
   };
 
   const handleUpdateLocation = async () => {
@@ -143,7 +143,7 @@ export default function Settings() {
       const res = await fetch('/api/push/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: "This is a test from Fit Check!" })
+        body: JSON.stringify({ message: "This is a test from FIT✔️!" })
       });
       if (res.ok) {
         toast({ title: "Test notification sent!" });
@@ -602,7 +602,7 @@ export default function Settings() {
         <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider pl-2">Use with Siri</h2>
         <div className="bg-card rounded-[2rem] border shadow-sm p-5 space-y-4">
           <p className="text-sm text-muted-foreground">
-            Want to ask Siri what to wear? On your iPhone, open the Shortcuts app and create a shortcut that opens this URL. Then say "Hey Siri, what should I wear?" to launch Fit Check instantly.
+            Want to ask Siri what to wear? On your iPhone, open the Shortcuts app and create a shortcut that opens this URL. Then say "Hey Siri, what should I wear?" to launch FIT✔️ instantly.
           </p>
           <div className="flex items-center gap-2 bg-muted p-3 rounded-xl overflow-hidden">
             <code className="text-xs flex-1 truncate">{window.location.origin}/?voice=1</code>
@@ -638,7 +638,7 @@ export default function Settings() {
             </div>
           </div>
           <a
-            href="mailto:fitcheckfeedback@gmail.com?subject=Fit%20Check%20Feedback"
+            href="mailto:fitcheckfeedback@gmail.com?subject=FIT%20Feedback"
             className="flex items-center justify-center gap-2 w-full h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
             onClick={() => trackEvent("feedback_tapped", {})}
           >

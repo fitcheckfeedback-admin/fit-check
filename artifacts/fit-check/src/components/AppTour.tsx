@@ -9,7 +9,7 @@ const SLIDES = [
   {
     emoji: "🌤️",
     title: "Your daily fit, sorted",
-    body: "Every day Fit Check reads your local weather and suggests exactly what to wear — no more standing at your wardrobe guessing.",
+    body: "Every day FIT✔️ reads your local weather and suggests exactly what to wear — no more standing at your wardrobe guessing.",
   },
   {
     emoji: "👗",
@@ -19,7 +19,7 @@ const SLIDES = [
   {
     emoji: "👔",
     title: "Build your closet",
-    body: "Head to the Closet tab and add your actual clothes. Fit Check will suggest outfits using what you already own.",
+    body: "Head to the Closet tab and add your actual clothes. FIT✔️ will suggest outfits using what you already own.",
   },
   {
     emoji: "🔔",
@@ -150,7 +150,7 @@ export function AppTour() {
                   onClick={next}
                   className="w-full h-12 font-bold rounded-2xl text-sm"
                 >
-                  {isLast ? "Start using Fit Check" : (
+                  {isLast ? "Start using FIT✔️" : (
                     <span className="flex items-center gap-1.5">
                       Next <ChevronRight className="w-4 h-4" />
                     </span>

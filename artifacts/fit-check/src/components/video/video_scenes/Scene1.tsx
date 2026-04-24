@@ -49,7 +49,7 @@ export function Scene1() {
         animate={phase >= 3 ? { y: 0, opacity: 1 } : { y: 20, opacity: 0 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       >
-        Every day Fit Check reads your local weather and suggests exactly what to wear — no more standing at your wardrobe guessing.
+        Every day FIT✔️ reads your local weather and suggests exactly what to wear — no more standing at your wardrobe guessing.
       </motion.p>
       
       {/* Decorative ambient element */}

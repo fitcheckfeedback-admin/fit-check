@@ -49,7 +49,7 @@ export function Scene3() {
         animate={phase >= 3 ? { y: 0, opacity: 1 } : { y: 20, opacity: 0 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       >
-        Head to the Closet tab and add your actual clothes. Fit Check will suggest outfits using what you already own.
+        Head to the Closet tab and add your actual clothes. FIT✔️ will suggest outfits using what you already own.
       </motion.p>
       
       {/* Decorative ambient element */}

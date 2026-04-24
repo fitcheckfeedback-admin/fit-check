@@ -24,10 +24,10 @@ export function AnnouncementModal({ appUrl = "https://style-sense-fitcheck.repli
   };
 
   const share = async () => {
-    const text = "Check out Fit Check — it tells you what to wear based on today's weather!";
+    const text = "Check out FIT✔️ — it tells you what to wear based on today's weather!";
     if (navigator.share) {
       try {
-        await navigator.share({ title: "Fit Check", text, url: appUrl });
+        await navigator.share({ title: "FIT✔️", text, url: appUrl });
       } catch {}
     } else {
       try {
@@ -87,7 +87,7 @@ export function AnnouncementModal({ appUrl = "https://style-sense-fitcheck.repli
 
                 {/* Body */}
                 <p className="text-sm text-muted-foreground leading-relaxed mb-5">
-                  Fit Check is growing up — we're building toward a full native app launch. Before we get there, we need more real users testing it out.{" "}
+                  FIT✔️ is growing up — we're building toward a full native app launch. Before we get there, we need more real users testing it out.{" "}
                   <span className="font-semibold text-foreground">If you're enjoying it, sharing it with one friend makes a huge difference.</span>
                 </p>
 

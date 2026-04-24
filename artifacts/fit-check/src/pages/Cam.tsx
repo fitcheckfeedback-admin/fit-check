@@ -103,7 +103,7 @@ export default function Cam() {
 
     ctx.font = "bold 40px system-ui, sans-serif";
     ctx.fillStyle = "#FF9500";
-    ctx.fillText("Fit Check", 52, 80);
+    ctx.fillText("FIT✔️", 52, 80);
 
     ctx.font = "bold 28px system-ui, sans-serif";
     ctx.fillStyle = "rgba(255,255,255,0.8)";
@@ -244,14 +244,14 @@ export default function Cam() {
     const ext = videoBlob.type.includes("mp4") ? "mp4" : "webm";
     const file = new File([videoBlob], `fitcheck-grwm.${ext}`, { type: videoBlob.type });
     const text = platform === "tiktok"
-      ? "Check my outfit today with Fit Check! #GRWM #FitCheck #OOTD"
+      ? "Check my outfit today with FIT✔️! #GRWM #FitCheck #OOTD"
       : platform === "facebook"
-      ? "Getting ready with today's weather-based outfit from Fit Check!"
-      : "My GRWM with Fit Check";
+      ? "Getting ready with today's weather-based outfit from FIT✔️!"
+      : "My GRWM with FIT✔️";
 
     if (navigator.canShare?.({ files: [file] })) {
       try {
-        await navigator.share({ files: [file], title: "My Fit Check GRWM", text });
+        await navigator.share({ files: [file], title: "My FIT✔️ GRWM", text });
       } catch (e: any) {
         if (e?.name !== "AbortError") setShareError("Share failed — try Save instead.");
       }
@@ -277,7 +277,7 @@ export default function Cam() {
         </button>
         <span className="text-5xl">🎬</span>
         <div className="text-center">
-          <h2 className="text-white font-bold text-xl mb-2">Fit Check GRWM</h2>
+          <h2 className="text-white font-bold text-xl mb-2">FIT✔️ GRWM</h2>
           <p className="text-white/60 text-sm mb-6">In-app recording isn't available on this browser. Record a video with your camera app, then upload it here to share.</p>
         </div>
         <input type="file" accept="video/*" ref={fileInputRef} className="hidden" onChange={handleNativeUpload} />
@@ -397,7 +397,7 @@ export default function Cam() {
               <span className="text-[#FF9500] font-black text-sm leading-none">F</span>
             </div>
             <div>
-              <span className="text-white font-black text-sm tracking-tight leading-none block">Fit Check</span>
+              <span className="text-white font-black text-sm tracking-tight leading-none block">FIT✔️</span>
               <span className="text-white/50 text-[9px] uppercase tracking-widest font-semibold leading-tight block">Get Ready With Me</span>
             </div>
           </div>

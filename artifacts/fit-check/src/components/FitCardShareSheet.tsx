@@ -80,7 +80,7 @@ export function FitCardShareSheet({ open, onOpenChange, data }: FitCardShareShee
   const handleNativeShare = async () => {
     try {
       const shareData: ShareData = {
-        title: "Fit Check",
+        title: "FIT✔️",
         text: caption,
         url: window.location.href,
       };

@@ -72,7 +72,7 @@ function drawBottomBar(ctx: CanvasRenderingContext2D, w: number, h: number) {
   ctx.textAlign = "center";
   ctx.font = "bold 20px system-ui, sans-serif";
   ctx.fillStyle = "rgba(255,255,255,0.9)";
-  ctx.fillText("fitcheck.app", w / 2, h - 12);
+  ctx.fillText("FIT✔️", w / 2, h - 12);
 }
 
 async function drawLogoHeader(ctx: CanvasRenderingContext2D, x: number, y: number) {
@@ -167,7 +167,7 @@ async function drawSplitLayout(ctx: CanvasRenderingContext2D, data: FitCardData,
 
   ctx.font = "bold 42px system-ui, sans-serif";
   ctx.fillStyle = "#1a1a1a";
-  ctx.fillText("Fit Check", INFO_X + 96, 114);
+  ctx.fillText("FIT✔️", INFO_X + 96, 114);
 
   // Score badge
   ctx.fillStyle = "rgba(255,255,255,0.9)";
@@ -265,7 +265,7 @@ async function drawCenteredLayout(ctx: CanvasRenderingContext2D, data: FitCardDa
 
   ctx.font = "bold 52px system-ui, sans-serif";
   ctx.fillStyle = "#1a1a1a";
-  ctx.fillText("Fit Check", 160, 128);
+  ctx.fillText("FIT✔️", 160, 128);
 
   ctx.fillStyle = "#FFB347";
   ctx.beginPath();

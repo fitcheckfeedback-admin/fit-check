@@ -302,7 +302,7 @@ export default function Onboarding() {
               >
                 <img
                   src="/logo.png"
-                  alt="Fit Check"
+                  alt="FIT✔️"
                   className="w-16 h-16 rounded-[1.1rem] drop-shadow-xl object-cover mx-auto"
                 />
               </motion.div>
@@ -353,7 +353,7 @@ export default function Onboarding() {
                   animate={{ x: "200%" }}
                   transition={{ duration: 1.8, repeat: Infinity, repeatDelay: 2, ease: "easeInOut" }}
                 />
-                Get My Daily Fit Check
+                Get My Daily FIT✔️
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
               </Button>
               <p className="text-center text-xs text-muted-foreground/70">
@@ -384,7 +384,7 @@ export default function Onboarding() {
                 transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
                 className="absolute -inset-8 brand-glow -z-10 rounded-full"
               />
-              <img src="/logo.png" alt="Fit Check" className="w-32 h-32 rounded-[2rem] drop-shadow-2xl object-cover" />
+              <img src="/logo.png" alt="FIT✔️" className="w-32 h-32 rounded-[2rem] drop-shadow-2xl object-cover" />
             </motion.div>
 
             <div className="w-full max-w-sm space-y-3">

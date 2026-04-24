@@ -17,7 +17,7 @@ export interface FitCardData {
 }
 
 export function buildCaption(data: FitCardData, hashtags: string[]): string {
-  return `${data.date} Fit Check — ${data.location}
+  return `${data.date} FIT✔️ — ${data.location}
 
 Today I'm wearing: ${data.mainOutfit}
 ${data.outerwear ? "Layer: " + data.outerwear : ""}

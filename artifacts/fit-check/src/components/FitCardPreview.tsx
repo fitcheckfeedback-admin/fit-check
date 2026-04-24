@@ -27,7 +27,7 @@ export function FitCardPreview({ data }: { data: FitCardData }) {
             <div className="flex items-center justify-between gap-1">
               <div className="flex items-center gap-1.5">
                 <img src="/logo.png" alt="Logo" className="w-7 h-7 rounded-lg shadow-sm bg-white shrink-0" />
-                <span className="text-sm font-bold text-slate-900 leading-tight">Fit Check</span>
+                <span className="text-sm font-bold text-slate-900 leading-tight">FIT✔️</span>
               </div>
               <div className="bg-white/80 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm shrink-0">
                 <span className="text-[8px] font-bold text-slate-500">SCORE</span>
@@ -78,7 +78,7 @@ export function FitCardPreview({ data }: { data: FitCardData }) {
               <img src="/logo.png" alt="Logo" className="w-12 h-12 rounded-xl shadow-md bg-white" />
               <div className="flex flex-col justify-center">
                 <span className="text-[10px] font-bold text-amber-800/70 leading-none">FIT CARD</span>
-                <span className="text-xl font-bold text-slate-900 leading-tight">Fit Check</span>
+                <span className="text-xl font-bold text-slate-900 leading-tight">FIT✔️</span>
               </div>
             </div>
             <div className="bg-white px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">

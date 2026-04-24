@@ -72,7 +72,7 @@ function LocationGate({ onLocation }: { onLocation: (loc: { lat: number; lon: nu
           <div>
             <h2 className="text-2xl font-display font-bold">Location Required</h2>
             <p className="text-muted-foreground mt-2 text-sm max-w-xs">
-              Fit Check needs your location to show real-time weather and what to wear today.
+              FIT✔️ needs your location to show real-time weather and what to wear today.
             </p>
             <p className="text-muted-foreground mt-3 text-sm max-w-xs">
               If you denied access, enable <strong>Location</strong> in your browser's site settings, then tap Try Again.
