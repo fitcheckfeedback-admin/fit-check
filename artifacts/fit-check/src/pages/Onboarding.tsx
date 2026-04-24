@@ -433,12 +433,14 @@ export default function Onboarding() {
               <Button
                 size="lg"
                 className="w-full h-14 text-base rounded-2xl shadow-lg shadow-primary/20"
-                onClick={() => { setShowCitySearch(false); requestLocation(); }}
-                disabled={geoLoading}
+                onClick={() => window.location.reload()}
               >
-                <RefreshCw className={`mr-2 h-5 w-5 ${geoLoading ? "animate-spin" : ""}`} />
-                Try Again
+                <RefreshCw className="mr-2 h-5 w-5" />
+                Reload &amp; Try Again
               </Button>
+              <p className="text-center text-xs text-muted-foreground/60 px-2">
+                After changing your browser or system settings, a reload is needed to pick up the new permission.
+              </p>
 
               {/* Collapsible instructions */}
               <button
