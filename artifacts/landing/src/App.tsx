@@ -3,219 +3,387 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { ChevronRight, CloudRain, ThermometerSun, Wind, Star, Smartphone, Sparkles, ArrowRight } from "lucide-react";
-import { useRef } from "react";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { Sun, CloudRain, Wind, Snowflake, Star, Check, ArrowRight, Thermometer, Sparkles, ShoppingBag } from "lucide-react";
+import { useState, useEffect } from "react";
 
 const queryClient = new QueryClient();
 
-const APP_URL = "https://fit-check.replit.app";
+const APP_URL = "https://fit-check.replit.app"; // Update with live URL
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1, delayChildren: 0.2 },
+const fadeUp = {
+  hidden: { opacity: 0, y: 32 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
+};
+
+const stagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.12 } },
+};
+
+const WEATHERS = [
+  {
+    icon: Sun,
+    label: "Sunny · 78°F",
+    color: "text-amber-400",
+    bg: "bg-amber-400/10",
+    outfit: ["Linen shirt", "Slim chinos", "White sneakers"],
+    vibe: "The Weekend Look",
+    gradient: "from-amber-500/20 via-orange-400/10 to-transparent",
   },
-};
+  {
+    icon: CloudRain,
+    label: "Rainy · 55°F",
+    color: "text-blue-400",
+    bg: "bg-blue-400/10",
+    outfit: ["Trench coat", "Dark jeans", "Chelsea boots"],
+    vibe: "Rainy Day Chic",
+    gradient: "from-blue-500/20 via-indigo-400/10 to-transparent",
+  },
+  {
+    icon: Wind,
+    label: "Windy · 62°F",
+    color: "text-teal-400",
+    bg: "bg-teal-400/10",
+    outfit: ["Zip hoodie", "Cargo pants", "Low-top trainers"],
+    vibe: "Street Ready",
+    gradient: "from-teal-500/20 via-cyan-400/10 to-transparent",
+  },
+  {
+    icon: Snowflake,
+    label: "Cold · 28°F",
+    color: "text-sky-300",
+    bg: "bg-sky-300/10",
+    outfit: ["Puffer coat", "Thermal layer", "Boots + scarf"],
+    vibe: "Winter Edit",
+    gradient: "from-sky-500/20 via-blue-300/10 to-transparent",
+  },
+];
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 100, damping: 15 } },
-};
+function OutfitCard() {
+  const [index, setIndex] = useState(0);
 
-function Home() {
-  const { scrollYProgress } = useScroll();
-  const yHero = useTransform(scrollYProgress, [0, 1], [0, 200]);
-  const opacityHero = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+  useEffect(() => {
+    const t = setInterval(() => setIndex(i => (i + 1) % WEATHERS.length), 3000);
+    return () => clearInterval(t);
+  }, []);
+
+  const w = WEATHERS[index];
+  const Icon = w.icon;
 
   return (
-    <div className="min-h-screen w-full bg-background text-foreground font-sans selection:bg-primary selection:text-black overflow-hidden flex flex-col">
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between backdrop-blur-md bg-background/80 border-b border-border/50">
-        <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="FIT Logo" className="w-8 h-8 rounded-md" />
-          <span className="font-display font-bold text-xl tracking-tight">FIT<span className="text-primary">✔️</span></span>
-        </div>
-        <a href={APP_URL} className="bg-primary text-black font-semibold px-4 py-2 rounded-full text-sm hover:scale-105 transition-transform active:scale-95 shadow-[0_0_20px_rgba(255,149,0,0.3)]">
-          Get Started
-        </a>
-      </nav>
-
-      {/* Hero */}
-      <section className="relative pt-32 pb-20 px-6 md:pt-40 md:pb-32 flex flex-col items-center justify-center min-h-[90vh]">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[120px] opacity-50" />
-        </div>
-        
-        <motion.div 
-          className="relative z-10 w-full max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          style={{ y: yHero, opacity: opacityHero }}
-        >
-          <div className="flex-1 flex flex-col items-start text-left">
-            <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-xs font-medium mb-6">
-              <Sparkles className="w-3 h-3" />
-              <span>Your AI Personal Stylist</span>
-            </motion.div>
-            <motion.h1 variants={itemVariants} className="text-5xl md:text-7xl font-display font-black leading-[1.1] tracking-tight mb-6">
-              Never guess what to wear <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-300">again.</span>
-            </motion.h1>
-            <motion.p variants={itemVariants} className="text-lg md:text-xl text-muted-foreground mb-8 max-w-lg leading-relaxed">
-              FIT✔️ reads your local weather and suggests the perfect outfit from your closet. Look good. Feel confident. Be you.
-            </motion.p>
-            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-              <a href={APP_URL} className="flex items-center justify-center gap-2 bg-primary text-black font-bold text-lg px-8 py-4 rounded-full hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(255,149,0,0.4)]">
-                Try it for free <ArrowRight className="w-5 h-5" />
-              </a>
-            </motion.div>
+    <div className="relative w-full max-w-[320px] mx-auto select-none">
+      <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-br from-[#FF9500]/20 to-transparent blur-2xl scale-110" />
+      <div className="relative rounded-[2rem] bg-zinc-900 border border-white/10 p-6 shadow-2xl overflow-hidden">
+        <div className={`absolute inset-0 bg-gradient-to-br ${w.gradient} transition-all duration-700`} />
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-5">
+            <div className={`flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full border border-white/10 ${w.bg} ${w.color}`}>
+              <Icon className="w-3.5 h-3.5" />
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={w.label}
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 6 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {w.label}
+                </motion.span>
+              </AnimatePresence>
+            </div>
+            <img src="/logo.png" alt="FIT✔️" className="w-8 h-8 rounded-xl" />
           </div>
 
-          <motion.div variants={itemVariants} className="flex-1 relative w-full max-w-md mx-auto perspective-1000">
-            <div className="relative rounded-[2.5rem] border-[6px] border-secondary bg-black overflow-hidden shadow-2xl rotate-y-[-10deg] rotate-x-[5deg] transform-style-3d">
-              <img src="/hero-app.png" alt="App interface" className="w-full h-auto object-cover" />
-            </div>
-            <div className="absolute -bottom-6 -left-6 bg-card border border-border p-4 rounded-2xl shadow-xl flex items-center gap-4 animate-bounce" style={{ animationDuration: '3s' }}>
-              <div className="bg-primary/20 p-2 rounded-full text-primary">
-                <ThermometerSun className="w-6 h-6" />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <p className="text-[10px] uppercase tracking-[0.15em] text-white/40 font-bold mb-1">Today's Fit</p>
+              <p className="text-xl font-black text-white mb-4">{w.vibe}</p>
+              <div className="space-y-2">
+                {w.outfit.map((item, i) => (
+                  <motion.div
+                    key={item}
+                    initial={{ opacity: 0, x: 12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.08 }}
+                    className="flex items-center gap-2.5"
+                  >
+                    <div className="w-5 h-5 rounded-full bg-[#FF9500]/20 flex items-center justify-center shrink-0">
+                      <Check className="w-3 h-3 text-[#FF9500]" />
+                    </div>
+                    <span className="text-sm text-white/80 font-medium">{item}</span>
+                  </motion.div>
+                ))}
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Currently</p>
-                <p className="text-lg font-bold font-display">72° & Sunny</p>
-              </div>
-            </div>
+            </motion.div>
+          </AnimatePresence>
+
+          <div className="mt-5 pt-4 border-t border-white/8 flex gap-1.5">
+            {WEATHERS.map((_, i) => (
+              <div
+                key={i}
+                className={`h-1 rounded-full transition-all duration-500 ${i === index ? "bg-[#FF9500] flex-1" : "bg-white/20 w-4"}`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Home() {
+  const { scrollY } = useScroll();
+  const navBg = useTransform(scrollY, [0, 80], ["rgba(0,0,0,0)", "rgba(10,10,10,0.95)"]);
+
+  return (
+    <div className="min-h-screen w-full bg-[#0A0A0A] text-white overflow-x-hidden" style={{ fontFamily: "'Outfit', sans-serif" }}>
+
+      {/* NAV */}
+      <motion.nav
+        style={{ backgroundColor: navBg }}
+        className="fixed top-0 left-0 right-0 z-50 px-5 py-4 flex items-center justify-between backdrop-blur-sm border-b border-white/5"
+      >
+        <div className="flex items-center gap-2.5">
+          <img src="/logo.png" alt="FIT✔️" className="w-9 h-9 rounded-xl shadow" />
+          <span className="font-black text-lg tracking-tight">FIT<span className="text-[#FF9500]">✔</span></span>
+        </div>
+        <a
+          href={APP_URL}
+          className="bg-[#FF9500] text-black font-bold text-sm px-5 py-2.5 rounded-full hover:bg-orange-400 active:scale-95 transition-all shadow-lg shadow-[#FF9500]/25"
+        >
+          Try Free →
+        </a>
+      </motion.nav>
+
+      {/* HERO */}
+      <section className="min-h-screen flex flex-col items-center justify-center pt-24 pb-16 px-5 relative">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#FF9500]/12 rounded-full blur-[100px] pointer-events-none" />
+
+        <motion.div
+          className="w-full max-w-lg mx-auto flex flex-col items-center text-center"
+          variants={stagger}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FF9500]/10 border border-[#FF9500]/25 text-[#FF9500] text-xs font-bold uppercase tracking-widest mb-8">
+            <Sparkles className="w-3 h-3" />
+            Weather-smart outfit planner
           </motion.div>
+
+          <motion.h1
+            variants={fadeUp}
+            className="text-5xl font-black leading-[1.05] tracking-tight mb-6"
+          >
+            Stop staring at<br />
+            your closet every<br />
+            <span className="text-[#FF9500]">morning.</span>
+          </motion.h1>
+
+          <motion.p
+            variants={fadeUp}
+            className="text-lg text-white/55 leading-relaxed mb-10 max-w-sm"
+          >
+            FIT✔️ checks your local weather and tells you exactly what to wear — outfit planned before you're out of bed.
+          </motion.p>
+
+          <motion.div variants={fadeUp} className="mb-14 w-full">
+            <OutfitCard />
+          </motion.div>
+
+          <motion.a
+            variants={fadeUp}
+            href={APP_URL}
+            className="w-full max-w-xs flex items-center justify-center gap-2 bg-[#FF9500] text-black font-black text-lg px-8 py-5 rounded-2xl shadow-xl shadow-[#FF9500]/30 hover:bg-orange-400 active:scale-95 transition-all"
+          >
+            Get My Daily Fit <ArrowRight className="w-5 h-5" />
+          </motion.a>
+          <p className="text-xs text-white/30 mt-3 font-medium">Free forever · No account needed</p>
         </motion.div>
       </section>
 
-      {/* Problem Section */}
-      <section className="py-24 px-6 bg-secondary/30 relative">
-        <motion.div 
-          className="max-w-4xl mx-auto text-center"
+      {/* PROBLEM */}
+      <section className="py-20 px-5 bg-zinc-950">
+        <motion.div
+          className="max-w-lg mx-auto text-center"
+          variants={stagger}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={containerVariants}
+          viewport={{ once: true, margin: "-80px" }}
         >
-          <motion.h2 variants={itemVariants} className="text-3xl md:text-5xl font-display font-bold mb-6">
-            The morning struggle is real.
+          <motion.p variants={fadeUp} className="text-[#FF9500] text-xs font-black uppercase tracking-widest mb-4">Sound familiar?</motion.p>
+          <motion.h2 variants={fadeUp} className="text-3xl font-black leading-tight mb-6">
+            You own 40 outfits.<br />You wear the same 5.
           </motion.h2>
-          <motion.p variants={itemVariants} className="text-xl text-muted-foreground">
-            Staring at a closet full of clothes and having "nothing to wear." Checking three weather apps just to figure out if you need a jacket. We've all been there.
+          <motion.p variants={fadeUp} className="text-white/50 text-base leading-relaxed">
+            Every morning starts with the same 10-minute struggle — checking weather, staring at clothes, second-guessing everything, then leaving in a rush wearing whatever's on top.
+          </motion.p>
+          <motion.p variants={fadeUp} className="text-white/80 font-bold text-lg mt-6">
+            FIT✔️ solves that in 3 seconds.
           </motion.p>
         </motion.div>
       </section>
 
-      {/* How it works */}
-      <section className="py-32 px-6">
-        <div className="max-w-6xl mx-auto">
-          <motion.div 
-            className="text-center mb-20"
+      {/* HOW IT WORKS */}
+      <section className="py-20 px-5">
+        <div className="max-w-lg mx-auto">
+          <motion.div
+            className="text-center mb-12"
+            variants={stagger}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            variants={containerVariants}
           >
-            <motion.h2 variants={itemVariants} className="text-4xl md:text-5xl font-display font-bold mb-4">How FIT✔️ Works</motion.h2>
-            <motion.p variants={itemVariants} className="text-muted-foreground text-lg max-w-2xl mx-auto">Three simple steps to a perfect morning routine.</motion.p>
+            <motion.p variants={fadeUp} className="text-[#FF9500] text-xs font-black uppercase tracking-widest mb-3">How it works</motion.p>
+            <motion.h2 variants={fadeUp} className="text-3xl font-black">Simple as opening an app.</motion.h2>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="space-y-4">
             {[
-              { title: "Local Weather", desc: "We pull hyper-local, real-time weather data for your exact location.", icon: CloudRain },
-              { title: "AI Analysis", desc: "Our AI stylist cross-references the weather with fashion trends and your preferences.", icon: Sparkles },
-              { title: "Your Outfit", desc: "Get a complete, head-to-toe outfit recommendation instantly.", icon: Smartphone }
+              {
+                num: "01",
+                icon: Thermometer,
+                title: "Live weather, automatically",
+                desc: "Opens to your exact local conditions — temperature, rain, wind, all of it. No searching or typing.",
+              },
+              {
+                num: "02",
+                icon: Sparkles,
+                title: "AI picks your outfit",
+                desc: "Our stylist cross-references the weather with your taste and closet. One tap, full look.",
+              },
+              {
+                num: "03",
+                icon: ShoppingBag,
+                title: "Walk out the door confident",
+                desc: "Save your fits, plan ahead for the week, or share your look. Looking good has never been this easy.",
+              },
             ].map((step, i) => (
-              <motion.div 
+              <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.2, type: "spring" }}
-                className="bg-card border border-border p-8 rounded-3xl relative overflow-hidden group"
+                transition={{ delay: i * 0.15, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                className="flex gap-5 items-start p-6 rounded-2xl bg-zinc-900 border border-white/6"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6">
-                  <step.icon className="w-7 h-7" />
+                <div className="shrink-0 w-12 h-12 rounded-xl bg-[#FF9500]/10 border border-[#FF9500]/20 flex items-center justify-center">
+                  <step.icon className="w-5 h-5 text-[#FF9500]" />
                 </div>
-                <h3 className="text-2xl font-display font-bold mb-3">{step.title}</h3>
-                <p className="text-muted-foreground">{step.desc}</p>
+                <div>
+                  <p className="text-[10px] font-black text-white/25 uppercase tracking-widest mb-1">{step.num}</p>
+                  <h3 className="font-black text-base mb-1.5">{step.title}</h3>
+                  <p className="text-sm text-white/45 leading-relaxed">{step.desc}</p>
+                </div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Feature Image Section */}
-      <section className="py-20 px-6">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
-          <motion.div 
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
+      {/* FEATURES GRID */}
+      <section className="py-20 px-5 bg-zinc-950">
+        <div className="max-w-lg mx-auto">
+          <motion.div
+            className="text-center mb-12"
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
             viewport={{ once: true }}
-            className="rounded-[2.5rem] overflow-hidden border border-border relative aspect-[3/4]"
           >
-            <img src="/closet.png" alt="Organized closet" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-8">
-              <h3 className="text-3xl font-display font-bold text-white">Digitize your wardrobe.</h3>
-            </div>
+            <motion.p variants={fadeUp} className="text-[#FF9500] text-xs font-black uppercase tracking-widest mb-3">Features</motion.p>
+            <motion.h2 variants={fadeUp} className="text-3xl font-black">Everything you need.</motion.h2>
           </motion.div>
-          <motion.div 
-            initial={{ opacity: 0, x: 50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            className="flex flex-col gap-6"
-          >
-            <h2 className="text-4xl md:text-5xl font-display font-bold">Your closet,<br/>in your pocket.</h2>
-            <p className="text-xl text-muted-foreground">FIT✔️ remembers what you own. It mixes and matches pieces you haven't worn in months, giving new life to your existing wardrobe.</p>
-            <ul className="space-y-4 mt-4">
-              {["Save 15 minutes every morning", "Discover new clothing combinations", "Never be underdressed for the weather"].map((item, i) => (
-                <li key={i} className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary shrink-0">
-                    <ChevronRight className="w-4 h-4" />
-                  </div>
-                  <span className="text-lg">{item}</span>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { icon: "🌤️", title: "Real-time weather", desc: "Live conditions for your exact location" },
+              { icon: "✨", title: "AI outfit picks", desc: "Styled suggestions tailored to your taste" },
+              { icon: "👗", title: "Your closet", desc: "Add your clothes, get personalized looks" },
+              { icon: "📅", title: "Week forecast", desc: "Plan outfits for the whole week ahead" },
+              { icon: "🔔", title: "Morning alerts", desc: "Get your outfit before you leave bed" },
+              { icon: "📸", title: "GRWM camera", desc: "Film & share your daily look" },
+            ].map((f, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.92 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.07 }}
+                className="p-5 rounded-2xl bg-zinc-900 border border-white/6"
+              >
+                <span className="text-2xl mb-3 block">{f.icon}</span>
+                <h3 className="font-black text-sm mb-1">{f.title}</h3>
+                <p className="text-xs text-white/40 leading-relaxed">{f.desc}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-32 px-6 bg-secondary/50">
-        <div className="max-w-6xl mx-auto">
-          <motion.h2 
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
+      {/* TESTIMONIALS */}
+      <section className="py-20 px-5">
+        <div className="max-w-lg mx-auto">
+          <motion.div
+            className="text-center mb-12"
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
             viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-display font-bold text-center mb-16"
           >
-            Loved by busy people.
-          </motion.h2>
-          <div className="grid md:grid-cols-3 gap-6">
+            <motion.p variants={fadeUp} className="text-[#FF9500] text-xs font-black uppercase tracking-widest mb-3">Early users</motion.p>
+            <motion.h2 variants={fadeUp} className="text-3xl font-black">People are loving it.</motion.h2>
+          </motion.div>
+
+          <div className="space-y-4">
             {[
-              { name: "Sarah J.", role: "Marketing Director", text: "This app literally changed my mornings. I no longer stare blankly at my clothes." },
-              { name: "Mike T.", role: "Software Engineer", text: "Finally an app that tells me if I need a jacket. The AI suggestions are actually stylish." },
-              { name: "Elena R.", role: "Student", text: "I've started wearing clothes I forgot I owned! The daily weather integration is brilliant." }
-            ].map((review, i) => (
-              <motion.div 
+              {
+                text: "I used to spend 15 minutes every morning deciding what to wear. Now I just open FIT✔️ and I'm done in seconds. Actually wearing stuff I forgot I owned.",
+                name: "Sarah K.",
+                handle: "Marketing Director",
+                stars: 5,
+              },
+              {
+                text: "The weather integration is insane. It knew it was going to be windy before I did and suggested a jacket. Hasn't been wrong once.",
+                name: "Marcus T.",
+                handle: "Works in finance",
+                stars: 5,
+              },
+              {
+                text: "Finally an app that doesn't just tell me the weather — it tells me what to DO about it. Changed my mornings completely.",
+                name: "Priya R.",
+                handle: "Grad student",
+                stars: 5,
+              },
+            ].map((r, i) => (
+              <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="bg-background border border-border p-6 rounded-3xl"
+                className="p-6 rounded-2xl bg-zinc-900 border border-white/6"
               >
-                <div className="flex gap-1 mb-4 text-primary">
-                  {[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 fill-current" />)}
+                <div className="flex gap-0.5 mb-4">
+                  {[...Array(r.stars)].map((_, j) => (
+                    <Star key={j} className="w-4 h-4 fill-[#FF9500] text-[#FF9500]" />
+                  ))}
                 </div>
-                <p className="text-lg mb-6 italic">"{review.text}"</p>
-                <div>
-                  <p className="font-bold font-display">{review.name}</p>
-                  <p className="text-sm text-muted-foreground">{review.role}</p>
+                <p className="text-white/80 text-sm leading-relaxed mb-5 italic">"{r.text}"</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-[#FF9500]/15 border border-[#FF9500]/25 flex items-center justify-center text-[#FF9500] font-black text-sm">
+                    {r.name[0]}
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm">{r.name}</p>
+                    <p className="text-xs text-white/35">{r.handle}</p>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -223,36 +391,62 @@ function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-32 px-6 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <img src="/confident-walk.png" alt="Background" className="w-full h-full object-cover opacity-20 grayscale" />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background" />
-        </div>
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          className="relative z-10 max-w-3xl mx-auto text-center flex flex-col items-center"
+      {/* FINAL CTA */}
+      <section className="py-24 px-5 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#FF9500]/8 via-[#FF9500]/5 to-transparent pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#FF9500]/12 rounded-full blur-[80px] pointer-events-none" />
+
+        <motion.div
+          className="relative z-10 max-w-lg mx-auto text-center"
+          variants={stagger}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
         >
-          <h2 className="text-5xl md:text-7xl font-display font-black mb-6">Stop guessing. Start dressing.</h2>
-          <p className="text-xl text-muted-foreground mb-10 max-w-xl">
-            Join thousands of others who start their day with FIT✔️. Free to use, ready when you wake up.
-          </p>
-          <a href={APP_URL} className="bg-primary text-black font-bold text-xl px-10 py-5 rounded-full hover:scale-105 transition-transform active:scale-95 shadow-[0_0_40px_rgba(255,149,0,0.5)]">
-            Get Your First Outfit
-          </a>
+          <motion.img
+            variants={fadeUp}
+            src="/logo.png"
+            alt="FIT✔️"
+            className="w-20 h-20 rounded-[1.5rem] mx-auto mb-8 shadow-xl shadow-[#FF9500]/20"
+          />
+          <motion.h2 variants={fadeUp} className="text-4xl font-black leading-tight mb-5">
+            Your best-dressed<br />morning starts now.
+          </motion.h2>
+          <motion.p variants={fadeUp} className="text-white/45 text-base leading-relaxed mb-10 max-w-xs mx-auto">
+            Free to use. No account needed. Just open it, check the weather, and get dressed with confidence.
+          </motion.p>
+
+          <motion.div variants={fadeUp} className="flex flex-col items-center gap-4">
+            <a
+              href={APP_URL}
+              className="w-full max-w-xs flex items-center justify-center gap-2 bg-[#FF9500] text-black font-black text-lg px-8 py-5 rounded-2xl shadow-xl shadow-[#FF9500]/30 hover:bg-orange-400 active:scale-95 transition-all"
+            >
+              Get My Daily FIT✔️ <ArrowRight className="w-5 h-5" />
+            </a>
+
+            <div className="flex items-center gap-6 pt-2">
+              {[["Free", "Always"], ["Instant", "No signup"], ["Daily", "Outfits"]].map(([top, bot]) => (
+                <div key={top} className="text-center">
+                  <p className="text-[#FF9500] font-black text-sm">{top}</p>
+                  <p className="text-white/35 text-xs">{bot}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
         </motion.div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border/50 py-10 px-6 text-center text-muted-foreground">
-        <div className="flex items-center justify-center gap-2 mb-4 grayscale opacity-50">
-          <img src="/logo.png" alt="FIT Logo" className="w-6 h-6 rounded" />
-          <span className="font-display font-bold text-lg">FIT✔️</span>
+      {/* FOOTER */}
+      <footer className="border-t border-white/6 py-10 px-5">
+        <div className="max-w-lg mx-auto flex flex-col items-center gap-4">
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="FIT✔️" className="w-7 h-7 rounded-lg opacity-60" />
+            <span className="font-black text-white/40">FIT✔️</span>
+          </div>
+          <p className="text-xs text-white/25 text-center">
+            © {new Date().getFullYear()} FIT✔️ · Look good. Feel confident. Be you.
+          </p>
         </div>
-        <p className="text-sm">© {new Date().getFullYear()} FIT✔️ App. All rights reserved.</p>
-        <p className="text-xs mt-2 uppercase tracking-widest font-semibold">Look good. Feel confident. Be you.</p>
       </footer>
     </div>
   );
