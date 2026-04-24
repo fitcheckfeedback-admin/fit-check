@@ -230,6 +230,39 @@ router.get("/analytics/summary", async (req, res) => {
     pct: totalFeatureCount > 0 ? Math.round((Number(r.count) / totalFeatureCount) * 100) : 0,
   }));
 
+  // Landing page stats — no device exclusion (landing visitors ≠ app device IDs)
+  async function landingCount(eventType: string, since?: Date): Promise<number> {
+    const condition = since
+      ? and(
+          eq(analyticsEventsTable.eventType, eventType),
+          gte(analyticsEventsTable.createdAt, since),
+          sql`${analyticsEventsTable.metadata}->>'source' = 'landing'`,
+        )
+      : and(
+          eq(analyticsEventsTable.eventType, eventType),
+          sql`${analyticsEventsTable.metadata}->>'source' = 'landing'`,
+        );
+    const [row] = await db.select({ n: count() }).from(analyticsEventsTable).where(condition);
+    return Number(row?.n ?? 0);
+  }
+
+  const [
+    landingViewsAll, landingViewsToday, landingViews7d,
+    landingClicksAll, landingClicksToday, landingClicks7d,
+  ] = await Promise.all([
+    landingCount("landing_page_view"),
+    landingCount("landing_page_view", todayStart),
+    landingCount("landing_page_view", last7d),
+    landingCount("landing_cta_click"),
+    landingCount("landing_cta_click", todayStart),
+    landingCount("landing_cta_click", last7d),
+  ]);
+
+  const landingStats = {
+    views:  { allTime: landingViewsAll,  today: landingViewsToday,  last7d: landingViews7d },
+    clicks: { allTime: landingClicksAll, today: landingClicksToday, last7d: landingClicks7d },
+  };
+
   res.json({
     allTime,
     today,
@@ -244,6 +277,7 @@ router.get("/analytics/summary", async (req, res) => {
     excludedCount: excludedIds.length,
     avgSessionSecondsAllTime: avgSessionAll?.avgSeconds ? Number(avgSessionAll.avgSeconds) : null,
     avgSessionSecondsToday: avgSessionToday?.avgSeconds ? Number(avgSessionToday.avgSeconds) : null,
+    landingStats,
   });
 });
 

@@ -5,11 +5,38 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Sun, CloudRain, Wind, Snowflake, Star, Check, ArrowRight, Thermometer, Sparkles, ShoppingBag } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 const queryClient = new QueryClient();
 
 const APP_URL = "https://fit-check.replit.app"; // Update with live URL
+
+function getLandingVisitorId(): string {
+  const key = "fitcheck.landing.visitorId";
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = "lv_" + crypto.randomUUID();
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
+function useLandingTracker() {
+  const track = useCallback((eventType: string) => {
+    const deviceId = getLandingVisitorId();
+    fetch("/api/analytics/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deviceId, eventType, metadata: { source: "landing" } }),
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    track("landing_page_view");
+  }, [track]);
+
+  return track;
+}
 
 const fadeUp = {
   hidden: { opacity: 0, y: 32 },
@@ -141,6 +168,7 @@ function OutfitCard() {
 function Home() {
   const { scrollY } = useScroll();
   const navBg = useTransform(scrollY, [0, 80], ["rgba(0,0,0,0)", "rgba(10,10,10,0.95)"]);
+  const track = useLandingTracker();
 
   return (
     <div className="min-h-screen w-full bg-[#0A0A0A] text-white overflow-x-hidden" style={{ fontFamily: "'Outfit', sans-serif" }}>
@@ -156,6 +184,7 @@ function Home() {
         </div>
         <a
           href={APP_URL}
+          onClick={() => track("landing_cta_click")}
           className="bg-[#FF9500] text-black font-bold text-sm px-5 py-2.5 rounded-full hover:bg-orange-400 active:scale-95 transition-all shadow-lg shadow-[#FF9500]/25"
         >
           Try Free →
@@ -200,6 +229,7 @@ function Home() {
           <motion.a
             variants={fadeUp}
             href={APP_URL}
+            onClick={() => track("landing_cta_click")}
             className="w-full max-w-xs flex items-center justify-center gap-2 bg-[#FF9500] text-black font-black text-lg px-8 py-5 rounded-2xl shadow-xl shadow-[#FF9500]/30 hover:bg-orange-400 active:scale-95 transition-all"
           >
             Get My Daily Fit <ArrowRight className="w-5 h-5" />
@@ -419,6 +449,7 @@ function Home() {
           <motion.div variants={fadeUp} className="flex flex-col items-center gap-4">
             <a
               href={APP_URL}
+              onClick={() => track("landing_cta_click")}
               className="w-full max-w-xs flex items-center justify-center gap-2 bg-[#FF9500] text-black font-black text-lg px-8 py-5 rounded-2xl shadow-xl shadow-[#FF9500]/30 hover:bg-orange-400 active:scale-95 transition-all"
             >
               Get My Daily FIT✔️ <ArrowRight className="w-5 h-5" />

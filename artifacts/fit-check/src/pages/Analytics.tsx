@@ -4,7 +4,7 @@ import {
   LineChart, Line, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
-import { Users, TrendingUp, Calendar, Clock, MapPin, Zap, LogOut, Lock, Bell, Send, EyeOff, Eye, ShieldCheck, Timer } from "lucide-react";
+import { Users, TrendingUp, Calendar, Clock, MapPin, Zap, LogOut, Lock, Bell, Send, EyeOff, Eye, ShieldCheck, Timer, MousePointerClick, Globe, Percent } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -23,6 +23,10 @@ interface Summary {
   recent: { id: string; deviceId: string; eventType: string; metadata: Record<string, unknown> | null; createdAt: string }[];
   avgSessionSecondsAllTime: number | null;
   avgSessionSecondsToday: number | null;
+  landingStats?: {
+    views:  { allTime: number; today: number; last7d: number };
+    clicks: { allTime: number; today: number; last7d: number };
+  };
 }
 
 function formatDuration(seconds: number | null): string {
@@ -494,6 +498,104 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
             accent="bg-slate-500"
           />
         </div>
+
+        {/* Ad Traffic — landing page funnel */}
+        {data.landingStats && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card border border-border rounded-2xl p-5 space-y-5">
+            <div className="flex items-center gap-2">
+              <Globe className="w-4 h-4 text-violet-400" />
+              <h2 className="text-sm font-bold">Ad Traffic</h2>
+              <span className="ml-auto text-[10px] font-black uppercase tracking-widest text-violet-400/70 bg-violet-400/10 px-2.5 py-1 rounded-full">Landing Page</span>
+            </div>
+
+            {/* Funnel cards */}
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                {
+                  label: "Page Views",
+                  icon: Globe,
+                  color: "text-violet-400",
+                  bg: "bg-violet-400/10",
+                  today: data.landingStats.views.today,
+                  last7d: data.landingStats.views.last7d,
+                  allTime: data.landingStats.views.allTime,
+                },
+                {
+                  label: "CTA Clicks",
+                  icon: MousePointerClick,
+                  color: "text-amber-400",
+                  bg: "bg-amber-400/10",
+                  today: data.landingStats.clicks.today,
+                  last7d: data.landingStats.clicks.last7d,
+                  allTime: data.landingStats.clicks.allTime,
+                },
+                {
+                  label: "Click Rate",
+                  icon: Percent,
+                  color: "text-green-400",
+                  bg: "bg-green-400/10",
+                  today: data.landingStats.views.today > 0
+                    ? `${Math.round((data.landingStats.clicks.today / data.landingStats.views.today) * 100)}%`
+                    : "—",
+                  last7d: data.landingStats.views.last7d > 0
+                    ? `${Math.round((data.landingStats.clicks.last7d / data.landingStats.views.last7d) * 100)}%`
+                    : "—",
+                  allTime: data.landingStats.views.allTime > 0
+                    ? `${Math.round((data.landingStats.clicks.allTime / data.landingStats.views.allTime) * 100)}%`
+                    : "—",
+                },
+              ].map(stat => (
+                <div key={stat.label} className={`rounded-xl p-3 ${stat.bg} border border-white/5`}>
+                  <div className={`mb-2 ${stat.color}`}><stat.icon className="w-3.5 h-3.5" /></div>
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-wider mb-1">{stat.label}</p>
+                  <p className="text-2xl font-black">{typeof stat.allTime === "number" ? stat.allTime.toLocaleString() : stat.allTime}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">all time</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Period breakdown */}
+            <div className="rounded-xl border border-border overflow-hidden">
+              <div className="grid grid-cols-4 text-[10px] font-black uppercase tracking-wider text-muted-foreground bg-muted/50 px-4 py-2">
+                <span>Period</span>
+                <span className="text-center">Views</span>
+                <span className="text-center">Clicks</span>
+                <span className="text-center">Rate</span>
+              </div>
+              {[
+                {
+                  label: "Last 24h",
+                  views: data.landingStats.views.today,
+                  clicks: data.landingStats.clicks.today,
+                },
+                {
+                  label: "Last 7 days",
+                  views: data.landingStats.views.last7d,
+                  clicks: data.landingStats.clicks.last7d,
+                },
+                {
+                  label: "All time",
+                  views: data.landingStats.views.allTime,
+                  clicks: data.landingStats.clicks.allTime,
+                },
+              ].map((row, i) => {
+                const rate = row.views > 0 ? `${Math.round((row.clicks / row.views) * 100)}%` : "—";
+                return (
+                  <div key={row.label} className={`grid grid-cols-4 px-4 py-3 text-sm ${i < 2 ? "border-b border-border/50" : ""}`}>
+                    <span className="text-xs font-semibold text-muted-foreground">{row.label}</span>
+                    <span className="text-center font-bold text-violet-400">{row.views.toLocaleString()}</span>
+                    <span className="text-center font-bold text-amber-400">{row.clicks.toLocaleString()}</span>
+                    <span className="text-center font-bold text-green-400">{rate}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Tracks unique landing page visits and clicks on the "Get My Daily Fit" buttons. Click rate = how many visitors tap through to the app.
+            </p>
+          </motion.div>
+        )}
 
         {/* Daily opens — line chart */}
         {dailyData.length > 0 && (
