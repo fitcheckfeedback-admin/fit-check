@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback } from "react";
 
 const queryClient = new QueryClient();
 
-const APP_URL = "https://fit-check.replit.app"; // Update with live URL
+const APP_URL = "/";
 
 function getLandingVisitorId(): string {
   const key = "fitcheck.landing.visitorId";

@@ -81,7 +81,7 @@ WARDROBE TYPE: ${wardrobeType}
 Give a brief, specific outfit suggestion in 2-3 sentences, appropriate for the wardrobe type.`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5.1",
+      model: "gpt-4o",
       max_completion_tokens: 512,
       messages: [{ role: "user", content: prompt }],
     });
