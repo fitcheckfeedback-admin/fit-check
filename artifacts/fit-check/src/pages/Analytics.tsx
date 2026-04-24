@@ -416,7 +416,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
             className="relative overflow-hidden bg-gradient-to-br from-green-500/10 via-green-400/5 to-transparent border border-green-500/20 rounded-3xl p-5"
           >
             <div className="flex items-start justify-between mb-2">
-              <span className="text-[10px] font-black uppercase tracking-widest text-green-600/80">Today</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-green-600/80">Last 24h</span>
               <div className="p-1.5 bg-green-500/15 rounded-xl">
                 <Zap className="w-4 h-4 text-green-500" />
               </div>
@@ -430,7 +430,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
             >
               {Number(data.today.uniqueDevices).toLocaleString()}
             </motion.div>
-            <p className="text-xs text-muted-foreground mt-1.5">unique users today</p>
+            <p className="text-xs text-muted-foreground mt-1.5">unique users last 24h</p>
             <p className="text-xs text-green-600/70 font-semibold mt-0.5">{Number(data.today.totalEvents).toLocaleString()} events</p>
             <div className="absolute bottom-0 right-0 w-24 h-24 bg-green-500/5 rounded-full blur-2xl pointer-events-none" />
           </motion.div>
@@ -480,7 +480,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
             accent="bg-purple-500"
           />
           <StatCard
-            label="Avg session today"
+            label="Avg session (24h)"
             value={formatDuration(data.avgSessionSecondsToday)}
             sub="per user visit"
             icon={Timer}

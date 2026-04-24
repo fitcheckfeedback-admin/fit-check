@@ -94,8 +94,8 @@ router.get("/analytics/summary", async (req, res) => {
   const last24h  = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const last7d   = new Date(now.getTime() - 7  * 24 * 60 * 60 * 1000);
   const last30d  = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const todayStart = new Date(now);
-  todayStart.setHours(0, 0, 0, 0);
+  // Use rolling 24h window instead of UTC midnight so it's timezone-agnostic
+  const todayStart = last24h;
 
   const [allTime] = await db
     .select({ totalEvents: count(), uniqueDevices: countDistinct(analyticsEventsTable.deviceId) })
