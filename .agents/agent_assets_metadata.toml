@@ -1,0 +1,20 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "JUL-2QqrcPL_5GHpuUeZL"
+uri = "file://artifacts/landing/public/hero-app.png"
+type = "image"
+title = "Sleek mobile app mockup"
+
+[[generated]]
+id = "Qg2S0afJAkgsIZKmH3dQ0"
+uri = "file://artifacts/landing/public/closet.png"
+type = "image"
+title = "Modern minimalist closet"
+
+[[generated]]
+id = "xrjo6QpIb8u5nQ-2VHcky"
+uri = "file://artifacts/landing/public/confident-walk.png"
+type = "image"
+title = "Confident stylish person"
