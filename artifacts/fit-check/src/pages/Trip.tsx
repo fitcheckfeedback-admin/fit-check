@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plane, MapPin, Calendar, ChevronLeft, Package, Sparkles, Droplets, Wind } from "lucide-react";
+import { ProGate } from "@/components/ProGate";
 import { CitySearch } from "@/components/CitySearch";
 import { WeatherScene } from "@/components/WeatherScene";
 import { Button } from "@/components/ui/button";
@@ -111,6 +112,10 @@ export default function Trip() {
   const nightsBefore = forecast ? Math.max(0, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000)) : 0;
 
   return (
+    <ProGate
+      feature="Trip Planner"
+      description="Plan any trip with day-by-day outfit suggestions and a smart packing list built from your closet and the destination's forecast."
+    >
     <div className="flex-1 flex flex-col pb-6">
       {/* Header */}
       <div className="relative px-5 pt-14 pb-6 overflow-hidden rounded-b-[2.5rem]"
@@ -356,5 +361,6 @@ export default function Trip() {
         )}
       </div>
     </div>
+    </ProGate>
   );
 }

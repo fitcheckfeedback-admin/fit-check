@@ -20,6 +20,7 @@ import Reminders from "@/pages/Reminders";
 import Analytics from "@/pages/Analytics";
 import Cam from "@/pages/Cam";
 import Trip from "@/pages/Trip";
+import Discover from "@/pages/Discover";
 import NotFound from "@/pages/not-found";
 import VideoTemplate from "@/components/video/VideoTemplate";
 
@@ -59,6 +60,7 @@ function Router() {
       <Route path="/reminders" component={() => <ProtectedRoute component={Reminders} />} />
       <Route path="/cam" component={() => <ProtectedRoute component={Cam} hideNav />} />
       <Route path="/trip" component={() => <ProtectedRoute component={Trip} />} />
+      <Route path="/discover" component={() => <ProtectedRoute component={Discover} />} />
       <Route path="/analytics" component={Analytics} />
       <Route component={() => (
         <AppShell hideNav>

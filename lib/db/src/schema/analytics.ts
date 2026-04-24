@@ -17,3 +17,11 @@ export const excludedDevicesTable = pgTable("excluded_devices", {
 });
 
 export type ExcludedDevice = typeof excludedDevicesTable.$inferSelect;
+
+export const premiumAccessTable = pgTable("premium_access", {
+  deviceId: text("device_id").primaryKey(),
+  note: text("note"),
+  grantedAt: timestamp("granted_at").defaultNow().notNull(),
+});
+
+export type PremiumAccess = typeof premiumAccessTable.$inferSelect;

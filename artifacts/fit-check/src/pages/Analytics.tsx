@@ -4,7 +4,7 @@ import {
   LineChart, Line, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
-import { Users, TrendingUp, Calendar, Clock, MapPin, Zap, LogOut, Lock, Bell, Send, EyeOff, Eye, ShieldCheck, Timer, MousePointerClick, Globe, Percent } from "lucide-react";
+import { Users, TrendingUp, Calendar, Clock, MapPin, Zap, LogOut, Lock, Bell, Send, EyeOff, Eye, ShieldCheck, Timer, MousePointerClick, Globe, Percent, Crown, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -162,6 +162,10 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const [excludedDevices, setExcludedDevices] = useState<{ deviceId: string; note: string | null }[]>([]);
   const [devWorking, setDevWorking] = useState(false);
 
+  const [premiumDevices, setPremiumDevices] = useState<{ deviceId: string; note: string | null; grantedAt: string }[]>([]);
+  const [proWorking, setProWorking] = useState(false);
+  const [proGrantInput, setProGrantInput] = useState("");
+
   const fetchExcluded = useCallback(async () => {
     try {
       const res = await fetch("/api/analytics/excluded-devices", {
@@ -170,6 +174,39 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
       if (res.ok) setExcludedDevices(await res.json());
     } catch {}
   }, [token]);
+
+  const fetchPremiumDevices = useCallback(async () => {
+    try {
+      const res = await fetch("/api/premium/list", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setPremiumDevices(await res.json());
+    } catch {}
+  }, [token]);
+
+  const grantPremium = async (deviceId: string) => {
+    setProWorking(true);
+    try {
+      await fetch("/api/premium/grant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ deviceId: deviceId.trim(), note: "Manually granted via dashboard" }),
+      });
+      setProGrantInput("");
+      await fetchPremiumDevices();
+    } finally { setProWorking(false); }
+  };
+
+  const revokePremium = async (deviceId: string) => {
+    setProWorking(true);
+    try {
+      await fetch(`/api/premium/revoke/${encodeURIComponent(deviceId)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await fetchPremiumDevices();
+    } finally { setProWorking(false); }
+  };
 
   const excludeDevice = async (deviceId: string, note: string) => {
     setDevWorking(true);
@@ -240,9 +277,10 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     fetchData();
     fetchSubCount();
     fetchExcluded();
+    fetchPremiumDevices();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
-  }, [fetchData, fetchSubCount, fetchExcluded]);
+  }, [fetchData, fetchSubCount, fetchExcluded, fetchPremiumDevices]);
 
   if (loading) {
     return (
@@ -715,6 +753,92 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
               })}
             </div>
           )}
+        </motion.div>
+
+        {/* Premium Access Management */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card border border-border rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Crown className="w-4 h-4 text-amber-500" />
+            <h2 className="text-sm font-bold">Premium Access</h2>
+            <span className="ml-auto text-xs font-semibold text-amber-600 bg-amber-500/10 px-2.5 py-1 rounded-full">
+              {premiumDevices.length} granted
+            </span>
+          </div>
+
+          {/* Grant by device ID */}
+          <div className="flex gap-2 mb-4">
+            <Input
+              value={proGrantInput}
+              onChange={e => setProGrantInput(e.target.value)}
+              placeholder="Device ID to grant early access"
+              className="h-9 text-sm font-mono"
+              onKeyDown={e => { if (e.key === "Enter" && proGrantInput.trim()) grantPremium(proGrantInput); }}
+            />
+            <Button
+              size="sm"
+              disabled={proWorking || !proGrantInput.trim()}
+              onClick={() => grantPremium(proGrantInput)}
+              className="h-9 shrink-0 gap-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold"
+            >
+              <Plus className="w-3.5 h-3.5" /> Grant
+            </Button>
+          </div>
+
+          {/* Grant my own device quickly */}
+          <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 mb-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-foreground">This Device (You)</p>
+                <p className="text-[11px] text-muted-foreground font-mono truncate">{myDeviceId}</p>
+              </div>
+            </div>
+            {premiumDevices.some(d => d.deviceId === myDeviceId) ? (
+              <Button
+                size="sm" variant="outline" disabled={proWorking}
+                onClick={() => revokePremium(myDeviceId)}
+                className="shrink-0 ml-3 h-8 text-xs font-bold rounded-lg gap-1.5 text-destructive border-destructive/30"
+              >
+                <Trash2 className="w-3 h-3" /> Revoke
+              </Button>
+            ) : (
+              <Button
+                size="sm" disabled={proWorking}
+                onClick={() => grantPremium(myDeviceId)}
+                className="shrink-0 ml-3 h-8 text-xs font-bold rounded-lg gap-1.5 bg-amber-500 hover:bg-amber-600 text-white"
+              >
+                <Crown className="w-3 h-3" /> Grant
+              </Button>
+            )}
+          </div>
+
+          {/* List of granted devices */}
+          {premiumDevices.filter(d => d.deviceId !== myDeviceId).length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-1">Other granted devices</p>
+              {premiumDevices.filter(d => d.deviceId !== myDeviceId).map(d => (
+                <div key={d.deviceId} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-foreground truncate font-mono">{d.deviceId.slice(0, 24)}…</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {d.note ?? "No note"} · {new Date(d.grantedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm" variant="ghost" disabled={proWorking}
+                    onClick={() => revokePremium(d.deviceId)}
+                    className="shrink-0 ml-2 h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="w-3 h-3 mr-1" /> Revoke
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
+            Granted devices get full access to Pro features (Shop &amp; Trip Planner). Paste a device ID from the Recent Activity feed below to grant a tester early access.
+          </p>
         </motion.div>
 
         {/* Broadcast push notification */}
