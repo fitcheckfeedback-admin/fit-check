@@ -356,8 +356,8 @@ export default function Onboarding() {
                 Get My Daily FIT✔️
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
               </Button>
-              <p className="text-center text-xs text-muted-foreground/60 leading-relaxed px-4">
-                📍 We'll ask for your location — only used to get today's weather. Never stored or shared.
+              <p className="text-center text-xs text-muted-foreground/70">
+                Free forever · Needs your location to get started
               </p>
             </motion.div>
           </motion.div>

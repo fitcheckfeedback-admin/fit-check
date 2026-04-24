@@ -9,7 +9,7 @@ import { getWeatherTags, matchSavedFits } from "@/lib/savedFitsMatch";
 import { SavedFit } from "@/lib/storage";
 import { getWeatherInfo } from "@/lib/weather-codes";
 import { pickClosetItems } from "@/lib/closetMatch";
-import { MapPin, Search, Bell, Bookmark, ChevronRight, X, Share2, Plane, RefreshCw, Shuffle, Shirt } from "lucide-react";
+import { MapPin, Search, Bell, Bookmark, ChevronRight, X, Share2, Plane, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatTemp } from "@/lib/format";
 import { useState, useEffect, useRef } from "react";
@@ -108,11 +108,6 @@ export default function Home() {
   const [showShare, setShowShare] = useState(false);
   const [appliedFit, setAppliedFit] = useState<SavedFit | null>(null);
   const [viewDay, setViewDay] = useState<"today" | "tomorrow">("today");
-  const [swapRec, setSwapRec] = useState<ReturnType<typeof generateRecommendation> | null>(null);
-  const [swapCount, setSwapCount] = useState(0);
-  const [closetUpsellDismissed, setClosetUpsellDismissed] = useState(
-    () => localStorage.getItem("fitcheck.closetUpsellDismissed") === "1"
-  );
   const [, setLocation] = useLocation();
   const deviceId = getOrCreateDeviceId();
   const trackedWeatherRef = useRef<string | null>(null);
@@ -130,9 +125,6 @@ export default function Home() {
       }
     }
   }, [weather, settings.location, settings.style]);
-
-  // Reset swap when switching day or applying a saved fit
-  useEffect(() => { setSwapRec(null); setSwapCount(0); }, [viewDay]);
 
   const { data: reminders = [] } = useQuery({
     queryKey: ['reminders', deviceId],
@@ -161,25 +153,6 @@ export default function Home() {
   const isDay = weather.current.is_day === 1;
   const isTomorrow = viewDay === "tomorrow";
 
-  const todayWeatherInputs = {
-    temperatureF: weather.current.temperature_2m,
-    feelsLikeF: weather.current.apparent_temperature,
-    precipChance: weather.hourly.precipitation_probability[0],
-    weatherCode: weather.current.weather_code,
-    windMph: weather.current.wind_speed_10m,
-    humidity: weather.current.relative_humidity_2m,
-    isDay,
-    style: settings.style,
-    gender: settings.gender,
-  };
-
-  const swapOutfit = () => {
-    const next = generateRecommendation(todayWeatherInputs);
-    setSwapRec(next);
-    setSwapCount(c => c + 1);
-    trackEvent("outfit_swapped", { count: swapCount + 1 });
-  };
-
   // Today's data
   const todayRec = appliedFit 
     ? {
@@ -190,7 +163,17 @@ export default function Home() {
         fitScore: appliedFit.fitScore,
         alerts: []
       }
-    : (swapRec ?? generateRecommendation(todayWeatherInputs));
+    : generateRecommendation({
+        temperatureF: weather.current.temperature_2m,
+        feelsLikeF: weather.current.apparent_temperature,
+        precipChance: weather.hourly.precipitation_probability[0],
+        weatherCode: weather.current.weather_code,
+        windMph: weather.current.wind_speed_10m,
+        humidity: weather.current.relative_humidity_2m,
+        isDay,
+        style: settings.style,
+        gender: settings.gender,
+      });
 
   // Tomorrow's data
   const tomorrowCode = weather.daily.weather_code[1] ?? weather.daily.weather_code[0];
@@ -410,31 +393,14 @@ export default function Home() {
           transition={{ delay: 0.1 }}
         >
           <div className="flex items-center justify-between mb-3">
-            <div>
-              <h2 className="text-xl font-display font-bold tracking-tight leading-tight">
-                {appliedFit ? "Applied Fit" : isTomorrow ? "Tomorrow's Fit" : `Your fit today`}
-              </h2>
-              {!appliedFit && !isTomorrow && settings.location && (
-                <p className="text-xs text-muted-foreground font-medium mt-0.5">
-                  in {settings.location.name.split(",")[0]}
-                  {swapCount > 0 && <span className="ml-1.5 text-primary font-semibold">· option {swapCount + 1}</span>}
-                </p>
-              )}
-            </div>
+            <h2 className="text-xl font-display font-bold tracking-tight">
+              {appliedFit ? "Applied Fit" : isTomorrow ? "Tomorrow's Fit" : "Today's Fit"}
+            </h2>
             <div className="flex items-center gap-2">
               {appliedFit && (
-                <button onClick={() => { setAppliedFit(null); setSwapRec(null); }} className="flex items-center gap-1 text-xs font-semibold text-muted-foreground px-2.5 py-1.5 rounded-full bg-muted hover:bg-muted/80 transition-colors">
+                <button onClick={() => setAppliedFit(null)} className="flex items-center gap-1 text-xs font-semibold text-muted-foreground px-2.5 py-1.5 rounded-full bg-muted hover:bg-muted/80 transition-colors">
                   <X className="w-3.5 h-3.5" /> Clear
                 </button>
-              )}
-              {!appliedFit && !isTomorrow && (
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={swapOutfit}
-                  className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
-                >
-                  <Shuffle className="w-3.5 h-3.5" /> Swap
-                </motion.button>
               )}
               <button onClick={() => setShowShare(true)} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors">
                 <Share2 className="w-3.5 h-3.5" /> Share
@@ -446,40 +412,6 @@ export default function Home() {
             closetMatch={closetMatchResult}
             weatherTags={currentTags}
           />
-
-          {/* Closet upsell — only for users with empty closets */}
-          {!closetUpsellDismissed && allClosetItems.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="mt-3 flex items-center justify-between gap-3 p-4 rounded-2xl border border-primary/20 bg-primary/5"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Shirt className="w-4.5 h-4.5 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-black text-foreground leading-snug">Want better fits based on YOUR clothes?</p>
-                  <p className="text-[11px] text-muted-foreground">Add your closet in under 60 seconds</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => setLocation("/closet")}
-                  className="text-xs font-black text-primary flex items-center gap-0.5 whitespace-nowrap"
-                >
-                  Add My Closet <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => { setClosetUpsellDismissed(true); localStorage.setItem("fitcheck.closetUpsellDismissed", "1"); }}
-                  className="ml-1 p-1 rounded-full text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </motion.div>
-          )}
         </motion.section>
 
         {/* AI Stylist */}
