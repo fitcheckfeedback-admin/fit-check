@@ -15,7 +15,7 @@ export function BottomNav() {
   const [location] = useLocation();
 
   return (
-    <div className="sticky bottom-0 z-50 flex justify-center pb-6 pt-2 px-4 pointer-events-none">
+    <div className="flex justify-center pb-6 pt-2 px-4 pointer-events-none">
       <nav className="pointer-events-auto w-full max-w-sm bg-background/90 backdrop-blur-md border border-border/50 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.12)] px-2 py-2">
         <div className="flex items-center justify-around">
           {NAV_ITEMS.map(({ path, label, icon: Icon, pro }) => {
