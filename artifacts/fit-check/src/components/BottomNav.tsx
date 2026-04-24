@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, Sparkles, Shirt, Settings, Video, ShoppingBag } from "lucide-react";
+import { Home, Shirt, Settings, ShoppingBag, CloudSun } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -7,11 +7,11 @@ import { motion } from "framer-motion";
 // Refined iOS-style bottom tab bar
 
 const NAV_ITEMS = [
-  { path: "/", label: "Home", icon: Home, cam: false, pro: false },
-  { path: "/discover", label: "Shop", icon: ShoppingBag, cam: false, pro: true },
-  { path: "/cam", label: "GRWM", icon: Video, cam: true, pro: false },
-  { path: "/closet", label: "Closet", icon: Shirt, cam: false, pro: false },
-  { path: "/settings", label: "Settings", icon: Settings, cam: false, pro: false },
+  { path: "/", label: "Home", icon: Home, pro: false },
+  { path: "/discover", label: "Shop", icon: ShoppingBag, pro: true },
+  { path: "/forecast", label: "Forecast", icon: CloudSun, pro: false },
+  { path: "/closet", label: "Closet", icon: Shirt, pro: false },
+  { path: "/settings", label: "Settings", icon: Settings, pro: false },
 ];
 
 export function BottomNav() {
@@ -21,28 +21,8 @@ export function BottomNav() {
     <nav className="sticky bottom-0 z-50 pb-safe pointer-events-none">
       <div className="bg-background/85 dark:bg-slate-900/85 backdrop-blur-xl border-t border-border shadow-[0_-4px_24px_rgba(0,0,0,0.05)] px-2 pt-2 pb-6 pointer-events-auto">
         <div className="flex items-center justify-around">
-          {NAV_ITEMS.map(({ path, label, icon: Icon, cam, pro }) => {
+          {NAV_ITEMS.map(({ path, label, icon: Icon, pro }) => {
             const isActive = location === path;
-            if (cam) {
-              return (
-                <Link key={path} href={path} className="relative flex flex-col items-center justify-center w-full pb-1 group outline-none -mt-3">
-                  <motion.div whileTap={{ scale: 0.88 }} className="flex flex-col items-center">
-                    <div className={cn(
-                      "w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all",
-                      isActive
-                        ? "bg-primary shadow-primary/40"
-                        : "bg-gradient-to-br from-[#FF9500] to-[#FF6B00] shadow-[#FF9500]/30"
-                    )}>
-                      <Icon className="w-6 h-6 text-white" strokeWidth={2} />
-                    </div>
-                    <span className={cn(
-                      "text-[10px] font-medium mt-1 transition-colors duration-300",
-                      isActive ? "text-primary font-bold" : "text-muted-foreground"
-                    )}>{label}</span>
-                  </motion.div>
-                </Link>
-              );
-            }
             return (
               <Link key={path} href={path} className="relative flex flex-col items-center justify-center w-full pt-2 pb-1 group outline-none">
                 {isActive && (
