@@ -207,7 +207,8 @@ export default function Onboarding() {
   const { updateSettings } = useFitCheckSettings();
   const { getCurrentPosition, loading: geoLoading } = useGeolocation();
 
-  const [step, setStep] = useState<Step>("hook");
+  const fromLanding = new URLSearchParams(window.location.search).get("src") === "landing";
+  const [step, setStep] = useState<Step>(fromLanding ? "requesting" : "hook");
   const [showCitySearch, setShowCitySearch] = useState(false);
   const [showBrowserInstructions, setShowBrowserInstructions] = useState(false);
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
@@ -237,6 +238,13 @@ export default function Onboarding() {
       setStep("denied");
     }
   };
+
+  useEffect(() => {
+    if (fromLanding) {
+      requestLocation();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const toggleStyle = (s: string) => {
     setSelectedStyles(prev =>

@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback } from "react";
 
 const queryClient = new QueryClient();
 
-const APP_URL = "/";
+const APP_URL = "/?src=landing";
 
 function getLandingVisitorId(): string {
   const key = "fitcheck.landing.visitorId";
