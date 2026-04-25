@@ -169,6 +169,14 @@ function Home() {
   const { scrollY } = useScroll();
   const navBg = useTransform(scrollY, [0, 80], ["rgba(0,0,0,0)", "rgba(10,10,10,0.95)"]);
   const track = useLandingTracker();
+  const [showStickyBar, setShowStickyBar] = useState(false);
+
+  useEffect(() => {
+    const unsub = scrollY.on("change", (y) => {
+      setShowStickyBar(y > 420);
+    });
+    return unsub;
+  }, [scrollY]);
 
   return (
     <div className="min-h-screen w-full bg-[#0A0A0A] text-white overflow-x-hidden" style={{ fontFamily: "'Outfit', sans-serif" }}>
@@ -224,18 +232,30 @@ function Home() {
             Takes 3 seconds. No guesswork.
           </motion.p>
 
+          {/* Social proof */}
+          <motion.div variants={fadeUp} className="flex items-center gap-2 mb-6">
+            <div className="flex">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-4 h-4 fill-[#FF9500] text-[#FF9500]" />
+              ))}
+            </div>
+            <span className="text-white/60 text-sm font-semibold">Loved by early users · Free to try</span>
+          </motion.div>
+
           {/* Primary CTA — before the card */}
-          <motion.a
-            variants={fadeUp}
-            href={APP_URL}
-            onClick={() => track("landing_cta_click")}
-            className="w-full max-w-xs flex items-center justify-center gap-2 bg-[#FF9500] text-black font-black text-lg px-8 py-5 rounded-2xl shadow-xl shadow-[#FF9500]/30 hover:bg-orange-400 active:scale-95 transition-all mb-3"
-          >
-            Get My Daily Fit <ArrowRight className="w-5 h-5" />
-          </motion.a>
+          <motion.div variants={fadeUp} className="w-full max-w-xs mb-3 relative">
+            <div className="absolute inset-0 rounded-2xl bg-[#FF9500]/40 blur-xl animate-pulse" />
+            <a
+              href={APP_URL}
+              onClick={() => track("landing_cta_click")}
+              className="relative w-full flex items-center justify-center gap-2 bg-[#FF9500] text-black font-black text-lg px-8 py-5 rounded-2xl shadow-xl shadow-[#FF9500]/40 hover:bg-orange-400 active:scale-95 transition-all"
+            >
+              See Today's Outfit <ArrowRight className="w-5 h-5" />
+            </a>
+          </motion.div>
 
           <motion.p variants={fadeUp} className="text-sm text-white/45 font-semibold mb-14 tracking-wide">
-            Free forever &nbsp;·&nbsp; No account needed
+            Free forever &nbsp;·&nbsp; No sign-up needed &nbsp;·&nbsp; Works instantly
           </motion.p>
 
           {/* Visual proof — outfit card after CTA */}
@@ -473,6 +493,28 @@ function Home() {
           </motion.div>
         </motion.div>
       </section>
+
+      {/* STICKY BOTTOM CTA */}
+      <AnimatePresence>
+        {showStickyBar && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-3 bg-gradient-to-t from-black/95 to-transparent"
+          >
+            <a
+              href={APP_URL}
+              onClick={() => track("landing_sticky_cta_click")}
+              className="flex items-center justify-center gap-2 w-full max-w-sm mx-auto bg-[#FF9500] text-black font-black text-base px-6 py-4 rounded-2xl shadow-2xl shadow-[#FF9500]/30 active:scale-95 transition-all"
+            >
+              See Today's Outfit <ArrowRight className="w-5 h-5" />
+            </a>
+            <p className="text-center text-white/30 text-xs mt-2 font-medium">Free · No sign-up · Works right now</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* FOOTER */}
       <footer className="border-t border-white/6 py-10 px-5">
