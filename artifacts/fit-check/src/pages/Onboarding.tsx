@@ -280,6 +280,8 @@ export default function Onboarding() {
     trackEvent("gender_set", { gender: selectedGender });
     sessionStorage.setItem("fitcheck.sessionTracked", "1");
     trackEvent("app_open", { referrer: document.referrer || undefined });
+    // Ensure the app tour always fires for newly onboarded users
+    localStorage.removeItem("fitcheck.tour.v1");
     navigate("/");
   };
 

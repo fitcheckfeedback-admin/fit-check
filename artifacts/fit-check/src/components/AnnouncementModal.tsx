@@ -13,8 +13,10 @@ export function AnnouncementModal({ appUrl = "https://style-sense-fitcheck.repli
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (!localStorage.getItem(SEEN_KEY)) {
-      setVisible(true);
+    const tourSeen = localStorage.getItem("fitcheck.tour.v1");
+    if (!localStorage.getItem(SEEN_KEY) && tourSeen) {
+      const t = setTimeout(() => setVisible(true), 1000);
+      return () => clearTimeout(t);
     }
   }, []);
 
