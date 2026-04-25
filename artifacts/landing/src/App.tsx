@@ -166,6 +166,16 @@ function OutfitCard() {
 }
 
 function SplashGate({ onEnter, track }: { onEnter: () => void; track: (e: string) => void }) {
+  useEffect(() => {
+    const dismiss = () => onEnter();
+    window.addEventListener("wheel", dismiss, { once: true, passive: true });
+    window.addEventListener("touchmove", dismiss, { once: true, passive: true });
+    return () => {
+      window.removeEventListener("wheel", dismiss);
+      window.removeEventListener("touchmove", dismiss);
+    };
+  }, [onEnter]);
+
   return (
     <motion.div
       initial={{ opacity: 1 }}
