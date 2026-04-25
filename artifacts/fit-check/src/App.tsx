@@ -36,9 +36,15 @@ function ProtectedRoute({ component: Component, hideNav, ...rest }: any) {
     }
   }, [pathname, settings.onboarded]);
 
+  const srcParam = new URLSearchParams(window.location.search).get("src");
+
   if (!settings.onboarded) {
-    const srcParam = new URLSearchParams(window.location.search).get("src");
     return <Redirect to={srcParam ? `/onboarding?src=${srcParam}` : "/onboarding"} />;
+  }
+
+  // If arriving from the landing page, always show the tour
+  if (srcParam === "landing") {
+    localStorage.removeItem("fitcheck.tour.v1");
   }
 
   return (
