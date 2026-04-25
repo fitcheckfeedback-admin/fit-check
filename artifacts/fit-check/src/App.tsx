@@ -37,7 +37,8 @@ function ProtectedRoute({ component: Component, hideNav, ...rest }: any) {
   }, [pathname, settings.onboarded]);
 
   if (!settings.onboarded) {
-    return <Redirect to="/onboarding" />;
+    const srcParam = new URLSearchParams(window.location.search).get("src");
+    return <Redirect to={srcParam ? `/onboarding?src=${srcParam}` : "/onboarding"} />;
   }
 
   return (
