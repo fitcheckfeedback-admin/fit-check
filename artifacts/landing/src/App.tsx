@@ -165,11 +165,63 @@ function OutfitCard() {
   );
 }
 
+function SplashGate({ onEnter, track }: { onEnter: () => void; track: (e: string) => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 1 }}
+      exit={{ opacity: 0, scale: 1.04 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      className="fixed inset-0 z-[100] bg-[#0A0A0A] flex flex-col items-center justify-center px-6 text-white"
+      style={{ fontFamily: "'Outfit', sans-serif" }}
+    >
+      {/* Glow */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-[#FF9500]/15 rounded-full blur-[80px] pointer-events-none" />
+
+      <div className="relative z-10 flex flex-col items-center text-center max-w-xs">
+        {/* Logo */}
+        <img src="/logo.png" alt="FIT✔️" className="w-20 h-20 rounded-[1.5rem] shadow-2xl shadow-[#FF9500]/20 mb-6" />
+
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-[#FF9500] mb-3">Welcome to FIT✔️</p>
+
+        <h1 className="text-3xl font-black leading-tight mb-3">
+          This is the preview page.
+        </h1>
+
+        <p className="text-white/55 text-base leading-relaxed mb-10">
+          Tap below to open the app — it reads your live weather and picks your outfit. Free, no sign-up.
+        </p>
+
+        {/* CTA */}
+        <div className="w-full relative mb-4">
+          <div className="absolute inset-0 rounded-2xl bg-[#FF9500]/40 blur-xl animate-pulse" />
+          <a
+            href={APP_URL}
+            onClick={() => { track("landing_splash_cta_click"); }}
+            className="relative w-full flex items-center justify-center gap-2 bg-[#FF9500] text-black font-black text-lg px-8 py-5 rounded-2xl shadow-xl shadow-[#FF9500]/40 active:scale-95 transition-all"
+          >
+            Open the App — It's Free <ArrowRight className="w-5 h-5" />
+          </a>
+        </div>
+
+        <p className="text-white/30 text-xs font-semibold mb-2">No download · No account · Works instantly</p>
+
+        <button
+          onClick={onEnter}
+          className="mt-6 text-white/25 text-xs font-semibold underline underline-offset-2 active:text-white/50 transition-colors"
+        >
+          or scroll to learn more ↓
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
 function Home() {
   const { scrollY } = useScroll();
   const navBg = useTransform(scrollY, [0, 80], ["rgba(0,0,0,0)", "rgba(10,10,10,0.95)"]);
   const track = useLandingTracker();
   const [showStickyBar, setShowStickyBar] = useState(false);
+  const [splashDismissed, setSplashDismissed] = useState(false);
 
   useEffect(() => {
     const unsub = scrollY.on("change", (y) => {
@@ -180,6 +232,12 @@ function Home() {
 
   return (
     <div className="min-h-screen w-full bg-[#0A0A0A] text-white overflow-x-hidden" style={{ fontFamily: "'Outfit', sans-serif" }}>
+
+      <AnimatePresence>
+        {!splashDismissed && (
+          <SplashGate onEnter={() => setSplashDismissed(true)} track={track} />
+        )}
+      </AnimatePresence>
 
       {/* NAV */}
       <motion.nav
