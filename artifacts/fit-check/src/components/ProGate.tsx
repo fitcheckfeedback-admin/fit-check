@@ -9,8 +9,15 @@ interface ProGateProps {
   description?: string;
 }
 
+// Set to true when paid plans are ready to enforce
+const PRO_GATING_ENABLED = false;
+
 export function ProGate({ children, feature = "Pro Feature", description }: ProGateProps) {
   const { isPro, loading } = usePremium();
+
+  if (!PRO_GATING_ENABLED) {
+    return <>{children}</>;
+  }
 
   if (loading) {
     return (
