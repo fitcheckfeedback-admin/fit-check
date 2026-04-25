@@ -190,13 +190,7 @@ function Home() {
           <img src="/logo.png" alt="FIT✔️" className="w-9 h-9 rounded-xl shadow" />
           <span className="font-black text-lg tracking-tight">FIT<span className="text-[#FF9500]">✔</span></span>
         </div>
-        <a
-          href={APP_URL}
-          onClick={() => track("landing_cta_click")}
-          className="bg-[#FF9500] text-black font-bold text-sm px-5 py-2.5 rounded-full hover:bg-orange-400 active:scale-95 transition-all shadow-lg shadow-[#FF9500]/25"
-        >
-          Try Free →
-        </a>
+        <span className="text-xs text-white/40 font-semibold">Free · No download</span>
       </motion.nav>
 
       {/* HERO */}
@@ -209,6 +203,13 @@ function Home() {
           initial="hidden"
           animate="visible"
         >
+          {/* No download badge */}
+          <motion.div variants={fadeUp} className="flex items-center gap-2 mb-6">
+            <span className="bg-white/8 border border-white/12 text-white/70 text-xs font-bold px-4 py-1.5 rounded-full tracking-wide">
+              🌐 Works in your browser — no download needed
+            </span>
+          </motion.div>
+
           {/* Hook headline — above the fold */}
           <motion.h1
             variants={fadeUp}
@@ -233,13 +234,16 @@ function Home() {
           </motion.p>
 
           {/* Social proof */}
-          <motion.div variants={fadeUp} className="flex items-center gap-2 mb-6">
-            <div className="flex">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-4 h-4 fill-[#FF9500] text-[#FF9500]" />
-              ))}
+          <motion.div variants={fadeUp} className="flex flex-col items-center gap-2 mb-6">
+            <div className="flex items-center gap-2">
+              <div className="flex">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-[#FF9500] text-[#FF9500]" />
+                ))}
+              </div>
+              <span className="text-white/60 text-sm font-semibold">Loved by early users</span>
             </div>
-            <span className="text-white/60 text-sm font-semibold">Loved by early users · Free to try</span>
+            <span className="text-xs font-bold text-[#FF9500]/80">🔥 500+ outfits picked this week</span>
           </motion.div>
 
           {/* Primary CTA — before the card */}
@@ -260,7 +264,12 @@ function Home() {
 
           {/* Visual proof — outfit card after CTA */}
           <motion.div variants={fadeUp} className="w-full">
-            <OutfitCard />
+            <a href={APP_URL} onClick={() => track("landing_card_click")} className="block">
+              <OutfitCard />
+              <p className="text-center text-white/35 text-xs font-semibold mt-3 tracking-wide">
+                👆 Tap the card to see your real outfit
+              </p>
+            </a>
           </motion.div>
         </motion.div>
       </section>
@@ -365,7 +374,7 @@ function Home() {
               { icon: "👗", title: "Your closet", desc: "Add your clothes, get personalized looks" },
               { icon: "📅", title: "Week forecast", desc: "Plan outfits for the whole week ahead" },
               { icon: "🔔", title: "Morning alerts", desc: "Get your outfit before you leave bed" },
-              { icon: "📸", title: "GRWM camera", desc: "Film & share your daily look" },
+              { icon: "🗓️", title: "Trip planner", desc: "Pack perfectly for any trip or weather" },
             ].map((f, i) => (
               <motion.div
                 key={i}
