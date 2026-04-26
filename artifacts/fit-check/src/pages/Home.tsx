@@ -30,74 +30,186 @@ import { reverseGeocode } from "@/lib/weather";
 
 function LocationGate({ onLocation }: { onLocation: (loc: { lat: number; lon: number; name: string }) => void }) {
   const { getCurrentPosition, loading } = useGeolocation();
-  const [denied, setDenied] = useState(false);
+  const [gpsState, setGpsState] = useState<"idle" | "requesting" | "denied">("idle");
+  const [userCount, setUserCount] = useState<number | null>(null);
+  const [showManual, setShowManual] = useState(false);
 
-  const request = async () => {
-    setDenied(false);
+  useEffect(() => {
+    trackEvent("location_gate_view", {});
+    fetch("/api/analytics/user-count")
+      .then(r => r.json())
+      .then(d => setUserCount(d.count))
+      .catch(() => {});
+  }, []);
+
+  const requestGPS = async () => {
+    setGpsState("requesting");
     try {
       const pos = await getCurrentPosition();
       const name = await reverseGeocode(pos.lat, pos.lon) ?? "Current Location";
       onLocation({ lat: pos.lat, lon: pos.lon, name });
       trackEvent("location_set", { city: name, lat: pos.lat, lon: pos.lon, method: "gps" });
     } catch {
-      setDenied(true);
+      setGpsState("denied");
+      setShowManual(true);
     }
   };
 
-  // Auto-request on mount
-  useEffect(() => { request(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleCitySelect = (city: { name: string; admin1?: string; latitude: number; longitude: number }) => {
+    const name = `${city.name}${city.admin1 ? `, ${city.admin1}` : ""}`;
+    onLocation({ lat: city.latitude, lon: city.longitude, name });
+    trackEvent("location_set", { city: name, method: "manual" });
+  };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-6">
-      <div className={`w-20 h-20 rounded-full flex items-center justify-center ${denied ? "bg-destructive/10" : "bg-primary/10"}`}>
-        <MapPin className={`w-9 h-9 ${denied ? "text-destructive" : "text-primary"}`} />
-      </div>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="flex-1 flex flex-col min-h-[100dvh] bg-background"
+    >
+      {/* Hero gradient */}
+      <div className="relative overflow-hidden bg-gradient-to-b from-amber-50 to-background dark:from-amber-950/20 dark:to-background px-6 pt-14 pb-10 flex flex-col items-center text-center">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent pointer-events-none" />
 
-      {!denied ? (
-        <>
-          <div>
-            <h2 className="text-2xl font-display font-bold">Locating you…</h2>
-            <p className="text-muted-foreground mt-2 text-sm">
-              Tap <strong>Allow</strong> when your browser asks for location access.
-            </p>
-          </div>
-          <motion.div
-            animate={{ scale: [1, 1.15, 1] }}
-            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-            className="w-4 h-4 bg-primary rounded-full"
-          />
-        </>
-      ) : (
-        <>
-          <div>
-            <h2 className="text-2xl font-display font-bold">Location Required</h2>
-            <p className="text-muted-foreground mt-2 text-sm max-w-xs">
-              FIT✔️ needs your location to show real-time weather and what to wear today.
-            </p>
-            <p className="text-muted-foreground mt-3 text-sm max-w-xs">
-              If you denied access, enable <strong>Location</strong> in your browser's site settings, then tap Try Again.
-            </p>
-          </div>
+        {/* Logo */}
+        <motion.img
+          src="/logo.png"
+          alt="FIT✔️"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 200, damping: 15 }}
+          className="w-16 h-16 rounded-2xl shadow-lg mb-5"
+        />
 
-          <div className="w-full max-w-xs space-y-3">
-            <Button
-              size="lg"
-              className="w-full h-14 rounded-2xl font-bold"
-              onClick={request}
-              disabled={loading}
-            >
-              <RefreshCw className={`mr-2 h-5 w-5 ${loading ? "animate-spin" : ""}`} />
-              Try Again
-            </Button>
-            <div className="p-4 rounded-2xl bg-muted/50 text-left space-y-1.5">
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">How to enable</p>
-              <p className="text-xs text-muted-foreground"><strong>iPhone:</strong> Settings → Safari → Location → Allow</p>
-              <p className="text-xs text-muted-foreground"><strong>Android:</strong> Settings → Apps → Browser → Permissions → Location</p>
+        {/* Headline */}
+        <motion.h1
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="text-3xl font-display font-black leading-tight tracking-tight"
+        >
+          Your Daily Fit<br />
+          <span className="brand-gradient-text">Is Ready.</span>
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.18 }}
+          className="text-muted-foreground mt-3 text-sm max-w-[260px] leading-relaxed"
+        >
+          Real-time weather + what to actually wear today — personalized for you.
+        </motion.p>
+
+        {/* Blurred teaser preview */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="relative mt-6 w-full max-w-xs"
+        >
+          <div className="bg-card border rounded-2xl p-4 shadow-sm select-none pointer-events-none">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-xl">☀️</div>
+              <div>
+                <p className="text-sm font-bold">Today's Fit</p>
+                <p className="text-xs text-muted-foreground">Sunny · 74°F · Your City</p>
+              </div>
+              <div className="ml-auto text-xs font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full">98</div>
+            </div>
+            <div className="space-y-1.5 blur-sm">
+              <div className="text-sm font-semibold text-foreground">White linen shirt + slim chinos</div>
+              <div className="text-xs text-muted-foreground">Light sneakers or loafers • No jacket needed</div>
+              <div className="text-xs text-muted-foreground">Sunglasses recommended · UV high today</div>
             </div>
           </div>
-        </>
-      )}
-    </div>
+          <div className="absolute inset-0 flex items-end justify-center pb-3 rounded-2xl bg-gradient-to-t from-background/70 via-transparent to-transparent">
+            <p className="text-xs font-bold text-primary">Set your city to unlock your real fit →</p>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* CTA section */}
+      <div className="px-6 py-6 space-y-4 flex flex-col items-center">
+
+        {/* Social proof */}
+        {userCount !== null && userCount > 50 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="flex items-center gap-2 text-sm text-muted-foreground"
+          >
+            <div className="flex -space-x-1.5">
+              {["🧑", "👩", "🧔"].map((e, i) => (
+                <div key={i} className="w-6 h-6 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[10px]">{e}</div>
+              ))}
+            </div>
+            <span className="font-semibold text-foreground">{userCount.toLocaleString()}+</span> people already checked their fit today
+          </motion.div>
+        )}
+
+        {/* Primary GPS button */}
+        {gpsState !== "denied" && (
+          <Button
+            size="lg"
+            className="w-full max-w-sm h-14 rounded-2xl font-bold text-base shadow-md"
+            onClick={requestGPS}
+            disabled={loading || gpsState === "requesting"}
+          >
+            {gpsState === "requesting" || loading ? (
+              <>
+                <motion.div
+                  animate={{ scale: [1, 1.3, 1] }}
+                  transition={{ repeat: Infinity, duration: 1.2 }}
+                  className="w-2 h-2 bg-white rounded-full mr-3"
+                />
+                Locating… tap Allow if asked
+              </>
+            ) : (
+              <>
+                <MapPin className="w-5 h-5 mr-2" />
+                Use My Location
+              </>
+            )}
+          </Button>
+        )}
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 w-full max-w-sm">
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-xs text-muted-foreground font-medium">or search your city</span>
+          <div className="flex-1 h-px bg-border" />
+        </div>
+
+        {/* Manual city search — always visible */}
+        <div className="w-full max-w-sm">
+          <CitySearch
+            onSelect={handleCitySelect}
+            autoFocus={showManual}
+          />
+        </div>
+
+        {/* GPS denied helper */}
+        {gpsState === "denied" && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-sm p-4 rounded-2xl bg-muted/50 text-left space-y-1.5"
+          >
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">To enable GPS</p>
+            <p className="text-xs text-muted-foreground"><strong>iPhone:</strong> Settings → Safari → Location → Allow</p>
+            <p className="text-xs text-muted-foreground"><strong>Android:</strong> Settings → Apps → Browser → Permissions → Location</p>
+            <button
+              onClick={requestGPS}
+              className="text-xs font-bold text-primary mt-1 underline underline-offset-2"
+              disabled={loading}
+            >
+              Try GPS again
+            </button>
+          </motion.div>
+        )}
+      </div>
+    </motion.div>
   );
 }
 

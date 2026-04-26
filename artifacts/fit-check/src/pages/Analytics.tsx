@@ -27,6 +27,7 @@ interface Summary {
     views:  { allTime: number; today: number; last7d: number };
     clicks: { allTime: number; today: number; last7d: number };
   };
+  returningUsers?: { twoPlus: number; fivePlus: number; powerUsers: number };
 }
 
 function formatDuration(seconds: number | null): string {
@@ -51,9 +52,10 @@ const FEATURE_LABELS: Record<string, string> = {
   reminder_created:"Reminder Created",
   forecast_viewed: "Forecast Viewed",
   voice_used:      "Voice Used",
-  location_set:    "Location Set",
-  style_changed:   "Style Changed",
-  settings_opened: "Settings Opened",
+  location_set:       "Location Set",
+  location_gate_view: "Location Gate Shown",
+  style_changed:      "Style Changed",
+  settings_opened:    "Settings Opened",
 };
 
 function StatCard({ label, value, sub, icon: Icon, accent }: {
@@ -536,6 +538,74 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
             accent="bg-slate-500"
           />
         </div>
+
+        {/* Returning Users */}
+        {data.returningUsers && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card border border-border rounded-2xl p-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-emerald-400" />
+              <h2 className="text-sm font-bold">Returning Users</h2>
+              <span className="ml-auto text-[10px] font-black uppercase tracking-widest text-emerald-400/70 bg-emerald-400/10 px-2.5 py-1 rounded-full">Retention</span>
+            </div>
+            <p className="text-xs text-muted-foreground -mt-1">
+              Users who have opened the app on multiple distinct calendar days.
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                {
+                  label: "2+ Days",
+                  value: data.returningUsers.twoPlus,
+                  pct: data.allTime.uniqueDevices > 0
+                    ? Math.round((data.returningUsers.twoPlus / Number(data.allTime.uniqueDevices)) * 100)
+                    : 0,
+                  color: "text-emerald-400",
+                  bg: "bg-emerald-400/10",
+                },
+                {
+                  label: "5+ Days",
+                  value: data.returningUsers.fivePlus,
+                  pct: data.allTime.uniqueDevices > 0
+                    ? Math.round((data.returningUsers.fivePlus / Number(data.allTime.uniqueDevices)) * 100)
+                    : 0,
+                  color: "text-blue-400",
+                  bg: "bg-blue-400/10",
+                },
+                {
+                  label: "10+ Days",
+                  value: data.returningUsers.powerUsers,
+                  pct: data.allTime.uniqueDevices > 0
+                    ? Math.round((data.returningUsers.powerUsers / Number(data.allTime.uniqueDevices)) * 100)
+                    : 0,
+                  color: "text-violet-400",
+                  bg: "bg-violet-400/10",
+                },
+              ].map(({ label, value, pct, color, bg }) => (
+                <div key={label} className={`rounded-xl p-3 ${bg} text-center space-y-0.5`}>
+                  <p className={`text-2xl font-black ${color}`}>{value.toLocaleString()}</p>
+                  <p className="text-[11px] font-bold text-foreground">{label}</p>
+                  <p className="text-[10px] text-muted-foreground">{pct}% of total</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-400 rounded-full transition-all"
+                  style={{
+                    width: `${data.allTime.uniqueDevices > 0
+                      ? Math.round((data.returningUsers.twoPlus / Number(data.allTime.uniqueDevices)) * 100)
+                      : 0}%`
+                  }}
+                />
+              </div>
+              <span className="text-xs font-bold text-emerald-400 shrink-0">
+                {data.allTime.uniqueDevices > 0
+                  ? Math.round((data.returningUsers.twoPlus / Number(data.allTime.uniqueDevices)) * 100)
+                  : 0}% retention rate
+              </span>
+            </div>
+          </motion.div>
+        )}
 
         {/* Ad Traffic — landing page funnel */}
         {data.landingStats && (

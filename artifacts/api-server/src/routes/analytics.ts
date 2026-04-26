@@ -33,6 +33,19 @@ router.post("/analytics/auth", (req, res) => {
   res.json({ token: getToken() });
 });
 
+// GET /api/analytics/user-count — public, no auth required (used for social proof)
+router.get("/analytics/user-count", async (_req, res) => {
+  const excludedIds = await getExcludedIds();
+  const condition = excludedIds.length > 0
+    ? notInArray(analyticsEventsTable.deviceId, excludedIds)
+    : undefined;
+  const [row] = await db
+    .select({ count: countDistinct(analyticsEventsTable.deviceId) })
+    .from(analyticsEventsTable)
+    .where(condition);
+  res.json({ count: Number(row?.count ?? 0) });
+});
+
 // POST /api/analytics/event — always open (client-side tracking)
 router.post("/analytics/event", async (req, res) => {
   const { deviceId, eventType, metadata } = req.body;
@@ -224,6 +237,28 @@ router.get("/analytics/summary", async (req, res) => {
           )
     );
 
+  // Returning users — users seen on 2+ / 5+ / 10+ distinct calendar days
+  const returningUsersRaw = await db.execute(
+    sql`
+      SELECT
+        COUNT(DISTINCT CASE WHEN day_count >= 2 THEN device_id END)::int  AS returning_2plus,
+        COUNT(DISTINCT CASE WHEN day_count >= 5 THEN device_id END)::int  AS returning_5plus,
+        COUNT(DISTINCT CASE WHEN day_count >= 10 THEN device_id END)::int AS power_users
+      FROM (
+        SELECT device_id, COUNT(DISTINCT DATE(created_at)) AS day_count
+        FROM analytics_events
+        WHERE event_type = 'app_open'
+        ${excludedIds.length > 0 ? sql`AND device_id NOT IN (${sql.join(excludedIds.map(id => sql`${id}`), sql`, `)})` : sql``}
+        GROUP BY device_id
+      ) sub
+    `
+  );
+  const returningUsers = {
+    twoPlus:    Number((returningUsersRaw.rows[0] as { returning_2plus: number }).returning_2plus ?? 0),
+    fivePlus:   Number((returningUsersRaw.rows[0] as { returning_5plus: number }).returning_5plus ?? 0),
+    powerUsers: Number((returningUsersRaw.rows[0] as { power_users: number }).power_users ?? 0),
+  };
+
   const totalFeatureCount = featurePopularity.reduce((s, r) => s + Number(r.count), 0);
   const featuresWithPct = featurePopularity.map(r => ({
     ...r,
@@ -278,6 +313,7 @@ router.get("/analytics/summary", async (req, res) => {
     avgSessionSecondsAllTime: avgSessionAll?.avgSeconds ? Number(avgSessionAll.avgSeconds) : null,
     avgSessionSecondsToday: avgSessionToday?.avgSeconds ? Number(avgSessionToday.avgSeconds) : null,
     landingStats,
+    returningUsers,
   });
 });
 
