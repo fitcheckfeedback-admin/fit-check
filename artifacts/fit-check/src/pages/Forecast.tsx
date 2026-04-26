@@ -1,7 +1,7 @@
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { useWeather } from "@/hooks/useWeather";
 import { getWeatherInfo } from "@/lib/weather-codes";
-import { formatTemp, getDayName } from "@/lib/format";
+import { formatTemp } from "@/lib/format";
 import { WeatherScene } from "@/components/WeatherScene";
 import { Droplets, CloudRain, CalendarDays, Wind, Sunrise, Sunset, Thermometer } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -144,7 +144,8 @@ export default function Forecast() {
               const leftPct = ((minF - overallMin) / range) * 100;
               const widthPct = ((maxF - minF) / range) * 100;
 
-              const label = j === 0 ? "Today" : j === 1 ? "Tomorrow" : getDayName(dateStr);
+              const label = j === 0 ? "Today" : j === 1 ? "Tomorrow"
+                : new Date(dateStr + "T12:00:00").toLocaleDateString([], { weekday: "long" });
 
               return (
                 <motion.div
