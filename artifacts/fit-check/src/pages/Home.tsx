@@ -25,14 +25,9 @@ import { generateHashtags } from "@/lib/fitCardHashtags";
 import { FitCardData } from "@/lib/fitCardCaption";
 import { AIStylistCard } from "@/components/AIStylistCard";
 import { CitySearch } from "@/components/CitySearch";
-import { useGeolocation } from "@/hooks/useGeolocation";
-import { reverseGeocode } from "@/lib/weather";
 
 function LocationGate({ onLocation }: { onLocation: (loc: { lat: number; lon: number; name: string }) => void }) {
-  const { getCurrentPosition, loading } = useGeolocation();
-  const [gpsState, setGpsState] = useState<"idle" | "requesting" | "denied">("idle");
   const [userCount, setUserCount] = useState<number | null>(null);
-  const [showManual, setShowManual] = useState(false);
 
   useEffect(() => {
     trackEvent("location_gate_view", {});
@@ -41,19 +36,6 @@ function LocationGate({ onLocation }: { onLocation: (loc: { lat: number; lon: nu
       .then(d => setUserCount(d.count))
       .catch(() => {});
   }, []);
-
-  const requestGPS = async () => {
-    setGpsState("requesting");
-    try {
-      const pos = await getCurrentPosition();
-      const name = await reverseGeocode(pos.lat, pos.lon) ?? "Current Location";
-      onLocation({ lat: pos.lat, lon: pos.lon, name });
-      trackEvent("location_set", { city: name, lat: pos.lat, lon: pos.lon, method: "gps" });
-    } catch {
-      setGpsState("denied");
-      setShowManual(true);
-    }
-  };
 
   const handleCitySelect = (city: { name: string; admin1?: string; latitude: number; longitude: number }) => {
     const name = `${city.name}${city.admin1 ? `, ${city.admin1}` : ""}`;
@@ -67,11 +49,10 @@ function LocationGate({ onLocation }: { onLocation: (loc: { lat: number; lon: nu
       animate={{ opacity: 1 }}
       className="flex-1 flex flex-col min-h-[100dvh] bg-background"
     >
-      {/* Hero gradient */}
+      {/* Hero */}
       <div className="relative overflow-hidden bg-gradient-to-b from-amber-50 to-background dark:from-amber-950/20 dark:to-background px-6 pt-14 pb-10 flex flex-col items-center text-center">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent pointer-events-none" />
 
-        {/* Logo */}
         <motion.img
           src="/logo.png"
           alt="FIT✔️"
@@ -81,7 +62,6 @@ function LocationGate({ onLocation }: { onLocation: (loc: { lat: number; lon: nu
           className="w-16 h-16 rounded-2xl shadow-lg mb-5"
         />
 
-        {/* Headline */}
         <motion.h1
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -100,7 +80,7 @@ function LocationGate({ onLocation }: { onLocation: (loc: { lat: number; lon: nu
           Real-time weather + what to actually wear today — personalized for you.
         </motion.p>
 
-        {/* Blurred teaser preview */}
+        {/* Blurred teaser */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -118,18 +98,18 @@ function LocationGate({ onLocation }: { onLocation: (loc: { lat: number; lon: nu
             </div>
             <div className="space-y-1.5 blur-sm">
               <div className="text-sm font-semibold text-foreground">White linen shirt + slim chinos</div>
-              <div className="text-xs text-muted-foreground">Light sneakers or loafers • No jacket needed</div>
+              <div className="text-xs text-muted-foreground">Light sneakers or loafers · No jacket needed</div>
               <div className="text-xs text-muted-foreground">Sunglasses recommended · UV high today</div>
             </div>
           </div>
           <div className="absolute inset-0 flex items-end justify-center pb-3 rounded-2xl bg-gradient-to-t from-background/70 via-transparent to-transparent">
-            <p className="text-xs font-bold text-primary">Set your city to unlock your real fit →</p>
+            <p className="text-xs font-bold text-primary">Drop your city to see YOUR real fit →</p>
           </div>
         </motion.div>
       </div>
 
-      {/* CTA section */}
-      <div className="px-6 py-6 space-y-4 flex flex-col items-center">
+      {/* City search */}
+      <div className="px-6 pb-10 space-y-5 flex flex-col items-center">
 
         {/* Social proof */}
         {userCount !== null && userCount > 50 && (
@@ -144,70 +124,26 @@ function LocationGate({ onLocation }: { onLocation: (loc: { lat: number; lon: nu
                 <div key={i} className="w-6 h-6 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[10px]">{e}</div>
               ))}
             </div>
-            <span className="font-semibold text-foreground">{userCount.toLocaleString()}+</span> people already checked their fit today
+            <span className="font-semibold text-foreground">{userCount.toLocaleString()}+</span>&nbsp;people already got their fit
           </motion.div>
         )}
 
-        {/* Primary GPS button */}
-        {gpsState !== "denied" && (
-          <Button
-            size="lg"
-            className="w-full max-w-sm h-14 rounded-2xl font-bold text-base shadow-md"
-            onClick={requestGPS}
-            disabled={loading || gpsState === "requesting"}
-          >
-            {gpsState === "requesting" || loading ? (
-              <>
-                <motion.div
-                  animate={{ scale: [1, 1.3, 1] }}
-                  transition={{ repeat: Infinity, duration: 1.2 }}
-                  className="w-2 h-2 bg-white rounded-full mr-3"
-                />
-                Locating… tap Allow if asked
-              </>
-            ) : (
-              <>
-                <MapPin className="w-5 h-5 mr-2" />
-                Use My Location
-              </>
-            )}
-          </Button>
-        )}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.35 }}
+          className="text-base font-bold text-foreground text-center"
+        >
+          What city are you in?
+        </motion.p>
 
-        {/* Divider */}
-        <div className="flex items-center gap-3 w-full max-w-sm">
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-xs text-muted-foreground font-medium">or search your city</span>
-          <div className="flex-1 h-px bg-border" />
-        </div>
-
-        {/* Manual city search — always visible */}
         <div className="w-full max-w-sm">
-          <CitySearch
-            onSelect={handleCitySelect}
-            autoFocus={showManual}
-          />
+          <CitySearch onSelect={handleCitySelect} autoFocus />
         </div>
 
-        {/* GPS denied helper */}
-        {gpsState === "denied" && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-sm p-4 rounded-2xl bg-muted/50 text-left space-y-1.5"
-          >
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">To enable GPS</p>
-            <p className="text-xs text-muted-foreground"><strong>iPhone:</strong> Settings → Safari → Location → Allow</p>
-            <p className="text-xs text-muted-foreground"><strong>Android:</strong> Settings → Apps → Browser → Permissions → Location</p>
-            <button
-              onClick={requestGPS}
-              className="text-xs font-bold text-primary mt-1 underline underline-offset-2"
-              disabled={loading}
-            >
-              Try GPS again
-            </button>
-          </motion.div>
-        )}
+        <p className="text-xs text-muted-foreground text-center max-w-[240px]">
+          Your city is used to pull live weather and personalize your fit — that's it.
+        </p>
       </div>
     </motion.div>
   );
