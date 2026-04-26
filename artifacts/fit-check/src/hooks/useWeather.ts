@@ -16,7 +16,11 @@ export function useWeather(location: LocationData | null) {
       }
     },
     enabled: !!location,
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 0,                          // always treat data as stale
+    refetchInterval: 5 * 60 * 1000,       // background refresh every 5 min
+    refetchOnWindowFocus: true,            // refresh when user returns to app
+    refetchOnReconnect: true,             // refresh when connection restores
+    gcTime: 10 * 60 * 1000,               // keep cache for 10 min between sessions
   });
 }
 

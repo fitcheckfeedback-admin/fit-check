@@ -103,7 +103,7 @@ function LocationGate({ onLocation }: { onLocation: (loc: { lat: number; lon: nu
 
 export default function Home() {
   const { settings, updateSettings } = useFitCheckSettings();
-  const { data: weather, isLoading, isError } = useWeather(settings.location);
+  const { data: weather, isLoading, isError, isFetching, refetch } = useWeather(settings.location);
   const [showSearch, setShowSearch] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [appliedFit, setAppliedFit] = useState<SavedFit | null>(null);
@@ -308,16 +308,33 @@ export default function Home() {
                 <Search className="w-3 h-3 ml-0.5 opacity-50 shrink-0" />
               </button>
 
-              <button
-                className="relative w-9 h-9 flex items-center justify-center rounded-full backdrop-blur-md border transition-colors"
-                style={{ background: pillBg, borderColor: pillBorder }}
-                onClick={() => setLocation('/reminders')}
-              >
-                <Bell className="w-5 h-5" style={{ color: textPrimary }} />
-                {reminders.length > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400 shadow-sm" />
-                )}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  className="w-9 h-9 flex items-center justify-center rounded-full backdrop-blur-md border transition-colors"
+                  style={{ background: pillBg, borderColor: pillBorder }}
+                  onClick={() => refetch()}
+                  title="Refresh weather"
+                >
+                  <RefreshCw
+                    className="w-4 h-4"
+                    style={{
+                      color: textPrimary,
+                      animation: isFetching ? "spin 1s linear infinite" : "none",
+                    }}
+                  />
+                </button>
+
+                <button
+                  className="relative w-9 h-9 flex items-center justify-center rounded-full backdrop-blur-md border transition-colors"
+                  style={{ background: pillBg, borderColor: pillBorder }}
+                  onClick={() => setLocation('/reminders')}
+                >
+                  <Bell className="w-5 h-5" style={{ color: textPrimary }} />
+                  {reminders.length > 0 && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400 shadow-sm" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Main: icon left, temp+label right */}
