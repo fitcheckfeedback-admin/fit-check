@@ -268,6 +268,18 @@ export function RadarMap({ lat, lon, temperatureF, units }: RadarMapProps) {
         </div>
       )}
 
+      {/* Zoom controls */}
+      <div className="absolute top-3 left-3 z-30 flex flex-col gap-1">
+        <button
+          onClick={() => mapRef.current?.zoomIn()}
+          className="w-9 h-9 flex items-center justify-center rounded-xl bg-black/50 backdrop-blur-sm border border-white/10 text-white text-xl font-bold leading-none"
+        >+</button>
+        <button
+          onClick={() => mapRef.current?.zoomOut()}
+          className="w-9 h-9 flex items-center justify-center rounded-xl bg-black/50 backdrop-blur-sm border border-white/10 text-white text-xl font-bold leading-none"
+        >−</button>
+      </div>
+
       {/* Attribution */}
       <div className="absolute top-2 right-3 z-30 text-[8px] text-white/25 pointer-events-none">
         © OpenStreetMap · RainViewer
