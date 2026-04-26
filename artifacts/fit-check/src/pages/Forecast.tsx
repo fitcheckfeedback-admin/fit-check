@@ -5,15 +5,17 @@ import { formatTemp, getDayName } from "@/lib/format";
 import { WeatherScene } from "@/components/WeatherScene";
 import { OutfitCard } from "@/components/OutfitCard";
 import { generateRecommendation } from "@/lib/recommend";
-import { Droplets } from "lucide-react";
+import { Droplets, CloudRain, CalendarDays } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { RadarMap } from "@/components/RadarMap";
 
 export default function Forecast() {
   const { settings } = useFitCheckSettings();
   const { data: weather, isLoading } = useWeather(settings.location);
   const [expandedDay, setExpandedDay] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"forecast" | "radar">("forecast");
 
   if (isLoading || !weather) {
     return (
@@ -45,15 +47,56 @@ export default function Forecast() {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="p-6 space-y-8 pb-12"
+      className="p-6 space-y-6 pb-12"
     >
+      {/* Header */}
       <div className="flex items-center gap-4 mb-2">
         <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-xl shadow-sm" />
         <div>
           <h1 className="text-4xl font-display font-bold"><span className="brand-gradient-text">Fore</span>cast</h1>
-          <p className="text-muted-foreground font-medium">Next 5 days and what to wear.</p>
+          <p className="text-muted-foreground font-medium">Next 5 days + live radar.</p>
         </div>
       </div>
+
+      {/* Tab switcher */}
+      <div className="flex bg-muted rounded-2xl p-1 gap-1">
+        <button
+          onClick={() => setActiveTab("forecast")}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+            activeTab === "forecast"
+              ? "bg-background shadow text-foreground"
+              : "text-muted-foreground"
+          }`}
+        >
+          <CalendarDays className="w-4 h-4" />
+          5-Day
+        </button>
+        <button
+          onClick={() => setActiveTab("radar")}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+            activeTab === "radar"
+              ? "bg-background shadow text-foreground"
+              : "text-muted-foreground"
+          }`}
+        >
+          <CloudRain className="w-4 h-4" />
+          Radar
+        </button>
+      </div>
+
+      {/* Radar view */}
+      {activeTab === "radar" && settings.location && (
+        <div className="space-y-3">
+          <RadarMap lat={settings.location.lat} lon={settings.location.lon} />
+          <p className="text-xs text-center text-muted-foreground">
+            Live precipitation radar · Powered by RainViewer · Updates every 10 min
+          </p>
+        </div>
+      )}
+
+      {/* Forecast view */}
+      {activeTab === "forecast" && (
+        <div className="space-y-8">
 
       {/* Mini 24h trend chart */}
       <section className="bg-card border rounded-[2rem] p-5 shadow-sm">
@@ -170,6 +213,8 @@ export default function Forecast() {
           );
         })}
       </section>
+        </div>
+      )}
     </motion.div>
   );
 }
