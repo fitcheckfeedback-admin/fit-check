@@ -40,7 +40,7 @@ function LocationGate({ onLocation }: { onLocation: (loc: { lat: number; lon: nu
   const handleCitySelect = (city: { name: string; admin1?: string; latitude: number; longitude: number }) => {
     const name = `${city.name}${city.admin1 ? `, ${city.admin1}` : ""}`;
     onLocation({ lat: city.latitude, lon: city.longitude, name });
-    trackEvent("location_set", { city: name, method: "manual" });
+    trackEvent("location_set", { city: name, lat: city.latitude, lon: city.longitude, method: "city_search" });
   };
 
   return (
@@ -309,13 +309,9 @@ export default function Home() {
           >
             <CitySearch 
               onSelect={(city) => {
-                updateSettings({
-                  location: {
-                    lat: city.latitude,
-                    lon: city.longitude,
-                    name: `${city.name}${city.admin1 ? `, ${city.admin1}` : ''}`
-                  }
-                });
+                const name = `${city.name}${city.admin1 ? `, ${city.admin1}` : ''}`;
+                updateSettings({ location: { lat: city.latitude, lon: city.longitude, name } });
+                trackEvent("location_set", { city: name, lat: city.latitude, lon: city.longitude, method: "city_change" });
                 setShowSearch(false);
               }} 
               onCancel={() => setShowSearch(false)}

@@ -52,7 +52,7 @@ const FEATURE_LABELS: Record<string, string> = {
   reminder_created:"Reminder Created",
   forecast_viewed: "Forecast Viewed",
   voice_used:      "Voice Used",
-  location_set:       "Location Set",
+  location_set:       "Location Set (any method)",
   location_gate_view: "Location Gate Shown",
   style_changed:      "Style Changed",
   settings_opened:    "Settings Opened",
