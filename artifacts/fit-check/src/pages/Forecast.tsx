@@ -87,7 +87,12 @@ export default function Forecast() {
       {/* Radar view */}
       {activeTab === "radar" && settings.location && (
         <div className="space-y-3">
-          <RadarMap lat={settings.location.lat} lon={settings.location.lon} />
+          <RadarMap
+            lat={settings.location.lat}
+            lon={settings.location.lon}
+            temperatureF={weather.current.temperature_2m}
+            units={settings.units}
+          />
           <p className="text-xs text-center text-muted-foreground">
             Live precipitation radar · Powered by RainViewer · Updates every 10 min
           </p>
