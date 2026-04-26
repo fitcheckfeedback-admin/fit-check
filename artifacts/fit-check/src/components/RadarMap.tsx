@@ -80,10 +80,13 @@ export function RadarMap({ lat, lon, temperatureF, units }: RadarMapProps) {
   const hostRef = useRef("https://tilecache.rainviewer.com");
   const animTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const [frames, setFrames] = useState<RadarFrame[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [status, setStatus] = useState<"loading" | "error" | "ok">("loading");
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Init map
   useEffect(() => {
@@ -117,8 +120,8 @@ export function RadarMap({ lat, lon, temperatureF, units }: RadarMapProps) {
   }, []);
 
   // Fetch radar frames
-  const fetchFrames = useCallback(async () => {
-    setStatus("loading");
+  const fetchFrames = useCallback(async (silent = false) => {
+    if (!silent) setStatus("loading");
     try {
       const res = await fetch("https://api.rainviewer.com/public/weather-maps.json");
       if (!res.ok) throw new Error();
@@ -130,13 +133,22 @@ export function RadarMap({ lat, lon, temperatureF, units }: RadarMapProps) {
       if (!all.length) throw new Error();
       setFrames(all);
       setActiveIdx(Math.max(0, past.length - 1));
+      setLastUpdated(new Date());
       setStatus("ok");
     } catch {
-      setStatus("error");
+      if (!silent) setStatus("error");
     }
   }, []);
 
+  // Initial fetch
   useEffect(() => { fetchFrames(); }, [fetchFrames]);
+
+  // Auto-refresh every 30 seconds (silent — no loading spinner)
+  useEffect(() => {
+    if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
+    refreshTimerRef.current = setInterval(() => { fetchFrames(true); }, 30_000);
+    return () => { if (refreshTimerRef.current) clearInterval(refreshTimerRef.current); };
+  }, [fetchFrames]);
 
   // Render a specific radar frame
   const showFrame = useCallback((idx: number, frameList: RadarFrame[]) => {
@@ -183,6 +195,7 @@ export function RadarMap({ lat, lon, temperatureF, units }: RadarMapProps) {
   const isForecast = activeIdx >= frames.length - 2;
 
   return (
+    <>
     <div className="rounded-3xl overflow-hidden shadow-xl relative border border-border/20" style={{ background: "#1a1a1a" }}>
       {/* Map */}
       <div ref={containerRef} style={{ height: 340, width: "100%" }} />
@@ -246,16 +259,12 @@ export function RadarMap({ lat, lon, temperatureF, units }: RadarMapProps) {
             ))}
           </div>
 
-          {/* Legend */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-white/40 mr-0.5">Rain:</span>
-            {[["#40e0d0","Light"],["#00c400",""],["#ffff00","Mod"],["#ff8800",""],["#cc0000","Heavy"]].map(([c, label]) => (
-              <div key={c} className="flex items-center gap-1">
-                <div className="w-5 h-1.5 rounded-sm" style={{ background: c }} />
-                {label && <span className="text-[9px] text-white/40">{label}</span>}
-              </div>
-            ))}
-          </div>
+          {/* Last updated */}
+          {lastUpdated && (
+            <p className="text-[9px] text-white/35 text-center mt-1.5">
+              Updated {lastUpdated.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} · auto-refreshes every 30s
+            </p>
+          )}
         </div>
       )}
 
@@ -264,5 +273,32 @@ export function RadarMap({ lat, lon, temperatureF, units }: RadarMapProps) {
         © OpenStreetMap · RainViewer
       </div>
     </div>
+
+    {/* Legend card — outside the map */}
+    <div className="bg-card border border-border/40 rounded-2xl px-4 py-3 mt-3">
+      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Precipitation Intensity</p>
+      <div className="flex items-center gap-0">
+        {[
+          { color: "#99f6ff", label: "None" },
+          { color: "#40e0d0", label: "Light" },
+          { color: "#00c400", label: "Moderate" },
+          { color: "#ffff00", label: "Heavy" },
+          { color: "#ff8800", label: "Very Heavy" },
+          { color: "#cc0000", label: "Extreme" },
+        ].map(({ color, label }, i, arr) => (
+          <div key={color} className="flex-1 flex flex-col items-center gap-1">
+            <div
+              className="w-full h-3 rounded-sm"
+              style={{
+                background: color,
+                borderRadius: i === 0 ? "4px 0 0 4px" : i === arr.length - 1 ? "0 4px 4px 0" : "0",
+              }}
+            />
+            <span className="text-[8px] text-muted-foreground font-medium leading-tight text-center">{label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+    </>
   );
 }
