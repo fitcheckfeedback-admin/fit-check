@@ -1,16 +1,14 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { MapPin, ArrowRight, RefreshCw, Sparkles, User, Check, Plus, X, Lock, ChevronDown } from "lucide-react";
+import { MapPin, ArrowRight, Sparkles, User, Check, Plus, X } from "lucide-react";
 import { CitySearch } from "@/components/CitySearch";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { useGeolocation } from "@/hooks/useGeolocation";
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { trackEvent } from "@/lib/analytics";
 import { STYLE_TYPES, GenderPreference } from "@/lib/storage";
-import { reverseGeocode } from "@/lib/weather";
 
-type Step = "hook" | "requesting" | "denied" | "style" | "gender";
+type Step = "hook" | "requesting" | "fallback" | "style" | "gender";
 
 const SCENARIOS = [
   {
@@ -205,37 +203,37 @@ function OutfitShowcase() {
 export default function Onboarding() {
   const [, navigate] = useLocation();
   const { updateSettings } = useFitCheckSettings();
-  const { getCurrentPosition, loading: geoLoading } = useGeolocation();
 
   const fromLanding = new URLSearchParams(window.location.search).get("src") === "landing";
   const [step, setStep] = useState<Step>(fromLanding ? "requesting" : "hook");
-  const [showCitySearch, setShowCitySearch] = useState(false);
-  const [showBrowserInstructions, setShowBrowserInstructions] = useState(false);
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
   const [customInput, setCustomInput] = useState("");
   const [customStyles, setCustomStyles] = useState<string[]>([]);
   const [selectedGender, setSelectedGender] = useState<GenderPreference>("unspecified");
 
   const handleCitySelect = (city: any) => {
-    const loc = { lat: city.lat, lon: city.lon, name: city.name };
+    const name = city.name ?? `${city.city}${city.admin1 ? `, ${city.admin1}` : ""}`;
+    const loc = { lat: city.latitude ?? city.lat, lon: city.longitude ?? city.lon, name };
     updateSettings({ location: loc });
-    trackEvent("location_set", { city: city.name, lat: city.lat, lon: city.lon, method: "city_search" });
+    trackEvent("location_set", { city: name, lat: loc.lat, lon: loc.lon, method: "city_search" });
     setStep("style");
   };
 
   const requestLocation = async () => {
     setStep("requesting");
     try {
-      const pos = await getCurrentPosition();
-      const resolvedCity = await reverseGeocode(pos.lat, pos.lon);
-      const loc = { lat: pos.lat, lon: pos.lon, name: resolvedCity ?? "Current Location" };
-      updateSettings({ location: loc });
-      if (resolvedCity) {
-        trackEvent("location_set", { city: resolvedCity, lat: pos.lat, lon: pos.lon, method: "gps" });
+      const res = await fetch("/api/location/detect");
+      const loc = await res.json() as { detected: boolean; city?: string; region?: string; lat?: number; lon?: number };
+      if (loc.detected && loc.city && loc.lat !== undefined && loc.lon !== undefined) {
+        const name = loc.region ? `${loc.city}, ${loc.region}` : loc.city;
+        updateSettings({ location: { lat: loc.lat, lon: loc.lon, name } });
+        trackEvent("location_set", { city: name, lat: loc.lat, lon: loc.lon, method: "ip_auto" });
+        setStep("style");
+      } else {
+        setStep("fallback");
       }
-      setStep("style");
     } catch {
-      setStep("denied");
+      setStep("fallback");
     }
   };
 
@@ -367,13 +365,13 @@ export default function Onboarding() {
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
               </Button>
               <p className="text-center text-xs text-muted-foreground/70">
-                Free forever · Needs your location to get started
+                Free forever · No sign-up needed
               </p>
             </motion.div>
           </motion.div>
         )}
 
-        {/* ── Requesting location ── */}
+        {/* ── Detecting location automatically ── */}
         {step === "requesting" && (
           <motion.div
             key="requesting"
@@ -381,146 +379,51 @@ export default function Onboarding() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, x: -40 }}
             transition={{ duration: 0.4 }}
-            className="flex-1 flex flex-col items-center justify-center p-6 text-center"
+            className="flex-1 flex flex-col items-center justify-center p-6 text-center gap-6"
           >
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.1, type: "spring" }}
-              className="relative mb-10"
+              className="relative"
             >
               <motion.div
                 animate={{ opacity: [0.4, 0.7, 0.4], scale: [0.9, 1.1, 0.9] }}
                 transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
                 className="absolute -inset-8 brand-glow -z-10 rounded-full"
               />
-              <img src="/logo.png" alt="FIT✔️" className="w-32 h-32 rounded-[2rem] drop-shadow-2xl object-cover" />
+              <img src="/logo.png" alt="FIT✔️" className="w-28 h-28 rounded-[2rem] drop-shadow-2xl object-cover" />
             </motion.div>
-
-            <div className="w-full max-w-sm space-y-3">
-              <div className="flex items-center gap-3 p-4 rounded-2xl bg-primary/8 border border-primary/20">
-                <motion.div
-                  animate={{ rotate: geoLoading ? 360 : 0 }}
-                  transition={{ repeat: geoLoading ? Infinity : 0, duration: 1, ease: "linear" }}
-                >
-                  <MapPin className="w-5 h-5 text-primary shrink-0" />
-                </motion.div>
-                <p className="text-sm text-left text-foreground/80">
-                  {geoLoading ? "Getting your location…" : "Requesting your location…"}
-                </p>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Tap <strong>Allow</strong> when your browser asks for location access.
-              </p>
-            </div>
+            <motion.div
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+              className="w-3 h-3 bg-primary rounded-full"
+            />
+            <p className="text-sm text-muted-foreground">Getting your fit ready…</p>
           </motion.div>
         )}
 
-        {/* ── Location denied ── */}
-        {step === "denied" && (
+        {/* ── Fallback: IP detection failed, show city search ── */}
+        {step === "fallback" && (
           <motion.div
-            key="denied"
+            key="fallback"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, x: -40 }}
             transition={{ duration: 0.4 }}
-            className="flex-1 flex flex-col p-6 pt-14 min-h-[100dvh]"
+            className="flex-1 flex flex-col items-center justify-center p-6 gap-6 min-h-[100dvh]"
           >
-            {/* Privacy reassurance header */}
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 mx-auto">
-                <Lock className="w-7 h-7 text-primary" />
+            <div className="text-center space-y-2">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-3 mx-auto">
+                <MapPin className="w-6 h-6 text-primary" />
               </div>
-              <h2 className="text-2xl font-display font-bold mb-2">We get it</h2>
-              <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
-                Location access is <strong>only for this app</strong> — not shared with other sites. Your browser keeps each site's permissions completely separate.
+              <h2 className="text-2xl font-display font-bold">One quick step</h2>
+              <p className="text-sm text-muted-foreground max-w-[240px] mx-auto">
+                Just need your city to pull today's live weather.
               </p>
             </div>
-
-            {/* Option A: Try GPS again */}
-            <div className="space-y-3 mb-4">
-              <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Option 1 — Use GPS (most accurate)</p>
-              <Button
-                size="lg"
-                className="w-full h-14 text-base rounded-2xl shadow-lg shadow-primary/20"
-                onClick={() => window.location.reload()}
-              >
-                <RefreshCw className="mr-2 h-5 w-5" />
-                Reload &amp; Try Again
-              </Button>
-              <p className="text-center text-xs text-muted-foreground/60 px-2">
-                After changing your browser or system settings, a reload is needed to pick up the new permission.
-              </p>
-
-              {/* Collapsible instructions */}
-              <button
-                onClick={() => setShowBrowserInstructions(v => !v)}
-                className="w-full text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors flex items-center justify-center gap-1 py-1"
-              >
-                <motion.span animate={{ rotate: showBrowserInstructions ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                  <ChevronDown className="w-3 h-3" />
-                </motion.span>
-                How to enable in browser settings
-              </button>
-              <AnimatePresence>
-                {showBrowserInstructions && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="p-4 rounded-2xl bg-muted/50 text-left space-y-2">
-                      <p className="text-xs text-muted-foreground"><strong>iPhone Safari:</strong> Settings → Safari → Location → Allow</p>
-                      <p className="text-xs text-muted-foreground"><strong>Android Chrome:</strong> Site settings → Location → Allow</p>
-                      <p className="text-xs text-muted-foreground/70 mt-1">💡 Tip: set it to "Ask next time" so you're always in control.</p>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Divider */}
-            <div className="flex items-center gap-3 my-2">
-              <div className="flex-1 h-px bg-border/50" />
-              <span className="text-xs text-muted-foreground/50 font-medium">or</span>
-              <div className="flex-1 h-px bg-border/50" />
-            </div>
-
-            {/* Option B: City search */}
-            <div className="space-y-3">
-              <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Option 2 — Enter your city manually</p>
-              <AnimatePresence mode="wait">
-                {!showCitySearch ? (
-                  <motion.button
-                    key="show-search"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={() => setShowCitySearch(true)}
-                    className="w-full h-14 rounded-2xl border-2 border-border/60 bg-card text-sm font-semibold text-foreground/70 flex items-center justify-center gap-2 hover:border-primary/40 transition-colors"
-                  >
-                    <MapPin className="w-4 h-4" />
-                    Enter my city instead
-                  </motion.button>
-                ) : (
-                  <motion.div
-                    key="city-search"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <CitySearch
-                      onSelect={handleCitySelect}
-                      onCancel={() => setShowCitySearch(false)}
-                      autoFocus
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <p className="text-center text-xs text-muted-foreground/50">
-                GPS gives you the most precise local weather.
-              </p>
+            <div className="w-full max-w-sm">
+              <CitySearch onSelect={handleCitySelect} autoFocus />
             </div>
           </motion.div>
         )}

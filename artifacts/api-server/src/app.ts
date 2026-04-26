@@ -6,6 +6,9 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
+// Trust Replit's reverse proxy so req.ip and x-forwarded-for headers are accurate
+app.set("trust proxy", true);
+
 app.use(
   pinoHttp({
     logger,
