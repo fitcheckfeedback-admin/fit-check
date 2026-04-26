@@ -26,31 +26,24 @@ import { FitCardData } from "@/lib/fitCardCaption";
 import { AIStylistCard } from "@/components/AIStylistCard";
 import { CitySearch } from "@/components/CitySearch";
 
-type DetectedLocation = { detected: true; city: string; region: string; lat: number; lon: number } | { detected: false };
-
 function LocationGate({ onLocation }: { onLocation: (loc: { lat: number; lon: number; name: string }) => void }) {
-  const [detected, setDetected] = useState<DetectedLocation | null>(null);
-  const [showSearch, setShowSearch] = useState(false);
-  const [userCount, setUserCount] = useState<number | null>(null);
+  const [fallback, setFallback] = useState(false);
 
   useEffect(() => {
     trackEvent("location_gate_view", {});
-    // Detect city from IP and fetch social proof count in parallel
-    Promise.all([
-      fetch("/api/location/detect").then(r => r.json()).catch(() => ({ detected: false })),
-      fetch("/api/analytics/user-count").then(r => r.json()).catch(() => ({ count: null })),
-    ]).then(([loc, uc]) => {
-      setDetected(loc as DetectedLocation);
-      if (uc?.count) setUserCount(Number(uc.count));
-    });
-  }, []);
-
-  const confirmDetected = () => {
-    if (!detected || !detected.detected) return;
-    const name = detected.region ? `${detected.city}, ${detected.region}` : detected.city;
-    onLocation({ lat: detected.lat, lon: detected.lon, name });
-    trackEvent("location_set", { city: name, lat: detected.lat, lon: detected.lon, method: "ip_detected" });
-  };
+    fetch("/api/location/detect")
+      .then(r => r.json())
+      .then((loc: { detected: boolean; city?: string; region?: string; lat?: number; lon?: number }) => {
+        if (loc.detected && loc.city && loc.lat !== undefined && loc.lon !== undefined) {
+          const name = loc.region ? `${loc.city}, ${loc.region}` : loc.city;
+          onLocation({ lat: loc.lat, lon: loc.lon, name });
+          trackEvent("location_set", { city: name, lat: loc.lat, lon: loc.lon, method: "ip_auto" });
+        } else {
+          setFallback(true);
+        }
+      })
+      .catch(() => setFallback(true));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCitySelect = (city: { name: string; admin1?: string; latitude: number; longitude: number }) => {
     const name = `${city.name}${city.admin1 ? `, ${city.admin1}` : ""}`;
@@ -58,160 +51,35 @@ function LocationGate({ onLocation }: { onLocation: (loc: { lat: number; lon: nu
     trackEvent("location_set", { city: name, lat: city.latitude, lon: city.longitude, method: "city_search" });
   };
 
-  const isLoading = detected === null;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="flex-1 flex flex-col min-h-[100dvh] bg-background"
-    >
-      {/* Hero */}
-      <div className="relative overflow-hidden bg-gradient-to-b from-amber-50 to-background dark:from-amber-950/20 dark:to-background px-6 pt-14 pb-10 flex flex-col items-center text-center">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent pointer-events-none" />
-
-        <motion.img
-          src="/logo.png"
-          alt="FIT✔️"
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 200, damping: 15 }}
-          className="w-16 h-16 rounded-2xl shadow-lg mb-5"
-        />
-
-        <motion.h1
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="text-3xl font-display font-black leading-tight tracking-tight"
-        >
-          Your Daily Fit<br />
-          <span className="brand-gradient-text">Is Ready.</span>
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.18 }}
-          className="text-muted-foreground mt-3 text-sm max-w-[260px] leading-relaxed"
-        >
-          Real-time weather + what to actually wear today — personalized for you.
-        </motion.p>
-
-        {/* Blurred teaser */}
+  // While detecting: full-screen loading state
+  if (!fallback) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-4 p-6">
+        <img src="/logo.png" alt="FIT✔️" className="w-14 h-14 rounded-2xl shadow-md" />
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="relative mt-6 w-full max-w-xs"
-        >
-          <div className="bg-card border rounded-2xl p-4 shadow-sm select-none pointer-events-none">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-xl">☀️</div>
-              <div>
-                <p className="text-sm font-bold">Today's Fit</p>
-                <p className="text-xs text-muted-foreground">
-                  Sunny · 74°F · {detected?.detected ? `${detected.city}` : "Your City"}
-                </p>
-              </div>
-              <div className="ml-auto text-xs font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full">98</div>
-            </div>
-            <div className="space-y-1.5 blur-sm">
-              <div className="text-sm font-semibold text-foreground">White linen shirt + slim chinos</div>
-              <div className="text-xs text-muted-foreground">Light sneakers or loafers · No jacket needed</div>
-              <div className="text-xs text-muted-foreground">Sunglasses recommended · UV high today</div>
-            </div>
-          </div>
-          <div className="absolute inset-0 flex items-end justify-center pb-3 rounded-2xl bg-gradient-to-t from-background/70 via-transparent to-transparent">
-            <p className="text-xs font-bold text-primary">Confirm your city to unlock your real fit →</p>
-          </div>
-        </motion.div>
+          animate={{ scale: [1, 1.2, 1] }}
+          transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+          className="w-3 h-3 bg-primary rounded-full"
+        />
+        <p className="text-sm text-muted-foreground">Getting your fit ready…</p>
       </div>
+    );
+  }
 
-      {/* CTA */}
-      <div className="px-6 pb-10 space-y-4 flex flex-col items-center">
-
-        {/* Social proof */}
-        {userCount !== null && userCount > 50 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex items-center gap-2 text-sm text-muted-foreground"
-          >
-            <div className="flex -space-x-1.5">
-              {["🧑", "👩", "🧔"].map((e, i) => (
-                <div key={i} className="w-6 h-6 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[10px]">{e}</div>
-              ))}
-            </div>
-            <span className="font-semibold text-foreground">{userCount.toLocaleString()}+</span>&nbsp;people already got their fit
-          </motion.div>
-        )}
-
-        <AnimatePresence mode="wait">
-          {isLoading && (
-            <motion.div key="loading" exit={{ opacity: 0 }} className="flex flex-col items-center gap-3 py-4">
-              <motion.div
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
-                className="w-3 h-3 bg-primary rounded-full"
-              />
-              <p className="text-sm text-muted-foreground">Finding your city…</p>
-            </motion.div>
-          )}
-
-          {/* IP detected — one-tap confirm */}
-          {!isLoading && detected?.detected && !showSearch && (
-            <motion.div
-              key="detected"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="w-full max-w-sm space-y-3"
-            >
-              <div className="flex items-center gap-2 justify-center text-sm text-muted-foreground">
-                <MapPin className="w-4 h-4 text-primary" />
-                <span>Looks like you're in</span>
-                <span className="font-bold text-foreground">
-                  {detected.city}{detected.region ? `, ${detected.region}` : ""}
-                </span>
-              </div>
-
-              <Button
-                size="lg"
-                className="w-full h-14 rounded-2xl font-bold text-base shadow-md"
-                onClick={confirmDetected}
-              >
-                Yes — show my fit
-              </Button>
-
-              <button
-                onClick={() => setShowSearch(true)}
-                className="w-full text-center text-sm text-muted-foreground underline underline-offset-2 py-1"
-              >
-                Not my city — search instead
-              </button>
-            </motion.div>
-          )}
-
-          {/* Manual search — fallback or "not my city" */}
-          {!isLoading && (!detected?.detected || showSearch) && (
-            <motion.div
-              key="search"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="w-full max-w-sm space-y-3"
-            >
-              <p className="text-base font-bold text-foreground text-center">
-                {showSearch ? "Search your city" : "What city are you in?"}
-              </p>
-              <CitySearch onSelect={handleCitySelect} autoFocus />
-              <p className="text-xs text-muted-foreground text-center max-w-[240px] mx-auto">
-                Used to pull live weather and personalize your fit.
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+  // Fallback: IP detection failed — show city search
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center p-6 gap-6">
+      <div className="text-center space-y-2">
+        <img src="/logo.png" alt="FIT✔️" className="w-14 h-14 rounded-2xl shadow-md mx-auto mb-4" />
+        <h2 className="text-2xl font-display font-black">Almost there</h2>
+        <p className="text-sm text-muted-foreground max-w-[240px]">
+          Just need your city to pull today's weather.
+        </p>
       </div>
-    </motion.div>
+      <div className="w-full max-w-sm">
+        <CitySearch onSelect={handleCitySelect} autoFocus />
+      </div>
+    </div>
   );
 }
 
