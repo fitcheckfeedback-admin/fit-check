@@ -149,8 +149,8 @@ export function RadarMap({ lat, lon, temperatureF, units }: RadarMapProps) {
       radarLayerRef.current = null;
     }
 
-    const url = `${hostRef.current}${frame.path}/512/{z}/{x}/{y}/2/1_1.png`;
-    const layer = L.tileLayer(url, { tileSize: 512, opacity: 0.75, zIndex: 10 });
+    const url = `${hostRef.current}${frame.path}/256/{z}/{x}/{y}/8/1_1.png`;
+    const layer = L.tileLayer(url, { tileSize: 256, opacity: 0.75, zIndex: 10 });
     layer.addTo(mapRef.current);
     radarLayerRef.current = layer;
   }, []);
@@ -249,7 +249,7 @@ export function RadarMap({ lat, lon, temperatureF, units }: RadarMapProps) {
           {/* Legend */}
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] text-white/40 mr-0.5">Rain:</span>
-            {[["#00c8ff","Light"],["#00e676",""],["#ffee00","Mod"],["#ff6d00",""],["#d50000","Heavy"]].map(([c, label]) => (
+            {[["#40e0d0","Light"],["#00c400",""],["#ffff00","Mod"],["#ff8800",""],["#cc0000","Heavy"]].map(([c, label]) => (
               <div key={c} className="flex items-center gap-1">
                 <div className="w-5 h-1.5 rounded-sm" style={{ background: c }} />
                 {label && <span className="text-[9px] text-white/40">{label}</span>}
