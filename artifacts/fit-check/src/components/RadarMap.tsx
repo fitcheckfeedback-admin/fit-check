@@ -41,16 +41,10 @@ export function RadarMap({ lat, lon }: RadarMapProps) {
       scrollWheelZoom: false,
     }).setView([lat, lon], 7);
 
-    // Dark base — radar colors pop
+    // OpenStreetMap base — most reliable, no CORS issues
     L.tileLayer(
-      "https://a.basemaps.cartocdn.com/dark_matter_no_labels/{z}/{x}/{y}.png",
-      { maxZoom: 18 }
-    ).addTo(map);
-
-    // City labels on top
-    L.tileLayer(
-      "https://a.basemaps.cartocdn.com/dark_matter_only_labels/{z}/{x}/{y}.png",
-      { maxZoom: 18, zIndex: 20, opacity: 0.7 }
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      { subdomains: "abc", maxZoom: 19, crossOrigin: "anonymous" }
     ).addTo(map);
 
     // User location dot
@@ -106,7 +100,7 @@ export function RadarMap({ lat, lon }: RadarMapProps) {
     }
 
     const url = `${hostRef.current}${frame.path}/512/{z}/{x}/{y}/6/1_1.png`;
-    const layer = L.tileLayer(url, { tileSize: 512, opacity: 0.7, zIndex: 10 });
+    const layer = L.tileLayer(url, { tileSize: 512, opacity: 0.7, zIndex: 10, crossOrigin: "anonymous" });
     layer.addTo(mapRef.current);
     radarLayerRef.current = layer;
   }, []);
@@ -143,27 +137,27 @@ export function RadarMap({ lat, lon }: RadarMapProps) {
   const isForecastFrame = activeIdx >= frames.length - 2;
 
   return (
-    <div className="rounded-3xl overflow-hidden shadow-xl relative border border-white/5" style={{ background: "#1b1b2f" }}>
+    <div className="rounded-3xl overflow-hidden shadow-xl relative border border-border/40" style={{ background: "#e8e8e8" }}>
       {/* Map canvas */}
       <div ref={containerRef} style={{ height: 340, width: "100%" }} />
 
       {/* Attribution */}
-      <div className="absolute bottom-16 right-2 z-30 text-[8px] text-white/30 pointer-events-none">
-        © CartoDB · RainViewer
+      <div className="absolute bottom-16 right-2 z-30 text-[8px] text-black/30 pointer-events-none">
+        © OpenStreetMap · RainViewer
       </div>
 
       {/* Loading */}
       {status === "loading" && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#1b1b2f]/80 z-40 gap-3">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 z-40 gap-3">
           <RefreshCw className="w-6 h-6 animate-spin text-primary" />
-          <span className="text-sm text-white/60">Loading radar…</span>
+          <span className="text-sm text-muted-foreground">Loading radar…</span>
         </div>
       )}
 
       {/* Error */}
       {status === "error" && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#1b1b2f]/90 z-40 gap-3">
-          <p className="text-white/60 text-sm">Radar data unavailable</p>
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/90 z-40 gap-3">
+          <p className="text-muted-foreground text-sm">Radar data unavailable</p>
           <button onClick={fetchFrames} className="text-sm font-bold text-primary bg-primary/20 px-5 py-2 rounded-full">
             Retry
           </button>
