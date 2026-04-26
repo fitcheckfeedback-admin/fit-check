@@ -58,7 +58,7 @@ router.get("/location/detect", async (req, res) => {
   try {
     const response = await fetch(
       `http://ip-api.com/json/${ip}?fields=status,city,regionName,lat,lon,countryCode`,
-      { signal: AbortSignal.timeout(3000) }
+      { signal: AbortSignal.timeout(1500) }
     );
 
     if (response.ok) {
@@ -93,7 +93,7 @@ router.get("/location/detect", async (req, res) => {
   try {
     const response = await fetch(
       `https://ipapi.co/${ip}/json/`,
-      { signal: AbortSignal.timeout(4000) }
+      { signal: AbortSignal.timeout(2000) }
     );
 
     if (response.ok) {

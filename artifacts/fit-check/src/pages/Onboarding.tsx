@@ -211,6 +211,32 @@ export default function Onboarding() {
   const [customStyles, setCustomStyles] = useState<string[]>([]);
   const [selectedGender, setSelectedGender] = useState<GenderPreference>("unspecified");
 
+  // Pre-fetch location in the background immediately on mount so result is
+  // ready (or nearly ready) by the time the user taps the CTA.
+  type LocResult = { detected: boolean; city?: string; region?: string; lat?: number; lon?: number };
+  const prefetchRef = useState<{ promise: Promise<LocResult> | null }>(() => ({ promise: null }))[0];
+
+  useEffect(() => {
+    const promise = fetch("/api/location/detect")
+      .then(r => r.json() as Promise<LocResult>)
+      .catch(() => ({ detected: false } as LocResult));
+    prefetchRef.promise = promise;
+
+    if (fromLanding) {
+      promise.then(loc => {
+        if (loc.detected && loc.city && loc.lat !== undefined && loc.lon !== undefined) {
+          const name = loc.region ? `${loc.city}, ${loc.region}` : loc.city;
+          updateSettings({ location: { lat: loc.lat, lon: loc.lon, name } });
+          trackEvent("location_set", { city: name, lat: loc.lat, lon: loc.lon, method: "ip_auto" });
+          setStep("style");
+        } else {
+          setStep("fallback");
+        }
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleCitySelect = (city: any) => {
     const name = city.name ?? `${city.city}${city.admin1 ? `, ${city.admin1}` : ""}`;
     const loc = { lat: city.latitude ?? city.lat, lon: city.longitude ?? city.lon, name };
@@ -220,10 +246,21 @@ export default function Onboarding() {
   };
 
   const requestLocation = async () => {
-    setStep("requesting");
+    // Use the already-in-flight (or completed) pre-fetch promise
+    const promise = prefetchRef.promise ?? fetch("/api/location/detect").then(r => r.json() as Promise<LocResult>).catch(() => ({ detected: false } as LocResult));
+    prefetchRef.promise = promise;
+
+    // Optimistically skip the spinner if result arrives within 120 ms
+    let resolved = false;
+    const fast = new Promise<void>(res => setTimeout(res, 120));
+    const resultPromise = promise.then(loc => { resolved = true; return loc; });
+
+    await Promise.race([fast, resultPromise]);
+
+    if (!resolved) setStep("requesting");
+
     try {
-      const res = await fetch("/api/location/detect");
-      const loc = await res.json() as { detected: boolean; city?: string; region?: string; lat?: number; lon?: number };
+      const loc = await resultPromise;
       if (loc.detected && loc.city && loc.lat !== undefined && loc.lon !== undefined) {
         const name = loc.region ? `${loc.city}, ${loc.region}` : loc.city;
         updateSettings({ location: { lat: loc.lat, lon: loc.lon, name } });
@@ -236,13 +273,6 @@ export default function Onboarding() {
       setStep("fallback");
     }
   };
-
-  useEffect(() => {
-    if (fromLanding) {
-      requestLocation();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const toggleStyle = (s: string) => {
     setSelectedStyles(prev =>
