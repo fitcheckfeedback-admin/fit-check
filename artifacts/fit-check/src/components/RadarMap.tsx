@@ -162,7 +162,7 @@ export function RadarMap({ lat, lon, temperatureF, units }: RadarMapProps) {
     }
 
     const url = `${hostRef.current}${frame.path}/256/{z}/{x}/{y}/8/1_1.png`;
-    const layer = L.tileLayer(url, { tileSize: 256, opacity: 0.75, zIndex: 10 });
+    const layer = L.tileLayer(url, { tileSize: 256, opacity: 0.75, zIndex: 10, maxNativeZoom: 12, maxZoom: 18 });
     layer.addTo(mapRef.current);
     radarLayerRef.current = layer;
   }, []);
