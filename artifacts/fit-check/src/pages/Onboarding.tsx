@@ -498,7 +498,7 @@ export default function Onboarding() {
                 </div>
                 <h2 className="text-2xl font-display font-bold">Your Style</h2>
               </div>
-              <p className="text-sm text-muted-foreground">Pick any that feel like you. This helps personalize your outfits.</p>
+              <p className="text-sm text-muted-foreground">Pick any that feel like you — or just tap Continue to skip.</p>
               {selectedStyles.length > 0 && (
                 <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="mt-2 flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 text-primary" />
@@ -563,15 +563,11 @@ export default function Onboarding() {
                 size="lg"
                 className="w-full h-14 text-base rounded-2xl shadow-lg shadow-primary/20"
                 onClick={handleFinish}
-                disabled={selectedStyles.length === 0}
               >
                 {selectedStyles.length > 0
                   ? `Continue with ${selectedStyles.length} style${selectedStyles.length > 1 ? "s" : ""}`
-                  : "Select at least one style"}
+                  : "Continue"}
               </Button>
-              <button onClick={() => setStep("gender")} className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors py-2">
-                Skip for now
-              </button>
             </div>
           </motion.div>
         )}
