@@ -1,12 +1,34 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Component, ReactNode } from "react";
 import { useLocation } from "wouter";
-import { MapPin, ArrowRight, Sparkles, User, Check, Plus, X } from "lucide-react";
+import { MapPin, ArrowRight, Sparkles, User, Check, Plus, X, RefreshCw } from "lucide-react";
 import { CitySearch } from "@/components/CitySearch";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { trackEvent } from "@/lib/analytics";
 import { STYLE_TYPES, GenderPreference } from "@/lib/storage";
+
+class OnboardingErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="min-h-[100dvh] flex flex-col items-center justify-center p-8 text-center gap-4">
+          <RefreshCw className="w-8 h-8 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Something went wrong loading this step.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="text-sm font-semibold text-primary underline"
+          >
+            Tap to reload
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 type Step = "hook" | "requesting" | "fallback" | "style" | "gender";
 
@@ -328,11 +350,12 @@ export default function Onboarding() {
   };
 
   return (
+    <OnboardingErrorBoundary>
     <div className="min-h-[100dvh] flex flex-col bg-gradient-to-b from-primary/8 via-background to-background dark:from-primary/5 relative overflow-hidden">
       <div className="absolute top-[-15%] right-[-15%] w-80 h-80 bg-primary/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-[-10%] left-[-10%] w-72 h-72 bg-blue-500/8 rounded-full blur-3xl pointer-events-none" />
 
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="popLayout">
 
         {/* ── Hook / value-prop screen ── */}
         {step === "hook" && (
@@ -635,5 +658,6 @@ export default function Onboarding() {
 
       </AnimatePresence>
     </div>
+    </OnboardingErrorBoundary>
   );
 }
