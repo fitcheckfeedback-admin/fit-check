@@ -222,24 +222,32 @@ export default function Onboarding() {
       .catch(() => ({ detected: false } as LocResult));
     prefetchRef.promise = promise;
 
-    if (fromLanding) {
-      // Safety timeout — if IP detection hasn't resolved in 4s, drop to city search
-      const timeout = setTimeout(() => setStep("fallback"), 4000);
+    // Safety timeout — if IP detection hasn't resolved in 4s, drop to city search
+    // Applies to both landing arrivals (start on "requesting") and hook arrivals
+    const timeout = setTimeout(() => {
+      setStep(s => s === "requesting" || s === "hook" ? "fallback" : s);
+    }, 4000);
 
-      promise.then(loc => {
-        clearTimeout(timeout);
-        if (loc.detected && loc.city && loc.lat !== undefined && loc.lon !== undefined) {
-          const name = loc.region ? `${loc.city}, ${loc.region}` : loc.city;
-          updateSettings({ location: { lat: loc.lat, lon: loc.lon, name } });
-          trackEvent("location_set", { city: name, lat: loc.lat, lon: loc.lon, method: "ip_auto" });
-          setStep("style");
-        } else {
-          setStep("fallback");
-        }
-      });
+    // Minimum time to show the hook screen so users can read it
+    const minHookDisplay = new Promise<void>(res => setTimeout(res, 1500));
 
-      return () => clearTimeout(timeout);
-    }
+    promise.then(async loc => {
+      clearTimeout(timeout);
+      if (loc.detected && loc.city && loc.lat !== undefined && loc.lon !== undefined) {
+        const name = loc.region ? `${loc.city}, ${loc.region}` : loc.city;
+        updateSettings({ location: { lat: loc.lat, lon: loc.lon, name } });
+        trackEvent("location_set", { city: name, lat: loc.lat, lon: loc.lon, method: "ip_auto" });
+        // Wait for minimum display time before auto-advancing from hook
+        await minHookDisplay;
+        setStep(s => s === "hook" || s === "requesting" ? "style" : s);
+      } else {
+        // IP detection failed — only redirect if still waiting
+        await minHookDisplay;
+        setStep(s => s === "hook" || s === "requesting" ? "fallback" : s);
+      }
+    });
+
+    return () => clearTimeout(timeout);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
