@@ -166,15 +166,28 @@ function OutfitCard() {
 }
 
 function SplashGate({ onEnter, track }: { onEnter: () => void; track: (e: string) => void }) {
+  const [countdown, setCountdown] = useState(5);
+
   useEffect(() => {
-    const dismiss = () => onEnter();
-    window.addEventListener("wheel", dismiss, { once: true, passive: true });
-    window.addEventListener("touchmove", dismiss, { once: true, passive: true });
-    return () => {
-      window.removeEventListener("wheel", dismiss);
-      window.removeEventListener("touchmove", dismiss);
-    };
-  }, [onEnter]);
+    const interval = setInterval(() => {
+      setCountdown(c => {
+        if (c <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Auto-redirect when countdown hits 0
+  useEffect(() => {
+    if (countdown === 0) {
+      track("landing_splash_cta_click");
+      window.location.href = APP_URL;
+    }
+  }, [countdown, track]);
 
   return (
     <motion.div
@@ -189,38 +202,84 @@ function SplashGate({ onEnter, track }: { onEnter: () => void; track: (e: string
 
       <div className="relative z-10 flex flex-col items-center text-center max-w-xs">
         {/* Logo */}
-        <img src="/logo.png" alt="FIT✔️" className="w-20 h-20 rounded-[1.5rem] shadow-2xl shadow-[#FF9500]/20 mb-6" />
+        <motion.img
+          src="/logo.png"
+          alt="FIT✔️"
+          className="w-20 h-20 rounded-[1.5rem] shadow-2xl shadow-[#FF9500]/20 mb-6"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 280, damping: 20 }}
+        />
 
-        <p className="text-xs font-black uppercase tracking-[0.2em] text-[#FF9500] mb-3">Welcome to FIT✔️</p>
+        <motion.p
+          className="text-xs font-black uppercase tracking-[0.2em] text-[#FF9500] mb-3"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.15 }}
+        >
+          Your AI stylist
+        </motion.p>
 
-        <h1 className="text-3xl font-black leading-tight mb-3">
-          This is the preview page.
-        </h1>
+        <motion.h1
+          className="text-[2.1rem] font-black leading-tight mb-3"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          We checked your weather.<br />
+          <span className="text-[#FF9500]">Here's what to wear.</span>
+        </motion.h1>
 
-        <p className="text-white/55 text-base leading-relaxed mb-10">
-          Tap below to open the app — it reads your live weather and picks your outfit. Free, no sign-up.
-        </p>
+        <motion.p
+          className="text-white/55 text-sm leading-relaxed mb-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          Your outfit is ready. Free, no sign-up, no download.
+        </motion.p>
 
         {/* CTA */}
-        <div className="w-full relative mb-4">
+        <motion.div
+          className="w-full relative mb-3"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.38 }}
+        >
           <div className="absolute inset-0 rounded-2xl bg-[#FF9500]/40 blur-xl animate-pulse" />
           <a
             href={APP_URL}
-            onClick={() => { track("landing_splash_cta_click"); }}
+            onClick={() => track("landing_splash_cta_click")}
             className="relative w-full flex items-center justify-center gap-2 bg-[#FF9500] text-black font-black text-lg px-8 py-5 rounded-2xl shadow-xl shadow-[#FF9500]/40 active:scale-95 transition-all"
           >
-            Open the App — It's Free <ArrowRight className="w-5 h-5" />
+            Get My Fit — It's Free <ArrowRight className="w-5 h-5" />
           </a>
-        </div>
+        </motion.div>
 
-        <p className="text-white/30 text-xs font-semibold mb-2">No download · No account · Works instantly</p>
-
-        <button
-          onClick={onEnter}
-          className="mt-6 text-white/25 text-xs font-semibold underline underline-offset-2 active:text-white/50 transition-colors"
+        <motion.p
+          className="text-white/30 text-xs font-semibold mb-5"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.45 }}
         >
-          or scroll to learn more ↓
-        </button>
+          No download · No account · Works instantly
+        </motion.p>
+
+        {/* Countdown */}
+        <motion.p
+          className="text-white/20 text-xs"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+        >
+          Taking you there in {countdown}s…{" "}
+          <button
+            onClick={onEnter}
+            className="underline underline-offset-2 text-white/30 hover:text-white/50 transition-colors"
+          >
+            or see how it works
+          </button>
+        </motion.p>
       </div>
     </motion.div>
   );
@@ -309,9 +368,9 @@ function Home() {
                   <Star key={i} className="w-4 h-4 fill-[#FF9500] text-[#FF9500]" />
                 ))}
               </div>
-              <span className="text-white/60 text-sm font-semibold">Loved by early users</span>
+              <span className="text-white/60 text-sm font-semibold">500+ users this week</span>
             </div>
-            <span className="text-xs font-bold text-[#FF9500]/80">🔥 500+ outfits picked this week</span>
+            <span className="text-xs font-bold text-[#FF9500]/80">🔥 Takes 3 seconds. Zero guesswork.</span>
           </motion.div>
 
           {/* Primary CTA — before the card */}
@@ -322,7 +381,7 @@ function Home() {
               onClick={() => track("landing_cta_click")}
               className="relative w-full flex items-center justify-center gap-2 bg-[#FF9500] text-black font-black text-lg px-8 py-5 rounded-2xl shadow-xl shadow-[#FF9500]/40 hover:bg-orange-400 active:scale-95 transition-all"
             >
-              See Today's Outfit <ArrowRight className="w-5 h-5" />
+              Get My Fit Now <ArrowRight className="w-5 h-5" />
             </a>
           </motion.div>
 
@@ -586,7 +645,7 @@ function Home() {
               onClick={() => track("landing_sticky_cta_click")}
               className="flex items-center justify-center gap-2 w-full max-w-sm mx-auto bg-[#FF9500] text-black font-black text-base px-6 py-4 rounded-2xl shadow-2xl shadow-[#FF9500]/30 active:scale-95 transition-all"
             >
-              See Today's Outfit <ArrowRight className="w-5 h-5" />
+              Get My Fit — Free <ArrowRight className="w-5 h-5" />
             </a>
             <p className="text-center text-white/30 text-xs mt-2 font-medium">Free · No sign-up · Works right now</p>
           </motion.div>
