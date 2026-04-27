@@ -77,17 +77,15 @@ function _sendSessionEnd() {
     metadata: { ...location, durationSeconds },
   });
 
-  // sendBeacon is the only reliable way to fire on page unload
-  if (navigator.sendBeacon) {
-    navigator.sendBeacon("/api/analytics/event", new Blob([payload], { type: "application/json" }));
-  } else {
-    fetch("/api/analytics/event", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: payload,
-      keepalive: true,
-    }).catch(() => {});
-  }
+  // fetch + keepalive is more reliable than sendBeacon for JSON payloads:
+  // sendBeacon Blob Content-Type can be mangled by proxies causing body-parse 400s.
+  // keepalive fetch preserves the full request even after the page is unloaded.
+  fetch("/api/analytics/event", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: payload,
+    keepalive: true,
+  }).catch(() => {});
 }
 
 if (typeof window !== "undefined") {

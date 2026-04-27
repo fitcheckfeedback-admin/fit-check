@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, analyticsEventsTable, excludedDevicesTable } from "@workspace/db";
 import { desc, gte, sql, count, countDistinct, notInArray, and, eq } from "drizzle-orm";
 import crypto from "crypto";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -48,11 +49,16 @@ router.get("/analytics/user-count", async (_req, res) => {
 
 // POST /api/analytics/event — always open (client-side tracking)
 router.post("/analytics/event", async (req, res) => {
-  const { deviceId, eventType, metadata } = req.body;
+  const { deviceId, eventType, metadata } = req.body ?? {};
   if (!deviceId || !eventType) {
+    logger.warn({ body: req.body, contentType: req.headers["content-type"] }, "analytics/event missing required fields");
     res.status(400).json({ error: "deviceId and eventType are required" });
     return;
   }
+  logger.info(
+    { eventType, city: metadata?.city ?? null, devicePrefix: String(deviceId).slice(0, 8) },
+    "analytics/event"
+  );
   await db.insert(analyticsEventsTable).values({
     deviceId,
     eventType,
