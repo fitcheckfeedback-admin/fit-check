@@ -223,7 +223,11 @@ export default function Onboarding() {
     prefetchRef.promise = promise;
 
     if (fromLanding) {
+      // Safety timeout — if IP detection hasn't resolved in 4s, drop to city search
+      const timeout = setTimeout(() => setStep("fallback"), 4000);
+
       promise.then(loc => {
+        clearTimeout(timeout);
         if (loc.detected && loc.city && loc.lat !== undefined && loc.lon !== undefined) {
           const name = loc.region ? `${loc.city}, ${loc.region}` : loc.city;
           updateSettings({ location: { lat: loc.lat, lon: loc.lon, name } });
@@ -233,6 +237,8 @@ export default function Onboarding() {
           setStep("fallback");
         }
       });
+
+      return () => clearTimeout(timeout);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -430,6 +436,15 @@ export default function Onboarding() {
               className="w-3 h-3 bg-primary rounded-full"
             />
             <p className="text-sm text-muted-foreground">Getting your fit ready…</p>
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 2 }}
+              onClick={() => setStep("fallback")}
+              className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors underline underline-offset-2"
+            >
+              Taking too long? Enter your city
+            </motion.button>
           </motion.div>
         )}
 
