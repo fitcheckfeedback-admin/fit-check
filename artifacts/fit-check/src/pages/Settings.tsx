@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/analytics";
 import { STYLE_TYPES, GenderPreference } from "@/lib/storage";
-import { MapPin, RefreshCw, Sun, Moon, Laptop, Thermometer, Trash2, Copy, Mic, Play, BellRing, CheckCircle2, Sparkles, Plus, X, User, Check, MessageSquare } from "lucide-react";
+import { MapPin, RefreshCw, Sun, Moon, Laptop, Thermometer, Trash2, Copy, Mic, Play, BellRing, CheckCircle2, Sparkles, Plus, X, User, Check, MessageSquare, Download, Share, Smartphone } from "lucide-react";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useLocation } from "wouter";
 import { CitySearch } from "@/components/CitySearch";
@@ -15,6 +15,7 @@ import { useVoiceAssistant } from "@/hooks/useVoiceAssistant";
 import { useVoices } from "@/hooks/useVoices";
 import { Switch } from "@/components/ui/switch";
 import { registerServiceWorker } from "@/lib/swRegister";
+import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import { subscribeToPush, sendSubscriptionToServer, unsubscribeFromPush } from "@/lib/pushSubscribe";
 import {
   AlertDialog,
@@ -39,6 +40,8 @@ export default function Settings() {
   const { toast } = useToast();
   const { speak, isSpeaking, cancelSpeech } = useVoiceAssistant();
   const { ranked: rankedVoices, loading: voicesLoading } = useVoices();
+  const { canInstall, installed, ios, promptAvailable, install } = useInstallPrompt();
+  const [iosHintVisible, setIosHintVisible] = useState(false);
   
   const handleTestVoice = (voiceId?: string | null) => {
     if (isSpeaking) {
@@ -168,6 +171,83 @@ export default function Settings() {
           <p className="text-muted-foreground font-medium">Manage your preferences and location.</p>
         </div>
       </div>
+
+      {/* Install App */}
+      {!installed && (
+        <section className="space-y-4">
+          <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider pl-2">Install App</h2>
+          <div className="bg-card rounded-[2rem] border shadow-sm p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-xl text-primary shrink-0">
+                <Smartphone className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">Add to Home Screen</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {ios
+                    ? "Open directly from your home screen — no browser needed."
+                    : promptAvailable
+                    ? "Install the app for quick access right from your home screen."
+                    : "Open this page in Chrome to install the app on your phone."}
+                </p>
+              </div>
+            </div>
+
+            {ios ? (
+              <>
+                <button
+                  onClick={() => setIosHintVisible(!iosHintVisible)}
+                  className="w-full h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2"
+                >
+                  <Share className="w-4 h-4" />
+                  How to Install on iPhone
+                </button>
+                <AnimatePresence>
+                  {iosHintVisible && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="bg-muted/50 rounded-2xl p-4 space-y-2 text-sm">
+                        <p className="font-semibold text-center mb-3">3 quick steps</p>
+                        <div className="flex items-start gap-3">
+                          <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0">1</span>
+                          <p>Tap the <strong>Share</strong> button at the bottom of Safari <span className="text-muted-foreground">(box with arrow pointing up)</span></p>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0">2</span>
+                          <p>Scroll down and tap <strong>"Add to Home Screen"</strong></p>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0">3</span>
+                          <p>Tap <strong>"Add"</strong> in the top right — done!</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </>
+            ) : promptAvailable ? (
+              <button
+                onClick={async () => {
+                  await install();
+                  trackEvent("install_tapped_settings", {});
+                }}
+                className="w-full h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Install App
+              </button>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-1">
+                Open this app in <strong>Chrome</strong> on Android to install it.
+              </p>
+            )}
+          </div>
+        </section>
+      )}
 
       <section className="space-y-4">
         <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider pl-2">Location</h2>
