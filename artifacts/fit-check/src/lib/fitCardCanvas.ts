@@ -207,19 +207,26 @@ async function drawSplitLayout(ctx: CanvasRenderingContext2D, data: FitCardData,
   ctx.font = "28px system-ui, sans-serif";
   ctx.fillStyle = "#666";
   ctx.fillText(data.weatherLabel, cx, 430);
+  if (data.highF !== undefined && data.lowF !== undefined) {
+    ctx.font = "20px system-ui, sans-serif";
+    ctx.fillStyle = "#888";
+    const hiLo = `↑ ${formatTemp(data.highF, data.units)}  ↓ ${formatTemp(data.lowF, data.units)}${data.feelsLikeF !== undefined ? `  Feels ${formatTemp(data.feelsLikeF, data.units)}` : ""}`;
+    ctx.fillText(hiLo, cx, 460);
+  }
 
   // Divider
   ctx.fillStyle = "rgba(180,100,20,0.15)";
-  ctx.fillRect(INFO_X, 460, INFO_W, 1);
+  ctx.fillRect(INFO_X, 490, INFO_W, 1);
 
   // Outfit
   ctx.textAlign = "left";
   ctx.font = "bold 20px system-ui, sans-serif";
   ctx.fillStyle = "#F97316";
-  ctx.fillText("TODAY'S FIT", INFO_X, 506);
+  ctx.fillText("TODAY'S FIT", INFO_X, 526);
   ctx.font = "bold 32px system-ui, sans-serif";
   ctx.fillStyle = "#1a1a1a";
-  let nextY = wrapText(ctx, data.mainOutfit, INFO_X, 548, INFO_W, 44);
+  const outfitText = data.closetDesc ?? data.mainOutfit;
+  let nextY = wrapText(ctx, outfitText, INFO_X, 568, INFO_W, 44);
 
   if (data.outerwear) {
     nextY += 16;
@@ -289,6 +296,12 @@ async function drawCenteredLayout(ctx: CanvasRenderingContext2D, data: FitCardDa
   ctx.font = "32px system-ui, sans-serif";
   ctx.fillStyle = "#666";
   ctx.fillText(data.weatherLabel, 540, 410);
+  if (data.highF !== undefined && data.lowF !== undefined) {
+    ctx.font = "22px system-ui, sans-serif";
+    ctx.fillStyle = "#888";
+    const hiLo = `↑ ${formatTemp(data.highF, data.units)}  ↓ ${formatTemp(data.lowF, data.units)}${data.feelsLikeF !== undefined ? `  Feels ${formatTemp(data.feelsLikeF, data.units)}` : ""}`;
+    ctx.fillText(hiLo, 540, 442);
+  }
 
   ctx.textAlign = "left";
   ctx.fillStyle = "rgba(255,255,255,0.9)";
@@ -304,16 +317,17 @@ async function drawCenteredLayout(ctx: CanvasRenderingContext2D, data: FitCardDa
   ctx.fillText(String(data.fitScore), 975, 80);
 
   ctx.fillStyle = "rgba(180,100,20,0.15)";
-  ctx.fillRect(48, 440, 984, 1);
+  ctx.fillRect(48, 468, 984, 1);
 
   ctx.font = "bold 22px system-ui, sans-serif";
   ctx.fillStyle = "#F97316";
-  ctx.fillText("TODAY'S FIT", 48, 498);
+  ctx.fillText("TODAY'S FIT", 48, 516);
   ctx.font = "bold 38px system-ui, sans-serif";
   ctx.fillStyle = "#1a1a1a";
-  let nextY = wrapText(ctx, data.mainOutfit, 48, 548, 984, 50);
+  const centeredOutfitText = data.closetDesc ?? data.mainOutfit;
+  let nextY = wrapText(ctx, centeredOutfitText, 48, 566, 984, 50);
 
-  if (data.outerwear) {
+  if (data.outerwear && !data.closetDesc) {
     ctx.font = "bold 22px system-ui, sans-serif";
     ctx.fillStyle = "#F97316";
     nextY += 20;

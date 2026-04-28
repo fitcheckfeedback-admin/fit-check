@@ -3,11 +3,15 @@ import { formatHashtagsForShare } from "./fitCardHashtags";
 
 export interface FitCardData {
   mainOutfit: string;
+  closetDesc?: string;
   outerwear?: string;
   accessories: string[];
   fitScore: number;
   style: StylePreference;
   temperatureF: number;
+  highF?: number;
+  lowF?: number;
+  feelsLikeF?: number;
   weatherLabel: string;
   location: string;
   date: string;

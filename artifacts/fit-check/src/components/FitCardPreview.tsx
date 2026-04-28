@@ -56,8 +56,8 @@ export function FitCardPreview({ data }: { data: FitCardData }) {
             {/* Outfit */}
             <div className="flex-1 flex flex-col min-h-0">
               <div className="text-[8px] font-bold text-amber-600 tracking-wider mb-0.5">TODAY'S FIT</div>
-              <div className="text-xs font-bold text-slate-900 leading-snug line-clamp-3">{data.mainOutfit}</div>
-              {data.outerwear && (
+              <div className="text-xs font-bold text-slate-900 leading-snug line-clamp-3">{data.closetDesc ?? data.mainOutfit}</div>
+              {data.outerwear && !data.closetDesc && (
                 <div className="mt-1 text-[9px] font-bold text-slate-800 leading-snug line-clamp-1">
                   <span className="text-amber-600 mr-1">+</span>{data.outerwear}
                 </div>
@@ -102,14 +102,21 @@ export function FitCardPreview({ data }: { data: FitCardData }) {
               {formatTemp(data.temperatureF, data.units)}
             </div>
             <div className="text-xs font-medium text-slate-600">{data.weatherLabel}</div>
+            {(data.highF !== undefined && data.lowF !== undefined) && (
+              <div className="flex items-center justify-center gap-2 mt-1 text-[10px] font-semibold text-slate-500">
+                <span>↑ {formatTemp(data.highF, data.units)}</span>
+                <span>↓ {formatTemp(data.lowF, data.units)}</span>
+                {data.feelsLikeF !== undefined && <span>Feels {formatTemp(data.feelsLikeF, data.units)}</span>}
+              </div>
+            )}
           </div>
 
           <div className="h-px w-full bg-amber-900/10 my-3" />
 
           <div className="flex-1 flex flex-col min-h-0">
             <div className="text-[10px] font-bold text-amber-600 tracking-wider mb-1">TODAY'S FIT</div>
-            <div className="text-sm font-bold text-slate-900 leading-snug line-clamp-2">{data.mainOutfit}</div>
-            {data.outerwear && (
+            <div className="text-sm font-bold text-slate-900 leading-snug line-clamp-2">{data.closetDesc ?? data.mainOutfit}</div>
+            {data.outerwear && !data.closetDesc && (
               <div className="mt-2 text-xs font-bold text-slate-800 leading-snug line-clamp-1">
                 <span className="text-amber-600 text-[10px] mr-1">LAYER</span>
                 {data.outerwear}

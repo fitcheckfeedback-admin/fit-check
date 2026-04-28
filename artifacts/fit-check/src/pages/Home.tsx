@@ -23,6 +23,7 @@ import { useQuery } from "@tanstack/react-query";
 import { FitCardShareSheet } from "@/components/FitCardShareSheet";
 import { generateHashtags } from "@/lib/fitCardHashtags";
 import { FitCardData } from "@/lib/fitCardCaption";
+import { buildClosetDescription } from "@/lib/closetDesc";
 import { AIStylistCard } from "@/components/AIStylistCard";
 import { CitySearch } from "@/components/CitySearch";
 
@@ -219,11 +220,15 @@ export default function Home() {
 
   const shareData: FitCardData | null = weather ? {
     mainOutfit: activeRec.mainOutfit,
+    closetDesc: buildClosetDescription(closetMatchResult) ?? undefined,
     outerwear: activeRec.outerwear,
     accessories: activeRec.accessories,
     fitScore: activeRec.fitScore,
     style: settings.style,
     temperatureF: activeTemp,
+    highF: activeHighF,
+    lowF: activeLowF,
+    feelsLikeF: activeFeelsLike,
     weatherLabel: wmoInfo.label,
     location: settings.location.name,
     date: shareDate,
