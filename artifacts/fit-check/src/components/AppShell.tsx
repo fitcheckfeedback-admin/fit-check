@@ -3,6 +3,7 @@ import { BottomNav } from "./BottomNav";
 import { AnnouncementModal } from "./AnnouncementModal";
 import { AppTour } from "./AppTour";
 import { UpdateBanner } from "./UpdateBanner";
+import { InstallPrompt } from "./InstallPrompt";
 
 interface AppShellProps {
   children: ReactNode;
@@ -22,6 +23,7 @@ export function AppShell({ children, hideNav = false }: AppShellProps) {
             <BottomNav />
           </div>
         )}
+        <InstallPrompt />
         <AppTour />
         <AnnouncementModal />
       </div>

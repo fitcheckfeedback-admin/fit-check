@@ -2,9 +2,12 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   if (!('serviceWorker' in navigator)) {
     return null;
   }
-  
+
   try {
-    const registration = await navigator.serviceWorker.register('/sw.js');
+    const swUrl = `${import.meta.env.BASE_URL}sw.js`;
+    const registration = await navigator.serviceWorker.register(swUrl, {
+      scope: import.meta.env.BASE_URL,
+    });
     return registration;
   } catch (error) {
     console.error('Service worker registration failed:', error);
