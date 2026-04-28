@@ -77,6 +77,16 @@ export function FitCardShareSheet({ open, onOpenChange, data }: FitCardShareShee
   const encodedText = encodeURIComponent(caption);
   const encodedURL = encodeURIComponent(window.location.href);
 
+  const handleFacebookShare = () => {
+    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedURL}`;
+    // Facebook ignores &quote= — copy caption for user to paste manually
+    navigator.clipboard.writeText(caption).catch(() => {});
+    toast({ title: "Caption copied — paste it into your Facebook post!" });
+    // Use location.href so it works inside PWA / standalone mode
+    window.open(shareUrl, "_blank") ?? (window.location.href = shareUrl);
+    trackEvent("fit_card_shared", { method: "facebook" });
+  };
+
   const handleNativeShare = async () => {
     try {
       const shareData: ShareData = {
@@ -239,7 +249,7 @@ export function FitCardShareSheet({ open, onOpenChange, data }: FitCardShareShee
                 icon={<div className="font-bold text-3xl text-white font-serif -mt-1">f</div>}
                 label="Facebook"
                 bg="bg-[#1877F2]"
-                onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodedURL}&quote=${encodedText}`, "_blank")}
+                onClick={handleFacebookShare}
               />
               <ShareButton
                 icon={<Infinity className="w-6 h-6 text-white" />}
