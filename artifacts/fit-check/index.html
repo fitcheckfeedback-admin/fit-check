@@ -31,6 +31,15 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Capture install prompt before React mounts so we never miss the event -->
+    <script>
+      window.__installPromptEvent = null;
+      window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        window.__installPromptEvent = e;
+        window.dispatchEvent(new Event('installpromptready'));
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

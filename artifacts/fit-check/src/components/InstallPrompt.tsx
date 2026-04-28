@@ -3,9 +3,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Download, X, Share } from "lucide-react";
 
 const DISMISSED_KEY = "fitcheck.installDismissed";
+const DELAY_MS = 20000;
 
 function isIOS() {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
 
 function isInStandaloneMode() {
@@ -14,51 +16,61 @@ function isInStandaloneMode() {
 }
 
 export function InstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showIOSHint, setShowIOSHint] = useState(false);
   const [visible, setVisible] = useState(false);
+  const [isIOSDevice, setIsIOSDevice] = useState(false);
 
   useEffect(() => {
     if (isInStandaloneMode()) return;
     if (localStorage.getItem(DISMISSED_KEY)) return;
 
-    const onPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      // Show after a short delay so it doesn't interrupt the first experience
-      setTimeout(() => setVisible(true), 45000);
+    const ios = isIOS();
+    setIsIOSDevice(ios);
+
+    // Check if the event was already captured globally before React mounted
+    const tryShow = () => {
+      const hasAndroidPrompt = !!(window as any).__installPromptEvent;
+      if (hasAndroidPrompt || ios) {
+        setTimeout(() => setVisible(true), DELAY_MS);
+      }
     };
 
-    window.addEventListener("beforeinstallprompt", onPrompt as any);
-
-    // On iOS there's no beforeinstallprompt — show a manual hint instead
-    if (isIOS()) {
-      setTimeout(() => setShowIOSHint(true), 45000);
+    // If already captured, schedule now
+    if ((window as any).__installPromptEvent) {
+      tryShow();
+      return;
     }
 
-    return () => window.removeEventListener("beforeinstallprompt", onPrompt as any);
+    // iOS — no beforeinstallprompt event, just schedule the hint
+    if (ios) {
+      tryShow();
+      return;
+    }
+
+    // Android — wait for the global to signal it's ready
+    const onReady = () => tryShow();
+    window.addEventListener("installpromptready", onReady);
+    return () => window.removeEventListener("installpromptready", onReady);
   }, []);
 
   const handleInstall = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
+    const prompt = (window as any).__installPromptEvent;
+    if (!prompt) return;
+    prompt.prompt();
+    const { outcome } = await prompt.userChoice;
     if (outcome === "accepted") {
-      dismiss();
+      (window as any).__installPromptEvent = null;
     }
+    dismiss();
   };
 
   const dismiss = () => {
     localStorage.setItem(DISMISSED_KEY, "1");
     setVisible(false);
-    setShowIOSHint(false);
   };
-
-  const show = visible || showIOSHint;
 
   return (
     <AnimatePresence>
-      {show && (
+      {visible && (
         <motion.div
           initial={{ opacity: 0, y: 80 }}
           animate={{ opacity: 1, y: 0 }}
@@ -74,14 +86,18 @@ export function InstallPrompt() {
           </button>
 
           <div className="flex items-center gap-3 mb-3">
-            <img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="FIT✔️" className="w-10 h-10 rounded-xl" />
+            <img
+              src={`${import.meta.env.BASE_URL}icon-192.png`}
+              alt="FIT✔️"
+              className="w-10 h-10 rounded-xl"
+            />
             <div>
               <p className="font-bold text-sm leading-tight">Add FIT✔️ to your Home Screen</p>
               <p className="text-xs text-muted-foreground">Get instant outfit checks, no browser needed</p>
             </div>
           </div>
 
-          {showIOSHint ? (
+          {isIOSDevice ? (
             <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-xl p-3">
               <Share className="w-4 h-4 shrink-0 text-primary" />
               <span>Tap <strong>Share</strong> then <strong>"Add to Home Screen"</strong></span>
