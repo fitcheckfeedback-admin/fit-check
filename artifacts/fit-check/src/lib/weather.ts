@@ -14,8 +14,12 @@ export interface CurrentWeather {
   apparent_temperature: number;
   is_day: number;
   precipitation: number;
+  rain: number;
+  showers: number;
+  snowfall: number;
   weather_code: number;
   wind_speed_10m: number;
+  wind_gusts_10m: number;
 }
 
 export interface HourlyForecast {
@@ -57,7 +61,12 @@ export async function searchCity(query: string): Promise<CitySearchResult[]> {
 }
 
 export async function fetchForecast(lat: number, lon: number): Promise<WeatherForecastResponse> {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m&hourly=temperature_2m,apparent_temperature,precipitation_probability,weather_code,wind_speed_10m,relative_humidity_2m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=5`;
+  const currentFields = [
+    "temperature_2m", "relative_humidity_2m", "apparent_temperature",
+    "is_day", "precipitation", "rain", "showers", "snowfall",
+    "weather_code", "wind_speed_10m", "wind_gusts_10m",
+  ].join(",");
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=${currentFields}&hourly=temperature_2m,apparent_temperature,precipitation_probability,weather_code,wind_speed_10m,relative_humidity_2m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=5`;
   const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to fetch weather forecast");
   return res.json();

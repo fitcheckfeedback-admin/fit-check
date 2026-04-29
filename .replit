@@ -28,3 +28,19 @@ VAPID_EMAIL = "mailto:fitcheck@app.local"
 
 [nix]
 channel = "stable-25_05"
+
+[[ports]]
+localPort = 8080
+externalPort = 8080
+
+[[ports]]
+localPort = 8081
+externalPort = 8081
+
+[[ports]]
+localPort = 18150
+externalPort = 3000
+
+[[ports]]
+localPort = 20187
+externalPort = 80

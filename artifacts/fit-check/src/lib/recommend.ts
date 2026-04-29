@@ -9,11 +9,15 @@ export interface RecommendationInput {
   precipChance: number;
   weatherCode: number;
   windMph: number;
+  windGustsMph?: number;
   humidity: number;
   isDay: boolean;
   style: StylePreference;
   gender?: GenderPreference;
   upcomingCodes?: number[];
+  rainMm?: number;
+  showersMm?: number;
+  snowfallCm?: number;
 }
 
 export interface Recommendation {

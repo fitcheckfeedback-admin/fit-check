@@ -25,17 +25,26 @@ function isSnowCode(code: number) {
 
 export function detectAlerts(input: RecommendationInput): WeatherAlert[] {
   const alerts: WeatherAlert[] = [];
-  const { temperatureF, precipChance, weatherCode, windMph, humidity, upcomingCodes = [] } = input;
+  const {
+    temperatureF, precipChance, weatherCode, windMph, windGustsMph = 0,
+    humidity, upcomingCodes = [], rainMm = 0, showersMm = 0, snowfallCm = 0,
+  } = input;
+
+  // Measured precipitation takes priority over forecast codes
+  const isRainingNow = rainMm > 0 || showersMm > 0;
+  const isSnowingNow = snowfallCm > 0;
 
   const isThunderstorm = isStormCode(weatherCode);
   const incomingStorm = !isThunderstorm && upcomingCodes.some(isStormCode);
-  const isHeavyRain = precipChance >= 70 && isHeavyRainCode(weatherCode);
+  const isHeavyRain = (precipChance >= 70 && isHeavyRainCode(weatherCode)) || (isRainingNow && (rainMm + showersMm) >= 1.5);
   const incomingHeavyRain = !isThunderstorm && !incomingStorm && !isHeavyRain
     && upcomingCodes.some(isHeavyRainCode) && precipChance >= 50;
-  const isHeavySnow = isSnowCode(weatherCode);
+  const isHeavySnow = isSnowCode(weatherCode) || (isSnowingNow && snowfallCm >= 0.5);
   const incomingSnow = !isHeavySnow && upcomingCodes.some(isSnowCode);
-  const isHighWind = windMph >= 30;
-  const isRainLikely = precipChance >= 40 && precipChance < 70 && !isThunderstorm && !isHeavyRain && !isHeavySnow && !incomingStorm;
+  const effectiveWindMph = Math.max(windMph, windGustsMph * 0.7);
+  const isHighWind = effectiveWindMph >= 30 || windGustsMph >= 45;
+  const isRainLikely = (precipChance >= 40 || isRainingNow) && precipChance < 70
+    && !isThunderstorm && !isHeavyRain && !isHeavySnow && !incomingStorm;
 
   if (isThunderstorm) {
     alerts.push({ id: "thunderstorm", severity: "warning", title: "Thunderstorms", description: "Dangerous lightning in the area.", outfitTip: "Stay indoors if possible. If you must go out — full waterproof kit, no metal accessories.", icon: "Zap", color: "text-yellow-600", bgColor: "bg-yellow-50 dark:bg-yellow-950/30" });
