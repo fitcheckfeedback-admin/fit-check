@@ -1,6 +1,7 @@
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { useWeather } from "@/hooks/useWeather";
 import { useNWSAlerts } from "@/hooks/useNWSAlerts";
+import { useNWSObservation } from "@/hooks/useNWSObservation";
 import { WeatherScene } from "@/components/WeatherScene";
 import { WeatherBackground } from "@/components/WeatherBackground";
 import { OutfitLookCard } from "@/components/OutfitLookCard";
@@ -103,6 +104,10 @@ export default function Home() {
     settings.location?.lat ?? null,
     settings.location?.lon ?? null,
   );
+  const { data: nwsObs } = useNWSObservation(
+    settings.location?.lat ?? null,
+    settings.location?.lon ?? null,
+  );
   const [showSearch, setShowSearch] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [appliedFit, setAppliedFit] = useState<SavedFit | null>(null);
@@ -152,6 +157,17 @@ export default function Home() {
   const isDay = weather.current.is_day === 1;
   const isTomorrow = viewDay === "tomorrow";
 
+  // Prefer NWS station observations (real measured data) over Open-Meteo model when available
+  const currentTempF = nwsObs?.tempF ?? weather.current.temperature_2m;
+  const currentFeelsLikeF = nwsObs?.feelsLikeF ?? weather.current.apparent_temperature;
+  const currentWeatherCode = nwsObs?.weatherCode ?? weather.current.weather_code;
+  const currentWindMph = nwsObs?.windMph ?? weather.current.wind_speed_10m;
+  const currentGustsMph = nwsObs?.windGustsMph ?? weather.current.wind_gusts_10m;
+  const currentHumidity = nwsObs?.humidity ?? weather.current.relative_humidity_2m;
+  const currentRainMm = (nwsObs?.precipLastHourMm ?? 0) > 0
+    ? nwsObs!.precipLastHourMm!
+    : weather.current.rain;
+
   // Current hour index — find the hourly slot closest to right now
   const currentHourIdx = getCurrentHourIndex(weather.hourly.time);
   const next6hPrecip = weather.hourly.precipitation_probability.slice(currentHourIdx, currentHourIdx + 6);
@@ -169,14 +185,14 @@ export default function Home() {
         alerts: []
       }
     : generateRecommendation({
-        temperatureF: weather.current.temperature_2m,
-        feelsLikeF: weather.current.apparent_temperature,
+        temperatureF: currentTempF,
+        feelsLikeF: currentFeelsLikeF,
         precipChance: currentPrecipChance,
-        weatherCode: weather.current.weather_code,
-        windMph: weather.current.wind_speed_10m,
-        windGustsMph: weather.current.wind_gusts_10m,
-        humidity: weather.current.relative_humidity_2m,
-        rainMm: weather.current.rain,
+        weatherCode: currentWeatherCode,
+        windMph: currentWindMph,
+        windGustsMph: currentGustsMph,
+        humidity: currentHumidity,
+        rainMm: currentRainMm,
         showersMm: weather.current.showers,
         snowfallCm: weather.current.snowfall,
         isDay,
@@ -208,12 +224,12 @@ export default function Home() {
 
   // Active (today or tomorrow) variables
   const activeRec = isTomorrow ? tomorrowRec : todayRec;
-  const activeWeatherCode = isTomorrow ? tomorrowCode : weather.current.weather_code;
+  const activeWeatherCode = isTomorrow ? tomorrowCode : currentWeatherCode;
   const activeIsDay = isTomorrow ? true : isDay;
   const activeHighF = isTomorrow ? tomorrowHighF : weather.daily.temperature_2m_max[0];
   const activeLowF = isTomorrow ? tomorrowLowF : weather.daily.temperature_2m_min[0];
-  const activeTemp = isTomorrow ? tomorrowAvgF : weather.current.temperature_2m;
-  const activeFeelsLike = isTomorrow ? tomorrowAvgF : weather.current.apparent_temperature;
+  const activeTemp = isTomorrow ? tomorrowAvgF : currentTempF;
+  const activeFeelsLike = isTomorrow ? tomorrowAvgF : currentFeelsLikeF;
   const wmoInfo = getWeatherInfo(activeWeatherCode);
 
   const currentTags = getWeatherTags({
@@ -457,8 +473,8 @@ export default function Home() {
               tempF: activeTemp,
               feelsLikeF: activeFeelsLike,
               condition: wmoInfo.label,
-              windMph: weather.current.wind_speed_10m,
-              precipChance: isTomorrow ? tomorrowMaxPrecip : weather.hourly.precipitation_probability[0],
+              windMph: isTomorrow ? weather.current.wind_speed_10m : currentWindMph,
+              precipChance: isTomorrow ? tomorrowMaxPrecip : currentPrecipChance,
               isDay: activeIsDay,
             }}
             closetItems={allClosetItems}
