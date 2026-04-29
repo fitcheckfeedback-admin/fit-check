@@ -13,26 +13,46 @@ export interface WeatherAlert {
   bgColor: string;
 }
 
+function isStormCode(code: number) {
+  return code >= 95 && code <= 99;
+}
+function isHeavyRainCode(code: number) {
+  return (code >= 51 && code <= 67) || (code >= 80 && code <= 82);
+}
+function isSnowCode(code: number) {
+  return (code >= 71 && code <= 77) || (code >= 85 && code <= 86);
+}
+
 export function detectAlerts(input: RecommendationInput): WeatherAlert[] {
   const alerts: WeatherAlert[] = [];
-  const { temperatureF, precipChance, weatherCode, windMph, humidity } = input;
+  const { temperatureF, precipChance, weatherCode, windMph, humidity, upcomingCodes = [] } = input;
 
-  const isHeavyRain = precipChance >= 70 && ((weatherCode >= 51 && weatherCode <= 67) || (weatherCode >= 80 && weatherCode <= 82));
-  const isThunderstorm = weatherCode >= 95 && weatherCode <= 99;
-  const isHeavySnow = (weatherCode >= 71 && weatherCode <= 77) || (weatherCode >= 85 && weatherCode <= 86);
+  const isThunderstorm = isStormCode(weatherCode);
+  const incomingStorm = !isThunderstorm && upcomingCodes.some(isStormCode);
+  const isHeavyRain = precipChance >= 70 && isHeavyRainCode(weatherCode);
+  const incomingHeavyRain = !isThunderstorm && !incomingStorm && !isHeavyRain
+    && upcomingCodes.some(isHeavyRainCode) && precipChance >= 50;
+  const isHeavySnow = isSnowCode(weatherCode);
+  const incomingSnow = !isHeavySnow && upcomingCodes.some(isSnowCode);
   const isHighWind = windMph >= 30;
-  const isRainLikely = precipChance >= 40 && precipChance < 70 && !isThunderstorm && !isHeavyRain && !isHeavySnow;
-  
+  const isRainLikely = precipChance >= 40 && precipChance < 70 && !isThunderstorm && !isHeavyRain && !isHeavySnow && !incomingStorm;
+
   if (isThunderstorm) {
     alerts.push({ id: "thunderstorm", severity: "warning", title: "Thunderstorms", description: "Dangerous lightning in the area.", outfitTip: "Stay indoors if possible. If you must go out — full waterproof kit, no metal accessories.", icon: "Zap", color: "text-yellow-600", bgColor: "bg-yellow-50 dark:bg-yellow-950/30" });
+  } else if (incomingStorm) {
+    alerts.push({ id: "incoming-storm", severity: "warning", title: "Storm Moving In", description: "Thunderstorms expected within the next few hours.", outfitTip: "Plan to be indoors when it hits. Carry a compact umbrella and skip the metal accessories.", icon: "Zap", color: "text-yellow-600", bgColor: "bg-yellow-50 dark:bg-yellow-950/30" });
   } else if (isHeavyRain) {
     alerts.push({ id: "heavy-rain", severity: "warning", title: "Heavy Rain", description: "Expect significant rainfall today.", outfitTip: "Waterproof shell, rain boots, and an umbrella are non-negotiable.", icon: "CloudRain", color: "text-blue-600", bgColor: "bg-blue-50 dark:bg-blue-950/30" });
+  } else if (incomingHeavyRain) {
+    alerts.push({ id: "incoming-rain", severity: "watch", title: "Heavy Rain Coming", description: "Heavy rain expected later today.", outfitTip: "Pack an umbrella. Water-resistant shoes and a light shell are smart today.", icon: "CloudRain", color: "text-blue-600", bgColor: "bg-blue-50 dark:bg-blue-950/30" });
   } else if (isRainLikely) {
     alerts.push({ id: "rain-likely", severity: "advisory", title: "Rain Likely", description: "There is a moderate chance of rain.", outfitTip: "Toss a compact umbrella in your bag. A light water-resistant layer is worth it.", icon: "Umbrella", color: "text-teal-600", bgColor: "bg-teal-50 dark:bg-teal-950/30" });
   }
 
   if (isHeavySnow) {
     alerts.push({ id: "heavy-snow", severity: "warning", title: "Snow / Blizzard", description: "Significant snowfall expected.", outfitTip: "Insulated waterproof boots, thermal base layers, and a weatherproof outer shell. Cover all exposed skin.", icon: "Snowflake", color: "text-sky-600", bgColor: "bg-sky-50 dark:bg-sky-950/30" });
+  } else if (incomingSnow) {
+    alerts.push({ id: "incoming-snow", severity: "watch", title: "Snow Moving In", description: "Snowfall expected later today.", outfitTip: "Layer up before heading out — waterproof boots and a warm outer shell are wise today.", icon: "Snowflake", color: "text-sky-600", bgColor: "bg-sky-50 dark:bg-sky-950/30" });
   }
 
   if (temperatureF >= 95) {

@@ -1,4 +1,4 @@
-import { WeatherAlert } from "./weatherAlerts";
+import { WeatherAlert } from "@/lib/weatherAlerts";
 import { motion, AnimatePresence } from "framer-motion";
 import { CloudRain, Zap, Snowflake, Thermometer, Wind, Umbrella, Droplets, Shirt, ChevronDown } from "lucide-react";
 import { useState } from "react";

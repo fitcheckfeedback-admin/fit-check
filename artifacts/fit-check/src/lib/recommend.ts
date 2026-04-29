@@ -13,6 +13,7 @@ export interface RecommendationInput {
   isDay: boolean;
   style: StylePreference;
   gender?: GenderPreference;
+  upcomingCodes?: number[];
 }
 
 export interface Recommendation {

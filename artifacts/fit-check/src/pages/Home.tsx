@@ -1,5 +1,6 @@
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { useWeather } from "@/hooks/useWeather";
+import { useNWSAlerts } from "@/hooks/useNWSAlerts";
 import { WeatherScene } from "@/components/WeatherScene";
 import { WeatherBackground } from "@/components/WeatherBackground";
 import { OutfitLookCard } from "@/components/OutfitLookCard";
@@ -84,9 +85,24 @@ function LocationGate({ onLocation }: { onLocation: (loc: { lat: number; lon: nu
   );
 }
 
+function getCurrentHourIndex(times: string[]): number {
+  const now = Date.now();
+  let best = 0;
+  let bestDiff = Infinity;
+  for (let i = 0; i < times.length; i++) {
+    const diff = Math.abs(new Date(times[i]).getTime() - now);
+    if (diff < bestDiff) { bestDiff = diff; best = i; }
+  }
+  return best;
+}
+
 export default function Home() {
   const { settings, updateSettings } = useFitCheckSettings();
   const { data: weather, isLoading, isError, isFetching, refetch } = useWeather(settings.location);
+  const { data: nwsAlerts = [] } = useNWSAlerts(
+    settings.location?.lat ?? null,
+    settings.location?.lon ?? null,
+  );
   const [showSearch, setShowSearch] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [appliedFit, setAppliedFit] = useState<SavedFit | null>(null);
@@ -136,6 +152,12 @@ export default function Home() {
   const isDay = weather.current.is_day === 1;
   const isTomorrow = viewDay === "tomorrow";
 
+  // Current hour index — find the hourly slot closest to right now
+  const currentHourIdx = getCurrentHourIndex(weather.hourly.time);
+  const next6hPrecip = weather.hourly.precipitation_probability.slice(currentHourIdx, currentHourIdx + 6);
+  const currentPrecipChance = next6hPrecip.length ? Math.max(...next6hPrecip) : 0;
+  const next6hCodes = weather.hourly.weather_code.slice(currentHourIdx + 1, currentHourIdx + 7);
+
   // Today's data
   const todayRec = appliedFit 
     ? {
@@ -149,13 +171,14 @@ export default function Home() {
     : generateRecommendation({
         temperatureF: weather.current.temperature_2m,
         feelsLikeF: weather.current.apparent_temperature,
-        precipChance: weather.hourly.precipitation_probability[0],
+        precipChance: currentPrecipChance,
         weatherCode: weather.current.weather_code,
         windMph: weather.current.wind_speed_10m,
         humidity: weather.current.relative_humidity_2m,
         isDay,
         style: settings.style,
         gender: settings.gender,
+        upcomingCodes: next6hCodes,
       });
 
   // Tomorrow's data
@@ -165,6 +188,7 @@ export default function Home() {
   const tomorrowAvgF = (tomorrowHighF + tomorrowLowF) / 2;
   const tomorrowPrecipHourly = weather.hourly.precipitation_probability.slice(24, 48);
   const tomorrowMaxPrecip = tomorrowPrecipHourly.length ? Math.max(...tomorrowPrecipHourly) : 0;
+  const tomorrowUpcomingCodes = weather.hourly.weather_code.slice(24, 48);
   const tomorrowRec = generateRecommendation({
     temperatureF: tomorrowAvgF,
     feelsLikeF: tomorrowAvgF,
@@ -175,6 +199,7 @@ export default function Home() {
     isDay: true,
     style: settings.style,
     gender: settings.gender,
+    upcomingCodes: tomorrowUpcomingCodes,
   });
 
   // Active (today or tomorrow) variables
@@ -190,7 +215,7 @@ export default function Home() {
   const currentTags = getWeatherTags({
     temperatureF: activeTemp,
     feelsLikeF: activeFeelsLike,
-    precipChance: isTomorrow ? tomorrowMaxPrecip : weather.hourly.precipitation_probability[0],
+    precipChance: isTomorrow ? tomorrowMaxPrecip : currentPrecipChance,
     weatherCode: activeWeatherCode,
     windMph: weather.current.wind_speed_10m,
     humidity: weather.current.relative_humidity_2m,
@@ -381,11 +406,18 @@ export default function Home() {
       })()}
 
       <div className="px-4 -mt-10 pb-6 space-y-4 relative z-20">
-        {!appliedFit && !isTomorrow && activeRec.alerts?.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <WeatherAlertBanner alerts={activeRec.alerts} />
-          </motion.div>
-        )}
+        {!appliedFit && !isTomorrow && (() => {
+          // NWS official alerts first (highest priority), then forecast-based
+          const nwsDeduped = nwsAlerts.filter(
+            na => !activeRec.alerts?.some(a => a.id === na.id)
+          );
+          const mergedAlerts = [...nwsDeduped, ...(activeRec.alerts ?? [])];
+          return mergedAlerts.length > 0 ? (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+              <WeatherAlertBanner alerts={mergedAlerts} />
+            </motion.div>
+          ) : null;
+        })()}
 
         <motion.section 
           initial={{ opacity: 0, y: 20 }}
