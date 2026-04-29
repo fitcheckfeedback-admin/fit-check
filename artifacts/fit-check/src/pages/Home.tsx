@@ -11,7 +11,8 @@ import { getWeatherTags, matchSavedFits } from "@/lib/savedFitsMatch";
 import { SavedFit } from "@/lib/storage";
 import { getWeatherInfo } from "@/lib/weather-codes";
 import { pickClosetItems } from "@/lib/closetMatch";
-import { MapPin, Search, Bell, Bookmark, ChevronRight, X, Share2, Plane, RefreshCw } from "lucide-react";
+import { MapPin, Search, Bell, Bookmark, ChevronRight, X, Share2, Plane, RefreshCw, Crown } from "lucide-react";
+import { usePremium } from "@/hooks/usePremium";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatTemp } from "@/lib/format";
 import { useState, useEffect, useRef } from "react";
@@ -108,6 +109,8 @@ export default function Home() {
     settings.location?.lat ?? null,
     settings.location?.lon ?? null,
   );
+  const { refetch: refetchPremium } = usePremium();
+  const [proToast, setProToast] = useState<"success" | "cancel" | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [appliedFit, setAppliedFit] = useState<SavedFit | null>(null);
@@ -129,6 +132,24 @@ export default function Home() {
       }
     }
   }, [weather, settings.location, settings.style]);
+
+  // Detect return from Stripe checkout and show toast
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const proParam = params.get("pro");
+    if (proParam === "success" || proParam === "cancel") {
+      setProToast(proParam);
+      params.delete("pro");
+      const newUrl = window.location.pathname + (params.toString() ? "?" + params.toString() : "");
+      window.history.replaceState({}, "", newUrl);
+      if (proParam === "success") {
+        refetchPremium();
+      }
+      const timer = setTimeout(() => setProToast(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { data: reminders = [] } = useQuery({
     queryKey: ['reminders', deviceId],
@@ -438,6 +459,32 @@ export default function Home() {
             </motion.div>
           ) : null;
         })()}
+
+        {/* Pro upgrade result toast */}
+        <AnimatePresence>
+          {proToast && (
+            <motion.div
+              initial={{ opacity: 0, y: -16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              className={`mx-4 rounded-2xl px-4 py-3 flex items-center gap-3 ${
+                proToast === "success"
+                  ? "bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30"
+                  : "bg-muted border border-border"
+              }`}
+            >
+              <Crown className={`w-4 h-4 shrink-0 ${proToast === "success" ? "text-amber-500" : "text-muted-foreground"}`} />
+              <p className="text-sm font-semibold flex-1">
+                {proToast === "success"
+                  ? "Welcome to FIT✔️ Pro! All features are unlocked."
+                  : "Upgrade cancelled — you can upgrade anytime."}
+              </p>
+              <button onClick={() => setProToast(null)} className="text-muted-foreground">
+                <X className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <motion.section 
           initial={{ opacity: 0, y: 20 }}

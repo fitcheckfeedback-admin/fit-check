@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 const CACHE_KEY = "fitcheck.premiumStatus";
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -6,40 +6,69 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 interface PremiumStatus {
   isPro: boolean;
   loading: boolean;
+  refetch: () => void;
+}
+
+async function checkPremium(deviceId: string): Promise<boolean> {
+  // Clear cache to get fresh status
+  try { sessionStorage.removeItem(CACHE_KEY); } catch {}
+
+  const res = await fetch(`/api/premium/status?deviceId=${encodeURIComponent(deviceId)}`);
+  if (!res.ok) return false;
+  const { isPro } = await res.json();
+
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify({ isPro, ts: Date.now() }));
+  } catch {}
+
+  return Boolean(isPro);
 }
 
 export function usePremium(): PremiumStatus {
-  const [status, setStatus] = useState<PremiumStatus>({ isPro: false, loading: true });
+  const [isPro, setIsPro] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchStatus = useCallback(async (forceRefresh = false) => {
     const deviceId = localStorage.getItem("fitcheck.deviceId");
     if (!deviceId) {
-      setStatus({ isPro: false, loading: false });
+      setIsPro(false);
+      setLoading(false);
       return;
     }
 
-    // Check cache first
-    try {
-      const cached = sessionStorage.getItem(CACHE_KEY);
-      if (cached) {
-        const { isPro, ts } = JSON.parse(cached);
-        if (Date.now() - ts < CACHE_TTL_MS) {
-          setStatus({ isPro, loading: false });
-          return;
+    // Try cache first (unless forced refresh)
+    if (!forceRefresh) {
+      try {
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const { isPro: cachedPro, ts } = JSON.parse(cached);
+          if (Date.now() - ts < CACHE_TTL_MS) {
+            setIsPro(cachedPro);
+            setLoading(false);
+            return;
+          }
         }
-      }
-    } catch {}
+      } catch {}
+    }
 
-    fetch(`/api/premium/status?deviceId=${encodeURIComponent(deviceId)}`)
-      .then(r => r.json())
-      .then(({ isPro }) => {
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ isPro, ts: Date.now() }));
-        setStatus({ isPro, loading: false });
-      })
-      .catch(() => {
-        setStatus({ isPro: false, loading: false });
-      });
+    try {
+      const pro = await checkPremium(deviceId);
+      setIsPro(pro);
+    } catch {
+      setIsPro(false);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  return status;
+  const refetch = useCallback(() => {
+    setLoading(true);
+    fetchStatus(true);
+  }, [fetchStatus]);
+
+  useEffect(() => {
+    fetchStatus(false);
+  }, [fetchStatus]);
+
+  return { isPro, loading, refetch };
 }

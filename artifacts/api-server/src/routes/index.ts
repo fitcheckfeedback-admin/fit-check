@@ -5,6 +5,7 @@ import analyticsRouter from "./analytics";
 import aiRouter from "./ai";
 import premiumRouter from "./premium";
 import locationRouter from "./location";
+import stripeRouter from "./stripe";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(analyticsRouter);
 router.use(aiRouter);
 router.use(premiumRouter);
 router.use(locationRouter);
+router.use(stripeRouter);
 
 export default router;
