@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "JUL-2QqrcPL_5GHpuUeZL"
@@ -18,3 +17,9 @@ id = "xrjo6QpIb8u5nQ-2VHcky"
 uri = "file://artifacts/landing/public/confident-walk.png"
 type = "image"
 title = "Confident stylish person"
+
+[[outputs]]
+id = "CmjwW9T-vMC5BR4rZwT-c"
+uri = "file://fitcheck-source.zip"
+type = "unspecified"
+title = "FIT✔️ Full Source Code"
