@@ -6,9 +6,6 @@ workflows:
     integrations:
       app_store_connect: Fit Check
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: app.stylesense.fitcheck
       node: 20.9.0
       vars:
         BUNDLE_ID: app.stylesense.fitcheck
@@ -30,9 +27,15 @@ workflows:
         script: |
           cd artifacts/fit-check/ios/App
           pod install
-      - name: Set up code signing
+      - name: Fetch or create signing files
         script: |
-          xcode-project use-profiles --profile-types app-store
+          app-store-connect fetch-signing-files \
+            "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain initialize
+          keychain add-certificates
+          xcode-project use-profiles
       - name: Build iOS IPA
         script: |
           xcode-project build-ipa \
