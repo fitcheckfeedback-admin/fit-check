@@ -3,6 +3,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
+import Privacy from "@/pages/Privacy";
+import Screenshots from "@/pages/Screenshots";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Sun, CloudRain, Wind, Snowflake, Star, Check, ArrowRight, Thermometer, Sparkles, ShoppingBag } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
@@ -672,6 +674,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/privacy" component={Privacy} />
+      <Route path="/screenshots" component={Screenshots} />
       <Route component={NotFound} />
     </Switch>
   );
