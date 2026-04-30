@@ -9,11 +9,12 @@ search_paths = [
     os.path.expanduser("~/Library/MobileDevice/Provisioning Profiles/*.mobileprovision"),
     "/Users/builder/Library/MobileDevice/Provisioning Profiles/*.mobileprovision",
     "/Library/MobileDevice/Provisioning Profiles/*.mobileprovision",
+    os.path.expanduser("~/Library/codemagic-cli-tools/**/*.mobileprovision"),
 ]
 
 all_profiles = []
 for pattern in search_paths:
-    all_profiles.extend(glob.glob(pattern))
+    all_profiles.extend(glob.glob(pattern, recursive=True))
 
 all_profiles = list(set(all_profiles))
 print(f"Searching {len(all_profiles)} profile(s) for bundle ID: {bundle_id}")
