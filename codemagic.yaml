@@ -24,42 +24,15 @@ workflows:
           set -e
           keychain initialize
 
-          # Decode the key from the repo file (no env var paste issues)
-          python3 -c "
-          import base64
-          key_b64 = open('artifacts/fit-check/ios/cert_key.b64').read().strip()
-          key_pem = base64.b64decode(key_b64)
-          open('/tmp/cert_key.pem', 'wb').write(key_pem)
-          print('Key decoded OK, length:', len(key_pem))
-          "
-
-          # Verify it is a valid PEM key
-          openssl pkey -in /tmp/cert_key.pem -check -noout
-
-          # Revoke any existing iOS distribution certs so we can create a fresh one
-          app-store-connect list-certificates \
-            --type IOS_DISTRIBUTION \
-            --json 2>/dev/null | python3 -c "
-          import json, sys, subprocess
-          try:
-              for cert in json.load(sys.stdin):
-                  cid = cert.get('id', '')
-                  if cid:
-                      print('Revoking cert:', cid)
-                      subprocess.run(['app-store-connect', 'revoke-certificate', cid],
-                                     capture_output=True)
-          except Exception as e:
-              print('Revoke step skipped:', e)
-          " || true
-
           # Fetch or create the distribution certificate and provisioning profile
+          # The app_store_connect integration handles API auth automatically
+          # --create generates a new cert+key internally if none exists
           app-store-connect fetch-signing-files \
             "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --create \
-            --private-key @file:/tmp/cert_key.pem
+            --create
 
-          # Add certificate to keychain
+          # Add certificate + private key to keychain
           keychain add-certificates
 
           # Configure Xcode project to use the downloaded profiles
