@@ -461,6 +461,12 @@ importers:
       '@rollup/rollup-linux-x64-gnu':
         specifier: '*'
         version: 4.59.0
+      lightningcss-darwin-arm64:
+        specifier: '*'
+        version: 1.32.0
+      lightningcss-linux-x64-gnu:
+        specifier: '*'
+        version: 1.31.1
 
   artifacts/landing:
     devDependencies:
@@ -2878,6 +2884,12 @@ packages:
   leven@4.1.0:
     resolution: {integrity: sha512-KZ9W9nWDT7rF7Dazg8xyLHGLrmpgq2nVNFUckhqdW3szVP6YhCpp/RAnpmVExA9JvrMynjwSLVrEj3AepHR6ew==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+
+  lightningcss-darwin-arm64@1.32.0:
+    resolution: {integrity: sha512-RzeG9Ju5bag2Bv1/lwlVJvBE3q6TtXskdZLLCyfg5pt+HLz9BqlICO7LZM7VHNTTn/5PRhHFBSjk5lc4cmscPQ==}
+    engines: {node: '>= 12.0.0'}
+    cpu: [arm64]
+    os: [darwin]
 
   lightningcss-linux-x64-gnu@1.31.1:
     resolution: {integrity: sha512-xGlFWRMl+0KvUhgySdIaReQdB4FNudfUTARn7q0hh/V67PVGCs3ADFjw+6++kG1RNd0zdGRlEKa+T13/tQjPMA==}
@@ -5907,6 +5919,9 @@ snapshots:
   leaflet@1.9.4: {}
 
   leven@4.1.0: {}
+
+  lightningcss-darwin-arm64@1.32.0:
+    optional: true
 
   lightningcss-linux-x64-gnu@1.31.1:
     optional: true

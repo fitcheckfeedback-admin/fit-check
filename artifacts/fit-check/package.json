@@ -89,6 +89,8 @@
   },
   "optionalDependencies": {
     "@rollup/rollup-darwin-arm64": "*",
-    "@rollup/rollup-linux-x64-gnu": "*"
+    "@rollup/rollup-linux-x64-gnu": "*",
+    "lightningcss-darwin-arm64": "*",
+    "lightningcss-linux-x64-gnu": "*"
   }
 }

@@ -6,7 +6,7 @@ workflows:
     integrations:
       app_store_connect: Fit Check
     environment:
-      node: 20.9.0
+      node: 22.12.0
       vars:
         BUNDLE_ID: app.stylesense.fitcheck
     scripts:
