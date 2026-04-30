@@ -23,9 +23,22 @@ workflows:
         script: |
           set -e
           keychain initialize
-          python3 -c 'import base64; k=open("artifacts/fit-check/ios/cert_key.b64").read().strip(); pem=base64.b64decode(k).decode(); open("/tmp/cert_key.pem","w").write(pem); print("Key type:", pem.split("\n")[0])'
-          export CERTIFICATE_PRIVATE_KEY="$(cat /tmp/cert_key.pem)"
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create --private-key @env:CERTIFICATE_PRIVATE_KEY
+
+          python3 -c 'import base64; k=open("artifacts/fit-check/ios/cert_key.b64").read().strip(); pem=base64.b64decode(k).decode(); open("/tmp/cert_key.pem","w").write(pem)'
+
+          KEYCHAIN_PATH=$(security default-keychain | tr -d '" \n')
+          echo "Keychain: $KEYCHAIN_PATH"
+
+          security import /tmp/cert_key.pem \
+            -k "$KEYCHAIN_PATH" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security \
+            || echo "Key import warning (may already exist)"
+
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+
           keychain add-certificates
           xcode-project use-profiles
       - name: Archive
@@ -41,7 +54,7 @@ workflows:
           exit ${PIPESTATUS[0]}
       - name: Export IPA
         script: |
-          python3 -c 'open("/tmp/ExportOptions.plist","w").write("""<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict><key>method</key><string>app-store</string><key>teamID</key><string>P6D4L2GJ75</string></dict></plist>""")'
+          python3 -c 'open("/tmp/ExportOptions.plist","w").write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict><key>method</key><string>app-store</string><key>teamID</key><string>P6D4L2GJ75</string></dict></plist>")'
           mkdir -p build/ios/ipa
           xcodebuild -exportArchive \
             -archivePath /tmp/App.xcarchive \
