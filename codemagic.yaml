@@ -7,10 +7,9 @@ workflows:
       app_store_connect: Fit Check
     environment:
       node: 22.12.0
-      groups:
-        - ios-signing
       vars:
         BUNDLE_ID: app.stylesense.fitcheck
+        TEAM_ID: P6D4L2GJ75
     scripts:
       - name: Install pnpm
         script: npm install -g pnpm@10 --force
@@ -20,49 +19,25 @@ workflows:
         script: |
           cd artifacts/fit-check
           npx cap sync ios
-      - name: Fetch signing files and build IPA
+      - name: Write ASC API key
         script: |
-          set -e
-
-          # 1. Set up keychain FIRST so private key can be stored during cert creation
-          keychain initialize
-
-          # 2. Decode base64 key and fetch / create provisioning profile + cert
-          python3 -c "import base64,os; open('/tmp/cert_key.pem','wb').write(base64.b64decode(os.environ['CERTIFICATE_PRIVATE_KEY']))"
-          app-store-connect fetch-signing-files \
-            "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create \
-            --private-key @file:/tmp/cert_key.pem
-
-          # 3. Add certificates (private key is now in keychain)
-          keychain add-certificates
-
-          # 3. Pull profile UUID + team ID from the downloaded .mobileprovision
-          PROFILE=$(find "$HOME/Library/MobileDevice/Provisioning Profiles" \
-            -name "*.mobileprovision" | head -1)
-          security cms -D -i "$PROFILE" > /tmp/profile.plist
-          PROFILE_UUID=$(/usr/libexec/PlistBuddy \
-            -c "Print UUID" /tmp/profile.plist)
-          TEAM_ID=$(/usr/libexec/PlistBuddy \
-            -c "Print TeamIdentifier:0" /tmp/profile.plist)
-
-          echo "Team ID: $TEAM_ID"
-          echo "Profile UUID: $PROFILE_UUID"
-
-          # 4. Archive
+          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/AuthKey.p8
+      - name: Archive
+        script: |
           xcodebuild archive \
             -project artifacts/fit-check/ios/App/App.xcodeproj \
             -scheme App \
             -configuration Release \
             -archivePath /tmp/App.xcarchive \
-            CODE_SIGN_STYLE=Manual \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath /tmp/AuthKey.p8 \
+            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
-            PROVISIONING_PROFILE="$PROFILE_UUID" \
-            CODE_SIGN_IDENTITY="iPhone Distribution"
-
-          # 5. Export options plist
-          cat > /tmp/ExportOptions.plist << PLIST
+            CODE_SIGN_STYLE=Automatic
+      - name: Export IPA
+        script: |
+          cat > /tmp/ExportOptions.plist << 'EOF'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -70,25 +45,21 @@ workflows:
             <key>method</key>
             <string>app-store</string>
             <key>teamID</key>
-            <string>$TEAM_ID</string>
+            <string>P6D4L2GJ75</string>
             <key>signingStyle</key>
-            <string>manual</string>
-            <key>provisioningProfiles</key>
-            <dict>
-              <key>$BUNDLE_ID</key>
-              <string>$PROFILE_UUID</string>
-            </dict>
+            <string>automatic</string>
           </dict>
           </plist>
-          PLIST
-
-          # 6. Export IPA
+          EOF
           mkdir -p build/ios/ipa
           xcodebuild -exportArchive \
             -archivePath /tmp/App.xcarchive \
             -exportPath build/ios/ipa \
-            -exportOptionsPlist /tmp/ExportOptions.plist
-
+            -exportOptionsPlist /tmp/ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath /tmp/AuthKey.p8 \
+            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
