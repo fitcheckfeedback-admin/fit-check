@@ -7,6 +7,8 @@ workflows:
       app_store_connect: Fit Check
     environment:
       node: 22.12.0
+      groups:
+        - ios-signing
       vars:
         BUNDLE_ID: app.stylesense.fitcheck
         TEAM_ID: P6D4L2GJ75
@@ -19,18 +21,35 @@ workflows:
         script: |
           cd artifacts/fit-check
           npx cap sync ios
-      - name: Write ASC API key
+      - name: Set up signing
         script: |
-          mkdir -p ~/.appstoreconnect/private_keys
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > ~/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_IDENTIFIER}.p8
-      - name: Diagnose project
-        script: |
-          echo "=== Available schemes ==="
-          xcodebuild -list -project artifacts/fit-check/ios/App/App.xcodeproj
-          echo "=== Resolve SPM packages ==="
-          xcodebuild -resolvePackageDependencies \
-            -project artifacts/fit-check/ios/App/App.xcodeproj \
-            -scheme App
+          set -e
+          keychain initialize
+
+          # Decode the base64 certificate private key using Python (reliable on macOS)
+          python3 -c "
+          import base64, os
+          key_b64 = os.environ['CERTIFICATE_PRIVATE_KEY']
+          key_pem = base64.b64decode(key_b64)
+          open('/tmp/cert_key.pem', 'wb').write(key_pem)
+          print('Key decoded, length:', len(key_pem))
+          "
+
+          # Verify it is a valid PEM key
+          openssl pkey -in /tmp/cert_key.pem -check -noout
+
+          # Fetch or create the distribution certificate and provisioning profile
+          app-store-connect fetch-signing-files \
+            "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create \
+            --private-key @file:/tmp/cert_key.pem
+
+          # Add certificate to keychain
+          keychain add-certificates
+
+          # Configure Xcode project to use the downloaded profiles
+          xcode-project use-profiles
       - name: Archive
         script: |
           set -o pipefail
@@ -39,12 +58,6 @@ workflows:
             -scheme App \
             -configuration Release \
             -archivePath /tmp/App.xcarchive \
-            -allowProvisioningUpdates \
-            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
-            DEVELOPMENT_TEAM="$TEAM_ID" \
-            CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
             2>&1 | tee /tmp/xcodebuild_archive.log
           exit ${PIPESTATUS[0]}
       - name: Export IPA
@@ -58,8 +71,6 @@ workflows:
             <string>app-store</string>
             <key>teamID</key>
             <string>P6D4L2GJ75</string>
-            <key>signingStyle</key>
-            <string>automatic</string>
           </dict>
           </plist>
           EOF
@@ -67,14 +78,10 @@ workflows:
           xcodebuild -exportArchive \
             -archivePath /tmp/App.xcarchive \
             -exportPath build/ios/ipa \
-            -exportOptionsPlist /tmp/ExportOptions.plist \
-            -allowProvisioningUpdates \
-            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
+            -exportOptionsPlist /tmp/ExportOptions.plist
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_archive.log
-      - /tmp/xcodebuild_logs/*.log
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
     publishing:
       app_store_connect:
