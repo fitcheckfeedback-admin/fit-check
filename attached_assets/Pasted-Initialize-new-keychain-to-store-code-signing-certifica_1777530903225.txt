@@ -1,0 +1,51 @@
+Initialize new keychain to store code signing certificates at /Users/builder/Library/codemagic-cli-tools/keychains/30-04-26_k2sl10jm.keychain-db
+Create keychain /Users/builder/Library/codemagic-cli-tools/keychains/30-04-26_k2sl10jm.keychain-db
+Set keychain /Users/builder/Library/codemagic-cli-tools/keychains/30-04-26_k2sl10jm.keychain-db timeout to "no timeout"
+Set keychain /Users/builder/Library/codemagic-cli-tools/keychains/30-04-26_k2sl10jm.keychain-db to system default keychain
+Unlock keychain /Users/builder/Library/codemagic-cli-tools/keychains/30-04-26_k2sl10jm.keychain-db
+Found 1 Bundle ID matching specified filters: identifier=app.stylesense.fitcheck, platform=IOS.
+- FIT Check app.stylesense.fitcheck (88PKPUUXRH)
+
+Found 1 Signing Certificate matching specified filters: certificateType=DISTRIBUTION,IOS_DISTRIBUTION.
+Filtered out 1 Signing Certificate for given private key
+- Apple Distribution: Joshua Wilson (BHQTF8NP75)
+
+Get Profiles for Bundle ID 88PKPUUXRH
+Found 1 Profile for Bundle ID 88PKPUUXRH matching specified filters: profileState=ACTIVE, profileType=IOS_APP_STORE.
+
+Filtered out 1 Profile that contain Signing Certificate Apple Distribution: Joshua Wilson (BHQTF8NP75)
+- IOS_APP_STORE FIT Check ios_app_store 1777529806 (X83D4UG34R)
+
+Saved Signing Certificate Apple Distribution: Joshua Wilson (BHQTF8NP75) to /Users/builder/Library/Developer/Xcode/UserData/Certificates/DISTRIBUTION_BHQTF8NP75_9r008rpd.p12
+Saved Profile IOS_APP_STORE FIT Check ios_app_store 1777529806 (X83D4UG34R) to '/Users/builder/Library/Developer/Xcode/UserData/Provisioning Profiles/IOS_APP_STORE_X83D4UG34R_r3co5obm.mobileprovision'
+Add certificates to keychain /Users/builder/Library/codemagic-cli-tools/keychains/30-04-26_k2sl10jm.keychain-db
+Searching for files matching /Users/builder/Library/Developer/Xcode/UserData/Certificates/*.p12
+Searching for files matching /Users/builder/Library/MobileDevice/Certificates/*.p12
+Add certificate /Users/builder/Library/Developer/Xcode/UserData/Certificates/DISTRIBUTION_BHQTF8NP75_9r008rpd.p12 to keychain /Users/builder/Library/codemagic-cli-tools/keychains/30-04-26_k2sl10jm.keychain-db
+security: SecKeychainItemImport: Unable to decode the provided data.
+1 key imported.
+1 certificate imported.
+Configure code signing settings
+Searching for files matching /Users/builder/Library/Developer/Xcode/UserData/Provisioning Profiles/*.mobileprovision
+Searching for files matching /Users/builder/Library/Developer/Xcode/UserData/Provisioning Profiles/*.provisionprofile
+Searching for files matching /Users/builder/Library/MobileDevice/Provisioning Profiles/*.mobileprovision
+Searching for files matching /Users/builder/Library/MobileDevice/Provisioning Profiles/*.provisionprofile
+List available code signing certificates in keychain /Users/builder/Library/codemagic-cli-tools/keychains/30-04-26_k2sl10jm.keychain-db
+Searching for files matching /Users/builder/clone/**/*.xcodeproj
+Completed configuring code signing settings
+ - Using profile "FIT Check ios_app_store 1777529806" [ed4707c0-b46c-4499-8e58-8976b2dc85da] for target "App" [Debug] from project "App"
+ - Using profile "FIT Check ios_app_store 1777529806" [ed4707c0-b46c-4499-8e58-8976b2dc85da] for target "App" [Release] from project "App"
+Generated options for exporting the project
+ - Method: app-store
+ - Provisioning Profiles:
+     - app.stylesense.fitcheck: FIT Check ios_app_store 1777529806
+ - Signing Certificate: Apple Distribution
+ - Signing Style: manual
+ - Team Id: P6D4L2GJ75
+Saved export options to /Users/builder/export_options.plist
+Searching 0 profile(s) for bundle ID: app.stylesense.fitcheck
+ERROR: No matching provisioning profile found!
+
+
+Build failed :|
+Step 5 script `Set up signing` exited with status code 1
