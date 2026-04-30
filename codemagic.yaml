@@ -22,14 +22,16 @@ workflows:
         script: |
           set -e
 
-          # 1. Fetch / create provisioning profile + cert
+          # 1. Set up keychain FIRST so private key can be stored during cert creation
+          keychain initialize
+
+          # 2. Fetch / create provisioning profile + cert
           app-store-connect fetch-signing-files \
             "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create
 
-          # 2. Set up keychain
-          keychain initialize
+          # 3. Add certificates (private key is now in keychain)
           keychain add-certificates
 
           # 3. Pull profile UUID + team ID from the downloaded .mobileprovision
