@@ -18,23 +18,71 @@ workflows:
         script: |
           cd artifacts/fit-check
           npx cap sync ios
-      - name: Fetch or create signing files
+      - name: Fetch signing files and build IPA
         script: |
+          set -e
+
+          # 1. Fetch / create provisioning profile + cert
           app-store-connect fetch-signing-files \
             "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create
+
+          # 2. Set up keychain
           keychain initialize
           keychain add-certificates
-          sed -i '' \
-            's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' \
-            artifacts/fit-check/ios/App/App.xcodeproj/project.pbxproj
-          xcode-project use-profiles
-      - name: Build iOS IPA
-        script: |
-          xcode-project build-ipa \
-            --project "artifacts/fit-check/ios/App/App.xcodeproj" \
-            --scheme "App"
+
+          # 3. Pull profile UUID + team ID from the downloaded .mobileprovision
+          PROFILE=$(find "$HOME/Library/MobileDevice/Provisioning Profiles" \
+            -name "*.mobileprovision" | head -1)
+          security cms -D -i "$PROFILE" > /tmp/profile.plist
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy \
+            -c "Print UUID" /tmp/profile.plist)
+          TEAM_ID=$(/usr/libexec/PlistBuddy \
+            -c "Print TeamIdentifier:0" /tmp/profile.plist)
+
+          echo "Team ID: $TEAM_ID"
+          echo "Profile UUID: $PROFILE_UUID"
+
+          # 4. Archive
+          xcodebuild archive \
+            -project artifacts/fit-check/ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -archivePath /tmp/App.xcarchive \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            PROVISIONING_PROFILE="$PROFILE_UUID" \
+            CODE_SIGN_IDENTITY="iPhone Distribution"
+
+          # 5. Export options plist
+          cat > /tmp/ExportOptions.plist << PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>teamID</key>
+            <string>$TEAM_ID</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>$BUNDLE_ID</key>
+              <string>$PROFILE_UUID</string>
+            </dict>
+          </dict>
+          </plist>
+          PLIST
+
+          # 6. Export IPA
+          mkdir -p build/ios/ipa
+          xcodebuild -exportArchive \
+            -archivePath /tmp/App.xcarchive \
+            -exportPath build/ios/ipa \
+            -exportOptionsPlist /tmp/ExportOptions.plist
+
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
