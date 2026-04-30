@@ -14,15 +14,10 @@ workflows:
         script: npm install -g pnpm@10 --force
       - name: Install dependencies
         script: pnpm install --frozen-lockfile --ignore-scripts
-      - name: Add iOS platform
+      - name: Sync Capacitor
         script: |
           cd artifacts/fit-check
-          npx cap add ios 2>/dev/null || true
           npx cap sync ios
-      - name: Install CocoaPods
-        script: |
-          cd artifacts/fit-check/ios/App
-          pod install
       - name: Fetch or create signing files
         script: |
           app-store-connect fetch-signing-files \
@@ -35,7 +30,7 @@ workflows:
       - name: Build iOS IPA
         script: |
           xcode-project build-ipa \
-            --workspace "artifacts/fit-check/ios/App/App.xcworkspace" \
+            --project "artifacts/fit-check/ios/App/App.xcodeproj" \
             --scheme "App"
     artifacts:
       - build/ios/ipa/*.ipa
