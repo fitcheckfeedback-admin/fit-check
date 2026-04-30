@@ -4,6 +4,7 @@ import { ShoppingBag, Crown, Sparkles, ExternalLink, ChevronLeft, TrendingUp, Al
 import { useLocation } from "wouter";
 import { ProGate } from "@/components/ProGate";
 import { isNative } from "@/lib/platform";
+import { Browser } from "@capacitor/browser";
 
 interface ProductCard {
   id: string;
@@ -11,20 +12,22 @@ interface ProductCard {
   name: string;
   price: string;
   category: string;
+  closetKey: string;
   why: string;
   gradient: string;
   emoji: string;
   affiliateLink: string;
 }
 
-const SAMPLE_PRODUCTS: ProductCard[] = [
+const ALL_PRODUCTS: ProductCard[] = [
   {
     id: "1",
     brand: "Banana Republic",
     name: "Classic Trench Coat",
     price: "$198",
     category: "Outerwear",
-    why: "You're missing a mid-season layer — this covers rain and cool temps",
+    closetKey: "outerwear",
+    why: "You're missing a mid-season layer — covers rain and cool temps",
     gradient: "from-stone-300 to-stone-400",
     emoji: "🧥",
     affiliateLink: "https://bananarepublic.gap.com/browse/category.do?cid=1001921",
@@ -35,6 +38,7 @@ const SAMPLE_PRODUCTS: ProductCard[] = [
     name: "Tree Runners",
     price: "$110",
     category: "Shoes",
+    closetKey: "shoes",
     why: "A versatile sneaker that pairs with 80% of your existing wardrobe",
     gradient: "from-zinc-300 to-zinc-400",
     emoji: "👟",
@@ -46,6 +50,7 @@ const SAMPLE_PRODUCTS: ProductCard[] = [
     name: "Merino Crew Neck",
     price: "$49",
     category: "Tops",
+    closetKey: "tops",
     why: "A merino base layer works with every bottom you own and handles cold snaps",
     gradient: "from-blue-200 to-indigo-300",
     emoji: "🔵",
@@ -57,21 +62,47 @@ const SAMPLE_PRODUCTS: ProductCard[] = [
     name: "511 Slim Fit Jeans",
     price: "$79",
     category: "Bottoms",
+    closetKey: "bottoms",
     why: "A second pair of slim jeans gives your outfits more variety",
     gradient: "from-blue-400 to-blue-600",
     emoji: "👖",
     affiliateLink: "https://www.levi.com/US/en_US/clothing/men/jeans/511-slim-fit-mens-jeans/p/045110093",
   },
+  {
+    id: "5",
+    brand: "Frank And Oak",
+    name: "Essential Oxford Shirt",
+    price: "$75",
+    category: "Tops",
+    closetKey: "tops",
+    why: "A sharp casual shirt that bridges smart and relaxed looks",
+    gradient: "from-sky-200 to-blue-300",
+    emoji: "👔",
+    affiliateLink: "https://www.frankandoak.com/collections/mens-shirts",
+  },
+  {
+    id: "6",
+    brand: "Nike",
+    name: "Air Force 1 '07",
+    price: "$115",
+    category: "Shoes",
+    closetKey: "shoes",
+    why: "An iconic clean white sneaker that works with almost everything",
+    gradient: "from-gray-100 to-gray-200",
+    emoji: "⬜",
+    affiliateLink: "https://www.nike.com/t/air-force-1-07-mens-shoes",
+  },
 ];
 
-const ACCESSORIES: ProductCard[] = [
+const ALL_ACCESSORIES: ProductCard[] = [
   {
     id: "a1",
     brand: "Madewell",
     name: "Canvas Tote Bag",
     price: "$38",
     category: "Accessories",
-    why: "Casual and functional — works on warm days",
+    closetKey: "accessories",
+    why: "Casual and functional — works on warm days and pulls any outfit together",
     gradient: "from-amber-200 to-yellow-300",
     emoji: "👜",
     affiliateLink: "https://www.madewell.com/the-transport-tote-NF654.html",
@@ -82,7 +113,8 @@ const ACCESSORIES: ProductCard[] = [
     name: "High Key Sunglasses",
     price: "$65",
     category: "Accessories",
-    why: "Classic frame style that complements your casual looks",
+    closetKey: "accessories",
+    why: "Classic frame style that complements casual looks and adds polish",
     gradient: "from-rose-300 to-pink-400",
     emoji: "🕶️",
     affiliateLink: "https://www.quayaustralia.com/collections/sunglasses",
@@ -93,34 +125,54 @@ const ACCESSORIES: ProductCard[] = [
     name: "ReNew Fleece",
     price: "$68",
     category: "Outerwear",
+    closetKey: "outerwear",
     why: "For mild evenings — lighter than a coat, smarter than a hoodie",
     gradient: "from-teal-300 to-emerald-400",
     emoji: "🟢",
     affiliateLink: "https://www.everlane.com/collections/womens-fleece",
   },
+  {
+    id: "a4",
+    brand: "Fossil",
+    name: "Minimalist Watch",
+    price: "$95",
+    category: "Accessories",
+    closetKey: "accessories",
+    why: "A clean watch instantly elevates even basic outfits",
+    gradient: "from-amber-100 to-stone-300",
+    emoji: "⌚",
+    affiliateLink: "https://www.fossil.com/en-us/watches/",
+  },
 ];
 
-function openLink(url: string) {
+async function openLink(url: string) {
   if (isNative()) {
-    window.open(url, "_system");
+    await Browser.open({ url });
   } else {
     window.open(url, "_blank", "noopener,noreferrer");
   }
 }
 
-function WardrobeGaps() {
-  const { settings } = useFitCheckSettings();
-  const closet = settings.closet;
+function getClosetCounts(closet: Record<string, string[] | undefined>) {
+  return {
+    outerwear: (closet.outerwear ?? []).length,
+    shoes: (closet.shoes ?? []).length,
+    tops: (closet.tops ?? []).length,
+    bottoms: (closet.bottoms ?? []).length,
+    accessories: (closet.accessories ?? []).length,
+  };
+}
 
+function WardrobeGaps({ counts }: { counts: ReturnType<typeof getClosetCounts> }) {
   const gaps: { label: string; desc: string; icon: string }[] = [];
 
-  if ((closet.outerwear ?? []).length === 0)
+  if (counts.outerwear === 0)
     gaps.push({ label: "No outerwear", desc: "You have nothing to layer over your tops for cooler days", icon: "🧥" });
-  if ((closet.shoes ?? []).length < 2)
+  if (counts.shoes < 2)
     gaps.push({ label: "Limited footwear", desc: "More than one pair of shoes opens up a lot of outfit options", icon: "👟" });
-  if ((closet.accessories ?? []).length === 0)
+  if (counts.accessories === 0)
     gaps.push({ label: "No accessories", desc: "A bag or sunglasses can transform a basic look instantly", icon: "👜" });
-  if ((closet.tops ?? []).length < 3)
+  if (counts.tops < 3)
     gaps.push({ label: "Few tops", desc: "More variety in tops = more unique outfits from the same bottoms", icon: "👕" });
 
   if (gaps.length === 0) return null;
@@ -144,12 +196,38 @@ function WardrobeGaps() {
   );
 }
 
+function prioritiseProducts(products: ProductCard[], counts: ReturnType<typeof getClosetCounts>): ProductCard[] {
+  const gapKeys = new Set<string>();
+  if (counts.outerwear === 0) gapKeys.add("outerwear");
+  if (counts.shoes < 2) gapKeys.add("shoes");
+  if (counts.tops < 3) gapKeys.add("tops");
+  if (counts.bottoms < 2) gapKeys.add("bottoms");
+  if (counts.accessories === 0) gapKeys.add("accessories");
+
+  const priority = products.filter(p => gapKeys.has(p.closetKey));
+  const rest = products.filter(p => !gapKeys.has(p.closetKey));
+  return [...priority, ...rest].slice(0, 4);
+}
+
+function prioritiseAccessories(accessories: ProductCard[], counts: ReturnType<typeof getClosetCounts>): ProductCard[] {
+  const gapKeys = new Set<string>();
+  if (counts.accessories === 0) gapKeys.add("accessories");
+  if (counts.outerwear === 0) gapKeys.add("outerwear");
+
+  const priority = accessories.filter(p => gapKeys.has(p.closetKey));
+  const rest = accessories.filter(p => !gapKeys.has(p.closetKey));
+  return [...priority, ...rest].slice(0, 3);
+}
+
 function DiscoverContent() {
   const [, nav] = useLocation();
+  const { settings } = useFitCheckSettings();
+  const counts = getClosetCounts(settings.closet as Record<string, string[] | undefined>);
+  const products = prioritiseProducts(ALL_PRODUCTS, counts);
+  const accessories = prioritiseAccessories(ALL_ACCESSORIES, counts);
 
   return (
     <div className="flex-1 flex flex-col pb-6">
-      {/* Header */}
       <div className="relative px-5 pt-14 pb-6 overflow-hidden rounded-b-[2.5rem]"
         style={{ background: "linear-gradient(160deg, #1a0a2e 0%, #2d1247 40%, #1a0a2e 100%)" }}>
         <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full opacity-30"
@@ -171,37 +249,33 @@ function DiscoverContent() {
           </div>
         </div>
 
-        {/* Pro banner */}
         <div className="relative z-10 bg-white/8 backdrop-blur-sm border border-white/15 rounded-2xl px-4 py-3 flex items-center gap-3">
           <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
           <p className="text-xs text-white/70 leading-relaxed">
-            <span className="text-white font-bold">AI-picked, wardrobe-matched products</span> — curated based on what you own, what you're missing, and what the weather demands.
+            <span className="text-white font-bold">Matched to your wardrobe gaps</span> — products are ranked by what you're actually missing.
           </p>
         </div>
       </div>
 
       <div className="px-5 pt-6 space-y-8">
 
-        {/* Affiliate disclosure */}
         <p className="text-[10px] text-muted-foreground/60 text-center">
           FIT✔️ earns a small commission on purchases at no extra cost to you.
         </p>
 
-        {/* Wardrobe gaps */}
-        <WardrobeGaps />
+        <WardrobeGaps counts={counts} />
 
-        {/* Shop the Gap */}
         <div className="space-y-4">
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2">
               <ShoppingBag className="w-4 h-4 text-violet-500" />
               <h2 className="text-sm font-black">Shop the Gap</h2>
             </div>
-            <span className="text-xs text-muted-foreground">Matched to your style</span>
+            <span className="text-xs text-muted-foreground">Ranked by your gaps</span>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            {SAMPLE_PRODUCTS.map((p, i) => (
+            {products.map((p, i) => (
               <motion.button
                 key={p.id}
                 onClick={() => openLink(p.affiliateLink)}
@@ -232,7 +306,6 @@ function DiscoverContent() {
           </div>
         </div>
 
-        {/* Accessorize section */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 px-1">
             <TrendingUp className="w-4 h-4 text-amber-500" />
@@ -240,7 +313,7 @@ function DiscoverContent() {
           </div>
 
           <div className="space-y-3">
-            {ACCESSORIES.map((p, i) => (
+            {accessories.map((p, i) => (
               <motion.button
                 key={p.id}
                 onClick={() => openLink(p.affiliateLink)}
@@ -268,7 +341,6 @@ function DiscoverContent() {
           </div>
         </div>
 
-        {/* Coming soon note */}
         <div className="bg-muted/50 border border-border/50 rounded-2xl p-5 text-center space-y-2">
           <Sparkles className="w-6 h-6 text-amber-500 mx-auto" />
           <p className="text-sm font-bold">More on the way</p>

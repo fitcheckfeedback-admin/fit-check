@@ -82,6 +82,7 @@
     "zod": "catalog:"
   },
   "dependencies": {
+    "@capacitor/browser": "^8.0.3",
     "@capacitor/core": "^8.3.1",
     "@types/leaflet": "^1.9.21",
     "leaflet": "^1.9.4",

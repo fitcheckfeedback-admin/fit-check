@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Crown, Lock, Sparkles, ArrowRight, Check, Loader2 } from "lucide-react";
 import { usePremium } from "@/hooks/usePremium";
 import { isNative } from "@/lib/platform";
+import { Browser } from "@capacitor/browser";
 
 interface ProGateProps {
   children: ReactNode;
@@ -96,7 +97,7 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
       if (url) {
         if (isNative()) {
           awaitingReturnRef.current = true;
-          window.open(url, "_system");
+          await Browser.open({ url });
         } else {
           window.location.href = url;
         }
