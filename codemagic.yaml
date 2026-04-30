@@ -28,7 +28,7 @@ workflows:
           keychain initialize
 
           # 2. Decode base64 key and fetch / create provisioning profile + cert
-          echo "$CERTIFICATE_PRIVATE_KEY" | base64 --decode > /tmp/cert_key.pem
+          python3 -c "import base64,os; open('/tmp/cert_key.pem','wb').write(base64.b64decode(os.environ['CERTIFICATE_PRIVATE_KEY']))"
           app-store-connect fetch-signing-files \
             "$BUNDLE_ID" \
             --type IOS_APP_STORE \
