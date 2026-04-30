@@ -29,12 +29,16 @@ import { FitCardData } from "@/lib/fitCardCaption";
 import { buildClosetDescription } from "@/lib/closetDesc";
 import { AIStylistCard } from "@/components/AIStylistCard";
 import { CitySearch } from "@/components/CitySearch";
+import { isNative } from "@/lib/platform";
 
 function LocationGate({ onLocation }: { onLocation: (loc: { lat: number; lon: number; name: string }) => void }) {
-  const [fallback, setFallback] = useState(false);
+  const [fallback, setFallback] = useState(isNative());
 
   useEffect(() => {
     trackEvent("location_gate_view", {});
+    if (isNative()) {
+      return;
+    }
     fetch("/api/location/detect")
       .then(r => r.json())
       .then((loc: { detected: boolean; city?: string; region?: string; lat?: number; lon?: number }) => {

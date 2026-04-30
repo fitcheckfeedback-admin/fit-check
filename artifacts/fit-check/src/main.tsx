@@ -3,12 +3,9 @@ import App from "./App";
 import "./index.css";
 import { registerServiceWorker } from "./lib/swRegister";
 import { setBaseUrl } from "@workspace/api-client-react";
+import { isNative } from "./lib/platform";
 
 const PROD_API = "https://style-sense-fitcheck.replit.app";
-
-function isNative(): boolean {
-  return !!(window as any).Capacitor?.isNativePlatform?.();
-}
 
 if (isNative()) {
   setBaseUrl(PROD_API);

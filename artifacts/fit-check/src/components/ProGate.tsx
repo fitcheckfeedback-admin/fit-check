@@ -1,7 +1,8 @@
 import { ReactNode, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Crown, Lock, Sparkles, ArrowRight, X, Check, Loader2 } from "lucide-react";
+import { Crown, Lock, Sparkles, ArrowRight, X, Check, Loader2, BadgeCheck } from "lucide-react";
 import { usePremium } from "@/hooks/usePremium";
+import { isNative } from "@/lib/platform";
 
 interface ProGateProps {
   children: ReactNode;
@@ -31,9 +32,22 @@ async function startCheckout(deviceId: string): Promise<string | null> {
   return url ?? null;
 }
 
+async function verifyPayment(deviceId: string): Promise<boolean> {
+  const res = await fetch("/api/stripe/verify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ deviceId }),
+  });
+  if (!res.ok) return false;
+  const { isPro } = await res.json();
+  return isPro === true;
+}
+
 export function ProGate({ children, feature = "Pro Feature", description }: ProGateProps) {
   const { isPro, loading } = usePremium();
   const [checkingOut, setCheckingOut] = useState(false);
+  const [checkoutStarted, setCheckoutStarted] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!PRO_GATING_ENABLED) return <>{children}</>;
@@ -57,7 +71,12 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
     try {
       const url = await startCheckout(deviceId);
       if (url) {
-        window.location.href = url;
+        if (isNative()) {
+          window.open(url, "_system");
+          setCheckoutStarted(true);
+        } else {
+          window.location.href = url;
+        }
       } else {
         setError("Checkout unavailable right now. Try again in a moment.");
       }
@@ -65,6 +84,25 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
       setError("Something went wrong. Please try again.");
     } finally {
       setCheckingOut(false);
+    }
+  }
+
+  async function handleVerify() {
+    setError(null);
+    const deviceId = localStorage.getItem("fitcheck.deviceId");
+    if (!deviceId) return;
+    setVerifying(true);
+    try {
+      const paid = await verifyPayment(deviceId);
+      if (paid) {
+        window.location.reload();
+      } else {
+        setError("Payment not found yet. Complete checkout in Safari first, then tap Verify.");
+      }
+    } catch {
+      setError("Verification failed. Please try again.");
+    } finally {
+      setVerifying(false);
     }
   }
 
@@ -109,19 +147,45 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
             </div>
 
             <div className="w-full space-y-2">
-              <button
-                onClick={handleUpgrade}
-                disabled={checkingOut}
-                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-black text-base px-6 py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 active:scale-95 transition-transform disabled:opacity-70"
-              >
-                {checkingOut ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Lock className="w-4 h-4" />
-                )}
-                {checkingOut ? "Redirecting…" : "Upgrade to Pro — $2.99/mo"}
-                {!checkingOut && <ArrowRight className="w-4 h-4" />}
-              </button>
+              {checkoutStarted ? (
+                <>
+                  <p className="text-[11px] text-center text-muted-foreground leading-relaxed">
+                    Complete your payment in Safari, then come back and tap below.
+                  </p>
+                  <button
+                    onClick={handleVerify}
+                    disabled={verifying}
+                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-black text-base px-6 py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 active:scale-95 transition-transform disabled:opacity-70"
+                  >
+                    {verifying ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <BadgeCheck className="w-4 h-4" />
+                    )}
+                    {verifying ? "Checking…" : "I've Paid — Unlock Pro"}
+                  </button>
+                  <button
+                    onClick={() => { setCheckoutStarted(false); setError(null); }}
+                    className="w-full text-[11px] text-muted-foreground py-1"
+                  >
+                    Go back
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleUpgrade}
+                  disabled={checkingOut}
+                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-black text-base px-6 py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 active:scale-95 transition-transform disabled:opacity-70"
+                >
+                  {checkingOut ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Lock className="w-4 h-4" />
+                  )}
+                  {checkingOut ? "Loading checkout…" : "Upgrade to Pro — $2.99/mo"}
+                  {!checkingOut && <ArrowRight className="w-4 h-4" />}
+                </button>
+              )}
 
               <AnimatePresence>
                 {error && (
@@ -136,9 +200,11 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
                 )}
               </AnimatePresence>
 
-              <p className="text-[11px] text-muted-foreground">
-                Cancel anytime · Secure checkout via Stripe
-              </p>
+              {!checkoutStarted && (
+                <p className="text-[11px] text-muted-foreground">
+                  Cancel anytime · Secure checkout via Stripe
+                </p>
+              )}
             </div>
           </motion.div>
         </div>
