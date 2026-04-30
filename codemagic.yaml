@@ -10,6 +10,8 @@ workflows:
         distribution_type: app_store
         bundle_identifier: app.stylesense.fitcheck
       node: 20.9.0
+      vars:
+        BUNDLE_ID: app.stylesense.fitcheck
     scripts:
       - name: Install pnpm
         script: npm install -g pnpm@10
@@ -29,7 +31,8 @@ workflows:
           cd artifacts/fit-check/ios/App
           pod install
       - name: Set up code signing
-        script: xcode-project use-profiles
+        script: |
+          xcode-project use-profiles --profile-types app-store
       - name: Build iOS IPA
         script: |
           xcode-project build-ipa \
