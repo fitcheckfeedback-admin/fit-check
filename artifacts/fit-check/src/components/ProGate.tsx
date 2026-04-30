@@ -1,6 +1,6 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Crown, Lock, Sparkles, ArrowRight, X, Check, Loader2, BadgeCheck } from "lucide-react";
+import { Crown, Lock, Sparkles, ArrowRight, Check, Loader2 } from "lucide-react";
 import { usePremium } from "@/hooks/usePremium";
 import { isNative } from "@/lib/platform";
 
@@ -46,9 +46,31 @@ async function verifyPayment(deviceId: string): Promise<boolean> {
 export function ProGate({ children, feature = "Pro Feature", description }: ProGateProps) {
   const { isPro, loading } = usePremium();
   const [checkingOut, setCheckingOut] = useState(false);
-  const [checkoutStarted, setCheckoutStarted] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hint, setHint] = useState<string | null>(null);
+  const awaitingReturnRef = useRef(false);
+
+  // When the user returns from Safari after checkout, auto-verify
+  useEffect(() => {
+    function onVisible() {
+      if (!awaitingReturnRef.current) return;
+      awaitingReturnRef.current = false;
+      const deviceId = localStorage.getItem("fitcheck.deviceId");
+      if (!deviceId) return;
+      setVerifying(true);
+      verifyPayment(deviceId).then(paid => {
+        if (paid) {
+          window.location.reload();
+        } else {
+          setHint("Didn't complete checkout? Tap 'Already paid?' below once you're done.");
+          setVerifying(false);
+        }
+      }).catch(() => setVerifying(false));
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
 
   if (!PRO_GATING_ENABLED) return <>{children}</>;
   if (loading) {
@@ -62,6 +84,7 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
 
   async function handleUpgrade() {
     setError(null);
+    setHint(null);
     const deviceId = localStorage.getItem("fitcheck.deviceId");
     if (!deviceId) {
       setError("Could not identify your device. Please reload and try again.");
@@ -72,8 +95,8 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
       const url = await startCheckout(deviceId);
       if (url) {
         if (isNative()) {
+          awaitingReturnRef.current = true;
           window.open(url, "_system");
-          setCheckoutStarted(true);
         } else {
           window.location.href = url;
         }
@@ -87,8 +110,9 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
     }
   }
 
-  async function handleVerify() {
+  async function handleManualVerify() {
     setError(null);
+    setHint(null);
     const deviceId = localStorage.getItem("fitcheck.deviceId");
     if (!deviceId) return;
     setVerifying(true);
@@ -97,7 +121,7 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
       if (paid) {
         window.location.reload();
       } else {
-        setError("Payment not found yet. Complete checkout in Safari first, then tap Verify.");
+        setError("No active subscription found. Complete checkout in Safari first.");
       }
     } catch {
       setError("Verification failed. Please try again.");
@@ -147,64 +171,44 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
             </div>
 
             <div className="w-full space-y-2">
-              {checkoutStarted ? (
-                <>
-                  <p className="text-[11px] text-center text-muted-foreground leading-relaxed">
-                    Complete your payment in Safari, then come back and tap below.
-                  </p>
-                  <button
-                    onClick={handleVerify}
-                    disabled={verifying}
-                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-black text-base px-6 py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 active:scale-95 transition-transform disabled:opacity-70"
-                  >
-                    {verifying ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <BadgeCheck className="w-4 h-4" />
-                    )}
-                    {verifying ? "Checking…" : "I've Paid — Unlock Pro"}
-                  </button>
-                  <button
-                    onClick={() => { setCheckoutStarted(false); setError(null); }}
-                    className="w-full text-[11px] text-muted-foreground py-1"
-                  >
-                    Go back
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={handleUpgrade}
-                  disabled={checkingOut}
-                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-black text-base px-6 py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 active:scale-95 transition-transform disabled:opacity-70"
-                >
-                  {checkingOut ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Lock className="w-4 h-4" />
-                  )}
-                  {checkingOut ? "Loading checkout…" : "Upgrade to Pro — $2.99/mo"}
-                  {!checkingOut && <ArrowRight className="w-4 h-4" />}
-                </button>
-              )}
+              <button
+                onClick={handleUpgrade}
+                disabled={checkingOut || verifying}
+                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-black text-base px-6 py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 active:scale-95 transition-transform disabled:opacity-70"
+              >
+                {(checkingOut || verifying) ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Lock className="w-4 h-4" />
+                )}
+                {checkingOut ? "Loading checkout…" : verifying ? "Verifying payment…" : "Upgrade to Pro — $2.99/mo"}
+                {!checkingOut && !verifying && <ArrowRight className="w-4 h-4" />}
+              </button>
 
               <AnimatePresence>
-                {error && (
+                {(error || hint) && (
                   <motion.p
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    className="text-[11px] text-red-500 text-center"
+                    className={`text-[11px] text-center ${error ? "text-red-500" : "text-muted-foreground"}`}
                   >
-                    {error}
+                    {error ?? hint}
                   </motion.p>
                 )}
               </AnimatePresence>
 
-              {!checkoutStarted && (
-                <p className="text-[11px] text-muted-foreground">
-                  Cancel anytime · Secure checkout via Stripe
-                </p>
-              )}
+              <p className="text-[11px] text-muted-foreground">
+                Cancel anytime · Secure checkout via Stripe
+              </p>
+
+              <button
+                onClick={handleManualVerify}
+                disabled={verifying}
+                className="w-full text-[11px] text-muted-foreground/60 py-1 underline underline-offset-2"
+              >
+                Already paid?
+              </button>
             </div>
           </motion.div>
         </div>
