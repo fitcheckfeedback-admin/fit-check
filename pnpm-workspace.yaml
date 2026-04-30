@@ -34,6 +34,14 @@ minimumReleaseAgeExclude:
   - '@replit/*'
   - stripe-replit-sync
 
+supportedArchitectures:
+  os:
+    - linux
+    - darwin
+  cpu:
+    - x64
+    - arm64
+
 packages:
   - artifacts/*
   - lib/*
