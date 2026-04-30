@@ -26,12 +26,12 @@ workflows:
             --create
           keychain initialize
           keychain add-certificates
-          xcode-project use-profiles
-      - name: Build iOS IPA
-        script: |
           sed -i '' \
             's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' \
             artifacts/fit-check/ios/App/App.xcodeproj/project.pbxproj
+          xcode-project use-profiles
+      - name: Build iOS IPA
+        script: |
           xcode-project build-ipa \
             --project "artifacts/fit-check/ios/App/App.xcodeproj" \
             --scheme "App"
