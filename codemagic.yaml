@@ -36,12 +36,11 @@ workflows:
             -scheme App \
             -configuration Release \
             -archivePath /tmp/App.xcarchive \
-            CODE_SIGN_STYLE=Manual \
             2>&1 | tee /tmp/xcodebuild_archive.log
           exit ${PIPESTATUS[0]}
       - name: Export IPA
         script: |
-          python3 -c 'open("/tmp/ExportOptions.plist","w").write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict><key>method</key><string>app-store</string><key>teamID</key><string>P6D4L2GJ75</string></dict></plist>")'
+          python3 artifacts/fit-check/ios/generate_export_opts.py
           mkdir -p build/ios/ipa
           xcodebuild -exportArchive \
             -archivePath /tmp/App.xcarchive \
