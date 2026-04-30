@@ -38,6 +38,7 @@ workflows:
             -archivePath /tmp/App.xcarchive \
             CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM="$TEAM_ID" \
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
             2>&1 | tee /tmp/xcodebuild_archive.log
           exit ${PIPESTATUS[0]}
       - name: Export IPA
