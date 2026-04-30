@@ -11,7 +11,7 @@ workflows:
         BUNDLE_ID: app.stylesense.fitcheck
     scripts:
       - name: Install pnpm
-        script: npm install -g pnpm@10
+        script: npm install -g pnpm@10 --force
       - name: Install dependencies
         script: pnpm install
       - name: Build web app for Capacitor
