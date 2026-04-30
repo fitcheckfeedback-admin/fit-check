@@ -27,12 +27,13 @@ workflows:
           # 1. Set up keychain FIRST so private key can be stored during cert creation
           keychain initialize
 
-          # 2. Fetch / create provisioning profile + cert (using our own private key)
+          # 2. Decode base64 key and fetch / create provisioning profile + cert
+          echo "$CERTIFICATE_PRIVATE_KEY" | base64 --decode > /tmp/cert_key.pem
           app-store-connect fetch-signing-files \
             "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create \
-            --private-key @env:CERTIFICATE_PRIVATE_KEY
+            --private-key @file:/tmp/cert_key.pem
 
           # 3. Add certificates (private key is now in keychain)
           keychain add-certificates

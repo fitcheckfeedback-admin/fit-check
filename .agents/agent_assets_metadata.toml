@@ -29,3 +29,9 @@ id = "Ge6lmVdS-ogOU-u8ls2Av"
 uri = "file://cert_key.tar.gz"
 type = "unspecified"
 title = "Distribution Certificate Private Key (cert_key.pem inside)"
+
+[[outputs]]
+id = "Cvury5I3LMbEu7Ev4PWMx"
+uri = "file://cert_key_b64.txt"
+type = "text"
+title = "Certificate Private Key (base64, single line — paste this into Codemagic)"
