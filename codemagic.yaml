@@ -7,6 +7,8 @@ workflows:
       app_store_connect: Fit Check
     environment:
       node: 22.12.0
+      groups:
+        - ios-signing
       vars:
         BUNDLE_ID: app.stylesense.fitcheck
     scripts:
@@ -30,7 +32,7 @@ workflows:
             "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create \
-            --certificate-key @env:CERTIFICATE_PRIVATE_KEY
+            --private-key @env:CERTIFICATE_PRIVATE_KEY
 
           # 3. Add certificates (private key is now in keychain)
           keychain add-certificates
