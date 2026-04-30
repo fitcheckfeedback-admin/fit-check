@@ -24,47 +24,32 @@ workflows:
           set -e
           keychain initialize
 
-          # Revoke any existing distribution certs that have no matching private key
-          pip3 install PyJWT cryptography --quiet 2>/dev/null || true
-          python3 << 'PYEOF'
-import os, time, json, urllib.request, sys
-try:
-    import jwt
-    key_id = os.environ['APP_STORE_CONNECT_KEY_IDENTIFIER']
-    issuer_id = os.environ['APP_STORE_CONNECT_ISSUER_ID']
-    private_key = os.environ['APP_STORE_CONNECT_PRIVATE_KEY']
-    token = jwt.encode(
-        {'iss': issuer_id, 'iat': int(time.time()), 'exp': int(time.time())+1200,
-         'aud': 'appstoreconnect-v1'},
-        private_key, algorithm='ES256', headers={'kid': key_id}
-    )
-    hdrs = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
-    req = urllib.request.Request(
-        'https://api.appstoreconnect.apple.com/v1/certificates?filter[certificateType]=IOS_DISTRIBUTION',
-        headers=hdrs)
-    with urllib.request.urlopen(req) as r:
-        certs = json.loads(r.read()).get('data', [])
-    print(f'Found {len(certs)} existing distribution certificate(s) - revoking all')
-    for cert in certs:
-        cid = cert['id']
-        urllib.request.urlopen(urllib.request.Request(
-            f'https://api.appstoreconnect.apple.com/v1/certificates/{cid}',
-            method='DELETE', headers=hdrs))
-        print(f'Revoked {cid}')
-except Exception as e:
-    print(f'Revoke step skipped: {e}', file=sys.stderr)
-PYEOF
+          echo "=== fetch-signing-files flags ==="
+          app-store-connect fetch-signing-files --help 2>&1 | grep -E "private|cert|key" || true
 
-          # Fetch or create fresh certificate and provisioning profile
+          # Decode PKCS#1 RSA key from repo and export as env var
+          python3 -c "
+import base64
+key_b64 = open('artifacts/fit-check/ios/cert_key.b64').read().strip()
+key_pem = base64.b64decode(key_b64).decode('ascii')
+open('/tmp/cert_key.pem', 'w').write(key_pem)
+print('Key type:', key_pem.split()[1])
+print('Key length:', len(key_pem))
+"
+          export CERTIFICATE_PRIVATE_KEY="$(cat /tmp/cert_key.pem)"
+
+          echo "=== Running fetch-signing-files ==="
           app-store-connect fetch-signing-files \
             "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --create
+            --create \
+            --private-key @env:CERTIFICATE_PRIVATE_KEY
+          echo "=== fetch-signing-files done ==="
 
-          # Add certificate + private key to keychain
+          echo "=== Running keychain add-certificates ==="
           keychain add-certificates
+          echo "=== keychain done ==="
 
-          # Configure Xcode project to use the downloaded profiles
           xcode-project use-profiles
       - name: Archive
         script: |
