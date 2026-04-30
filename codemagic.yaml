@@ -24,18 +24,19 @@ workflows:
           set -e
           keychain initialize
 
-          echo "=== fetch-signing-files flags ==="
+          echo "=== fetch-signing-files help ==="
           app-store-connect fetch-signing-files --help 2>&1 | grep -E "private|cert|key" || true
 
-          # Decode PKCS#1 RSA key from repo and export as env var
-          python3 -c "
+          echo "=== Decoding certificate key ==="
+          python3 << 'PYEOF'
 import base64
 key_b64 = open('artifacts/fit-check/ios/cert_key.b64').read().strip()
 key_pem = base64.b64decode(key_b64).decode('ascii')
 open('/tmp/cert_key.pem', 'w').write(key_pem)
-print('Key type:', key_pem.split()[1])
+print('Key type:', key_pem.split('\n')[0])
 print('Key length:', len(key_pem))
-"
+PYEOF
+
           export CERTIFICATE_PRIVATE_KEY="$(cat /tmp/cert_key.pem)"
 
           echo "=== Running fetch-signing-files ==="
