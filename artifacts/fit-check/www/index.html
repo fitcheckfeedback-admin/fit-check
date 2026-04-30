@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>FIT✔️</title>
+
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Favicon & icons -->
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+
+    <!-- iOS PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="FIT✔️" />
+
+    <!-- Theme -->
+    <meta name="theme-color" content="#ff9500" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#f59e0b" media="(prefers-color-scheme: dark)" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="FIT✔️ — Your daily outfit check" />
+    <meta property="og:description" content="Know exactly what to wear, every day. AI-powered outfit suggestions based on your local weather." />
+    <meta property="og:image" content="https://style-sense-fitcheck.replit.app/opengraph.jpg" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="720" />
+    <meta property="og:url" content="https://style-sense-fitcheck.replit.app/" />
+    <!-- Twitter card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="FIT✔️ — Your daily outfit check" />
+    <meta name="twitter:description" content="Know exactly what to wear, every day. AI-powered outfit suggestions based on your local weather." />
+    <meta name="twitter:image" content="https://style-sense-fitcheck.replit.app/opengraph.jpg" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script type="module" crossorigin src="/assets/index-CZaOEHwl.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-C6crNgMm.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- Capture install prompt before React mounts so we never miss the event -->
+    <script>
+      window.__installPromptEvent = null;
+      window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        window.__installPromptEvent = e;
+        window.dispatchEvent(new Event('installpromptready'));
+      });
+    </script>
+  </body>
+</html>
