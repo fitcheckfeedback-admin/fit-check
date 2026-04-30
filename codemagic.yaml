@@ -21,7 +21,8 @@ workflows:
           npx cap sync ios
       - name: Write ASC API key
         script: |
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/AuthKey.p8
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > ~/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_IDENTIFIER}.p8
       - name: Archive
         script: |
           xcodebuild archive \
@@ -30,7 +31,6 @@ workflows:
             -configuration Release \
             -archivePath /tmp/App.xcarchive \
             -allowProvisioningUpdates \
-            -authenticationKeyPath /tmp/AuthKey.p8 \
             -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
@@ -57,7 +57,6 @@ workflows:
             -exportPath build/ios/ipa \
             -exportOptionsPlist /tmp/ExportOptions.plist \
             -allowProvisioningUpdates \
-            -authenticationKeyPath /tmp/AuthKey.p8 \
             -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
     artifacts:
