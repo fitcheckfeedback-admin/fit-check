@@ -86,5 +86,9 @@
     "@types/leaflet": "^1.9.21",
     "leaflet": "^1.9.4",
     "react-leaflet": "^5.0.0"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-darwin-arm64": "*",
+    "@rollup/rollup-linux-x64-gnu": "*"
   }
 }
