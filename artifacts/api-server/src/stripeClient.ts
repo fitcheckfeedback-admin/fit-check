@@ -1,5 +1,31 @@
 import Stripe from "stripe";
 
+async function fetchConnectorCredentials(
+  hostname: string,
+  xReplitToken: string,
+  environment: "development" | "production",
+): Promise<{ publishableKey: string; secretKey: string } | null> {
+  try {
+    const url = new URL(`https://${hostname}/api/v2/connection`);
+    url.searchParams.set("include_secrets", "true");
+    url.searchParams.set("connector_names", "stripe");
+    url.searchParams.set("environment", environment);
+
+    const response = await fetch(url.toString(), {
+      headers: { Accept: "application/json", "X-Replit-Token": xReplitToken },
+    });
+
+    const data = await response.json();
+    const settings = data.items?.[0]?.settings;
+    if (settings?.secret) {
+      return { publishableKey: settings.publishable as string, secretKey: settings.secret as string };
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
 async function getCredentials() {
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY
@@ -8,38 +34,17 @@ async function getCredentials() {
       ? "depl " + process.env.WEB_REPL_RENEWAL
       : null;
 
-  const isProduction = process.env.REPLIT_DEPLOYMENT === "1";
-  const targetEnvironment = isProduction ? "production" : "development";
-
   if (hostname && xReplitToken) {
-    try {
-      const url = new URL(`https://${hostname}/api/v2/connection`);
-      url.searchParams.set("include_secrets", "true");
-      url.searchParams.set("connector_names", "stripe");
-      url.searchParams.set("environment", targetEnvironment);
+    // Try development connector first (that's where the Stripe product is configured)
+    const dev = await fetchConnectorCredentials(hostname, xReplitToken, "development");
+    if (dev) return dev;
 
-      const response = await fetch(url.toString(), {
-        headers: {
-          Accept: "application/json",
-          "X-Replit-Token": xReplitToken,
-        },
-      });
-
-      const data = await response.json();
-      const connectionSettings = data.items?.[0];
-
-      if (connectionSettings?.settings?.secret) {
-        return {
-          publishableKey: connectionSettings.settings.publishable as string,
-          secretKey: connectionSettings.settings.secret as string,
-        };
-      }
-    } catch {
-      // fall through to env-var fallback
-    }
+    // Then try production connector if it exists
+    const prod = await fetchConnectorCredentials(hostname, xReplitToken, "production");
+    if (prod) return prod;
   }
 
-  // Fall back to env vars (set via Replit Secrets)
+  // Last resort: env vars set via Replit Secrets
   const secretKey = process.env.STRIPE_SECRET_KEY;
   const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
   if (secretKey && publishableKey) {

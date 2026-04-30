@@ -2,6 +2,8 @@ import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { motion } from "framer-motion";
 import { ShoppingBag, Crown, Sparkles, ExternalLink, ChevronLeft, TrendingUp, AlertCircle } from "lucide-react";
 import { useLocation } from "wouter";
+import { ProGate } from "@/components/ProGate";
+import { isNative } from "@/lib/platform";
 
 interface ProductCard {
   id: string;
@@ -25,7 +27,7 @@ const SAMPLE_PRODUCTS: ProductCard[] = [
     why: "You're missing a mid-season layer — this covers rain and cool temps",
     gradient: "from-stone-300 to-stone-400",
     emoji: "🧥",
-    affiliateLink: "#",
+    affiliateLink: "https://bananarepublic.gap.com/browse/category.do?cid=1001921",
   },
   {
     id: "2",
@@ -36,7 +38,7 @@ const SAMPLE_PRODUCTS: ProductCard[] = [
     why: "A versatile sneaker that pairs with 80% of your existing wardrobe",
     gradient: "from-zinc-300 to-zinc-400",
     emoji: "👟",
-    affiliateLink: "#",
+    affiliateLink: "https://www.allbirds.com/collections/mens-runners",
   },
   {
     id: "3",
@@ -47,7 +49,7 @@ const SAMPLE_PRODUCTS: ProductCard[] = [
     why: "A merino base layer works with every bottom you own and handles cold snaps",
     gradient: "from-blue-200 to-indigo-300",
     emoji: "🔵",
-    affiliateLink: "#",
+    affiliateLink: "https://www.uniqlo.com/us/en/search?q=merino+crew+neck",
   },
   {
     id: "4",
@@ -58,7 +60,7 @@ const SAMPLE_PRODUCTS: ProductCard[] = [
     why: "A second pair of slim jeans gives your outfits more variety",
     gradient: "from-blue-400 to-blue-600",
     emoji: "👖",
-    affiliateLink: "#",
+    affiliateLink: "https://www.levi.com/US/en_US/clothing/men/jeans/511-slim-fit-mens-jeans/p/045110093",
   },
 ];
 
@@ -72,7 +74,7 @@ const ACCESSORIES: ProductCard[] = [
     why: "Casual and functional — works on warm days",
     gradient: "from-amber-200 to-yellow-300",
     emoji: "👜",
-    affiliateLink: "#",
+    affiliateLink: "https://www.madewell.com/the-transport-tote-NF654.html",
   },
   {
     id: "a2",
@@ -83,7 +85,7 @@ const ACCESSORIES: ProductCard[] = [
     why: "Classic frame style that complements your casual looks",
     gradient: "from-rose-300 to-pink-400",
     emoji: "🕶️",
-    affiliateLink: "#",
+    affiliateLink: "https://www.quayaustralia.com/collections/sunglasses",
   },
   {
     id: "a3",
@@ -94,9 +96,17 @@ const ACCESSORIES: ProductCard[] = [
     why: "For mild evenings — lighter than a coat, smarter than a hoodie",
     gradient: "from-teal-300 to-emerald-400",
     emoji: "🟢",
-    affiliateLink: "#",
+    affiliateLink: "https://www.everlane.com/collections/womens-fleece",
   },
 ];
+
+function openLink(url: string) {
+  if (isNative()) {
+    window.open(url, "_system");
+  } else {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+}
 
 function WardrobeGaps() {
   const { settings } = useFitCheckSettings();
@@ -134,7 +144,7 @@ function WardrobeGaps() {
   );
 }
 
-export default function Discover() {
+function DiscoverContent() {
   const [, nav] = useLocation();
 
   return (
@@ -192,15 +202,14 @@ export default function Discover() {
 
           <div className="grid grid-cols-2 gap-3">
             {SAMPLE_PRODUCTS.map((p, i) => (
-              <motion.a
+              <motion.button
                 key={p.id}
-                href={p.affiliateLink}
+                onClick={() => openLink(p.affiliateLink)}
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.07 }}
-                className="bg-card border border-border rounded-2xl overflow-hidden group active:scale-95 transition-transform"
+                className="bg-card border border-border rounded-2xl overflow-hidden text-left active:scale-95 transition-transform w-full"
               >
-                {/* Product image placeholder */}
                 <div className={`h-36 bg-gradient-to-br ${p.gradient} flex items-center justify-center relative`}>
                   <span className="text-5xl">{p.emoji}</span>
                   <div className="absolute top-2 left-2 text-[9px] font-black uppercase tracking-wider bg-black/30 text-white px-2 py-0.5 rounded-full">
@@ -218,7 +227,7 @@ export default function Discover() {
                     </div>
                   </div>
                 </div>
-              </motion.a>
+              </motion.button>
             ))}
           </div>
         </div>
@@ -232,13 +241,13 @@ export default function Discover() {
 
           <div className="space-y-3">
             {ACCESSORIES.map((p, i) => (
-              <motion.a
+              <motion.button
                 key={p.id}
-                href={p.affiliateLink}
+                onClick={() => openLink(p.affiliateLink)}
                 initial={{ opacity: 0, x: -16 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 + i * 0.07 }}
-                className="flex items-center gap-4 p-4 bg-card border border-border rounded-2xl group active:scale-[0.99] transition-transform"
+                className="flex items-center gap-4 p-4 bg-card border border-border rounded-2xl active:scale-[0.99] transition-transform w-full text-left"
               >
                 <div className={`w-14 h-14 shrink-0 rounded-xl bg-gradient-to-br ${p.gradient} flex items-center justify-center text-2xl`}>
                   {p.emoji}
@@ -254,7 +263,7 @@ export default function Discover() {
                     View <ExternalLink className="w-3 h-3" />
                   </div>
                 </div>
-              </motion.a>
+              </motion.button>
             ))}
           </div>
         </div>
@@ -270,5 +279,16 @@ export default function Discover() {
 
       </div>
     </div>
+  );
+}
+
+export default function Discover() {
+  return (
+    <ProGate
+      feature="Shop the Gap"
+      description="Unlock AI-curated product picks matched to your wardrobe gaps, style, and today's weather."
+    >
+      <DiscoverContent />
+    </ProGate>
   );
 }
