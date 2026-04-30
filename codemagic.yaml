@@ -23,34 +23,10 @@ workflows:
         script: |
           set -e
           keychain initialize
-
-          echo "=== fetch-signing-files help ==="
-          app-store-connect fetch-signing-files --help 2>&1 | grep -E "private|cert|key" || true
-
-          echo "=== Decoding certificate key ==="
-          python3 << 'PYEOF'
-import base64
-key_b64 = open('artifacts/fit-check/ios/cert_key.b64').read().strip()
-key_pem = base64.b64decode(key_b64).decode('ascii')
-open('/tmp/cert_key.pem', 'w').write(key_pem)
-print('Key type:', key_pem.split('\n')[0])
-print('Key length:', len(key_pem))
-PYEOF
-
+          python3 -c 'import base64; k=open("artifacts/fit-check/ios/cert_key.b64").read().strip(); pem=base64.b64decode(k).decode(); open("/tmp/cert_key.pem","w").write(pem); print("Key type:", pem.split("\n")[0])'
           export CERTIFICATE_PRIVATE_KEY="$(cat /tmp/cert_key.pem)"
-
-          echo "=== Running fetch-signing-files ==="
-          app-store-connect fetch-signing-files \
-            "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create \
-            --private-key @env:CERTIFICATE_PRIVATE_KEY
-          echo "=== fetch-signing-files done ==="
-
-          echo "=== Running keychain add-certificates ==="
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create --private-key @env:CERTIFICATE_PRIVATE_KEY
           keychain add-certificates
-          echo "=== keychain done ==="
-
           xcode-project use-profiles
       - name: Archive
         script: |
@@ -65,18 +41,7 @@ PYEOF
           exit ${PIPESTATUS[0]}
       - name: Export IPA
         script: |
-          cat > /tmp/ExportOptions.plist << 'EOF'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>method</key>
-            <string>app-store</string>
-            <key>teamID</key>
-            <string>P6D4L2GJ75</string>
-          </dict>
-          </plist>
-          EOF
+          python3 -c 'open("/tmp/ExportOptions.plist","w").write("""<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict><key>method</key><string>app-store</string><key>teamID</key><string>P6D4L2GJ75</string></dict></plist>""")'
           mkdir -p build/ios/ipa
           xcodebuild -exportArchive \
             -archivePath /tmp/App.xcarchive \
