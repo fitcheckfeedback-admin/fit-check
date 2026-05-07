@@ -1,59 +1,64 @@
 workflows:
-  ios-workflow:
-    name: FIT Check iOS
-    max_build_duration: 120
-    instance_type: mac_mini_m2
-    integrations:
-      app_store_connect: Fit Check
-    environment:
-      node: 22.12.0
-      vars:
-        BUNDLE_ID: app.stylesense.fitcheck
-        TEAM_ID: P6D4L2GJ75
-    scripts:
-      - name: Install pnpm
-        script: npm install -g pnpm@10 --force
-      - name: Install dependencies
-        script: pnpm install --frozen-lockfile --ignore-scripts
-      - name: Sync Capacitor
-        script: |
-          cd artifacts/fit-check
-          npx cap sync ios
-      - name: Set up signing
-        script: |
-          set -e
-          keychain initialize
-          python3 -c 'import base64; k=open("artifacts/fit-check/ios/cert_key.b64").read().strip(); pem=base64.b64decode(k).decode(); open("/tmp/cert_key.pem","w").write(pem)'
-          export CERTIFICATE_PRIVATE_KEY="$(cat /tmp/cert_key.pem)"
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
-          keychain add-certificates
-          xcode-project use-profiles
-      - name: Archive
-        script: |
-          set -o pipefail
-          xcodebuild archive \
-            -project artifacts/fit-check/ios/App/App.xcodeproj \
-            -scheme App \
-            -configuration Release \
-            -archivePath /tmp/App.xcarchive \
-            CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM="$TEAM_ID" \
-            CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
-            2>&1 | tee /tmp/xcodebuild_archive.log
-          exit ${PIPESTATUS[0]}
-      - name: Export IPA
-        script: |
-          mkdir -p build/ios/ipa
-          xcodebuild -exportArchive \
-            -archivePath /tmp/App.xcarchive \
-            -exportPath build/ios/ipa \
-            -exportOptionsPlist /Users/builder/export_options.plist
-    artifacts:
-      - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_archive.log
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
-    publishing:
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
-        submit_to_app_store: false
+    ios-workflow:
+      name: FIT Check iOS
+      max_build_duration: 120
+      instance_type: mac_mini_m2
+      integrations:
+        app_store_connect: Fit Check
+      environment:
+        node: 22.12.0
+        vars:
+          BUNDLE_ID: app.stylesense.fitcheck
+          TEAM_ID: P6D4L2GJ75
+      scripts:
+        - name: Install pnpm
+          script: npm install -g pnpm@10 --force
+        - name: Install dependencies
+          script: pnpm install --frozen-lockfile --ignore-scripts
+        - name: Build web app
+          script: |
+            cd artifacts/fit-check
+            CAPACITOR_BUILD=true pnpm exec vite build --config vite.config.ts
+        - name: Sync Capacitor
+          script: |
+            cd artifacts/fit-check
+            npx cap sync ios
+        - name: Set up signing
+          script: |
+            set -e
+            keychain initialize
+            python3 -c 'import base64; k=open("artifacts/fit-check/ios/cert_key.b64").read().strip(); pem=base64.b64decode(k).decode(); open("/tmp/cert_key.pem","w").write(pem)'
+            export CERTIFICATE_PRIVATE_KEY="$(cat /tmp/cert_key.pem)"
+            app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+            keychain add-certificates
+            xcode-project use-profiles
+        - name: Archive
+          script: |
+            set -o pipefail
+            xcodebuild archive \
+              -project artifacts/fit-check/ios/App/App.xcodeproj \
+              -scheme App \
+              -configuration Release \
+              -archivePath /tmp/App.xcarchive \
+              CODE_SIGN_STYLE=Manual \
+              DEVELOPMENT_TEAM="$TEAM_ID" \
+              CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+              2>&1 | tee /tmp/xcodebuild_archive.log
+            exit ${PIPESTATUS[0]}
+        - name: Export IPA
+          script: |
+            mkdir -p build/ios/ipa
+            xcodebuild -exportArchive \
+              -archivePath /tmp/App.xcarchive \
+              -exportPath build/ios/ipa \
+              -exportOptionsPlist /Users/builder/export_options.plist
+      artifacts:
+        - build/ios/ipa/*.ipa
+        - /tmp/xcodebuild_archive.log
+        - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+      publishing:
+        app_store_connect:
+          auth: integration
+          submit_to_testflight: true
+          submit_to_app_store: false
+  
