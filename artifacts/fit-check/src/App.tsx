@@ -8,6 +8,7 @@ import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { useEffect } from "react";
 import { trackEvent, trackPageView } from "@/lib/analytics";
 import { useLocation } from "wouter";
+import { initRevenueCat } from "@/lib/revenuecat";
 
 // Pages
 import Onboarding from "@/pages/Onboarding";
@@ -80,8 +81,8 @@ function Router() {
 
 function AppTracker() {
   useEffect(() => {
-    // Only fire app_open for already-onboarded users who have location saved.
-    // New users will fire their app_open at the end of Onboarding instead.
+    initRevenueCat();
+
     const hasLocation = !!localStorage.getItem("fitcheck.location");
     if (!hasLocation) return;
 

@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
+import { isNative } from "@/lib/platform";
+import { getRCProStatus } from "@/lib/revenuecat";
 
 const CACHE_KEY = "fitcheck.premiumStatus";
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL_MS = 5 * 60 * 1000;
 
 interface PremiumStatus {
   isPro: boolean;
@@ -9,18 +11,14 @@ interface PremiumStatus {
   refetch: () => void;
 }
 
-async function checkPremium(deviceId: string): Promise<boolean> {
-  // Clear cache to get fresh status
+async function checkPremiumWeb(deviceId: string): Promise<boolean> {
   try { sessionStorage.removeItem(CACHE_KEY); } catch {}
-
   const res = await fetch(`/api/premium/status?deviceId=${encodeURIComponent(deviceId)}`);
   if (!res.ok) return false;
   const { isPro } = await res.json();
-
   try {
     sessionStorage.setItem(CACHE_KEY, JSON.stringify({ isPro, ts: Date.now() }));
   } catch {}
-
   return Boolean(isPro);
 }
 
@@ -29,6 +27,18 @@ export function usePremium(): PremiumStatus {
   const [loading, setLoading] = useState(true);
 
   const fetchStatus = useCallback(async (forceRefresh = false) => {
+    if (isNative()) {
+      try {
+        const pro = await getRCProStatus();
+        setIsPro(pro);
+      } catch {
+        setIsPro(false);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     const deviceId = localStorage.getItem("fitcheck.deviceId");
     if (!deviceId) {
       setIsPro(false);
@@ -36,7 +46,6 @@ export function usePremium(): PremiumStatus {
       return;
     }
 
-    // Try cache first (unless forced refresh)
     if (!forceRefresh) {
       try {
         const cached = sessionStorage.getItem(CACHE_KEY);
@@ -52,7 +61,7 @@ export function usePremium(): PremiumStatus {
     }
 
     try {
-      const pro = await checkPremium(deviceId);
+      const pro = await checkPremiumWeb(deviceId);
       setIsPro(pro);
     } catch {
       setIsPro(false);

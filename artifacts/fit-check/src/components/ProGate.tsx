@@ -1,9 +1,10 @@
 import { ReactNode, useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Crown, Lock, Sparkles, ArrowRight, Check, Loader2 } from "lucide-react";
+import { Crown, Lock, Sparkles, ArrowRight, Check, Loader2, RotateCcw } from "lucide-react";
 import { usePremium } from "@/hooks/usePremium";
 import { isNative } from "@/lib/platform";
 import { Browser } from "@capacitor/browser";
+import { purchasePro, restorePurchases } from "@/lib/revenuecat";
 
 interface ProGateProps {
   children: ReactNode;
@@ -22,7 +23,7 @@ const PRO_FEATURES = [
   "Favorite Outfits",
 ];
 
-async function startCheckout(deviceId: string): Promise<string | null> {
+async function startStripeCheckout(deviceId: string): Promise<string | null> {
   const res = await fetch("/api/stripe/checkout", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -33,7 +34,7 @@ async function startCheckout(deviceId: string): Promise<string | null> {
   return url ?? null;
 }
 
-async function verifyPayment(deviceId: string): Promise<boolean> {
+async function verifyStripePayment(deviceId: string): Promise<boolean> {
   const res = await fetch("/api/stripe/verify", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -45,22 +46,23 @@ async function verifyPayment(deviceId: string): Promise<boolean> {
 }
 
 export function ProGate({ children, feature = "Pro Feature", description }: ProGateProps) {
-  const { isPro, loading } = usePremium();
+  const { isPro, loading, refetch } = usePremium();
   const [checkingOut, setCheckingOut] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
   const awaitingReturnRef = useRef(false);
 
-  // When the user returns from Safari after checkout, auto-verify
   useEffect(() => {
+    if (isNative()) return;
     function onVisible() {
       if (!awaitingReturnRef.current) return;
       awaitingReturnRef.current = false;
       const deviceId = localStorage.getItem("fitcheck.deviceId");
       if (!deviceId) return;
       setVerifying(true);
-      verifyPayment(deviceId).then(paid => {
+      verifyStripePayment(deviceId).then(paid => {
         if (paid) {
           window.location.reload();
         } else {
@@ -86,6 +88,24 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
   async function handleUpgrade() {
     setError(null);
     setHint(null);
+
+    if (isNative()) {
+      setCheckingOut(true);
+      try {
+        const result = await purchasePro();
+        if (result.success) {
+          refetch();
+        } else if (!result.cancelled) {
+          setError(result.error ?? "Purchase failed. Please try again.");
+        }
+      } catch {
+        setError("Something went wrong. Please try again.");
+      } finally {
+        setCheckingOut(false);
+      }
+      return;
+    }
+
     const deviceId = localStorage.getItem("fitcheck.deviceId");
     if (!deviceId) {
       setError("Could not identify your device. Please reload and try again.");
@@ -93,14 +113,10 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
     }
     setCheckingOut(true);
     try {
-      const url = await startCheckout(deviceId);
+      const url = await startStripeCheckout(deviceId);
       if (url) {
-        if (isNative()) {
-          awaitingReturnRef.current = true;
-          await Browser.open({ url });
-        } else {
-          window.location.href = url;
-        }
+        awaitingReturnRef.current = true;
+        await Browser.open({ url });
       } else {
         setError("Checkout unavailable right now. Try again in a moment.");
       }
@@ -111,18 +127,36 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
     }
   }
 
-  async function handleManualVerify() {
+  async function handleRestore() {
     setError(null);
     setHint(null);
+
+    if (isNative()) {
+      setRestoring(true);
+      try {
+        const restored = await restorePurchases();
+        if (restored) {
+          refetch();
+        } else {
+          setError("No previous purchase found for this Apple ID.");
+        }
+      } catch {
+        setError("Restore failed. Please try again.");
+      } finally {
+        setRestoring(false);
+      }
+      return;
+    }
+
     const deviceId = localStorage.getItem("fitcheck.deviceId");
     if (!deviceId) return;
     setVerifying(true);
     try {
-      const paid = await verifyPayment(deviceId);
+      const paid = await verifyStripePayment(deviceId);
       if (paid) {
         window.location.reload();
       } else {
-        setError("No active subscription found. Complete checkout in Safari first.");
+        setError("No active subscription found.");
       }
     } catch {
       setError("Verification failed. Please try again.");
@@ -130,6 +164,8 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
       setVerifying(false);
     }
   }
+
+  const busy = checkingOut || verifying || restoring;
 
   return (
     <div className="flex-1 flex flex-col">
@@ -174,7 +210,7 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
             <div className="w-full space-y-2">
               <button
                 onClick={handleUpgrade}
-                disabled={checkingOut || verifying}
+                disabled={busy}
                 className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-black text-base px-6 py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 active:scale-95 transition-transform disabled:opacity-70"
               >
                 {(checkingOut || verifying) ? (
@@ -182,8 +218,8 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
                 ) : (
                   <Lock className="w-4 h-4" />
                 )}
-                {checkingOut ? "Loading checkout…" : verifying ? "Verifying payment…" : "Upgrade to Pro — $2.99/mo"}
-                {!checkingOut && !verifying && <ArrowRight className="w-4 h-4" />}
+                {checkingOut ? "Loading…" : verifying ? "Verifying…" : "Upgrade to Pro"}
+                {!busy && <ArrowRight className="w-4 h-4" />}
               </button>
 
               <AnimatePresence>
@@ -200,15 +236,16 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
               </AnimatePresence>
 
               <p className="text-[11px] text-muted-foreground">
-                Cancel anytime · Secure checkout via Stripe
+                {isNative() ? "Cancel anytime · Managed by Apple" : "Cancel anytime · Secure checkout via Stripe"}
               </p>
 
               <button
-                onClick={handleManualVerify}
-                disabled={verifying}
-                className="w-full text-[11px] text-muted-foreground/60 py-1 underline underline-offset-2"
+                onClick={handleRestore}
+                disabled={busy}
+                className="w-full flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/60 py-1"
               >
-                Already paid?
+                {restoring ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
+                {isNative() ? "Restore purchases" : "Already paid?"}
               </button>
             </div>
           </motion.div>
