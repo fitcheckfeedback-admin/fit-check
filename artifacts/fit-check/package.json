@@ -93,6 +93,8 @@
     "@rollup/rollup-darwin-arm64": "*",
     "@rollup/rollup-linux-x64-gnu": "*",
     "@tailwindcss/oxide-darwin-arm64": "*",
-    "@tailwindcss/oxide-linux-x64-gnu": "*"
+    "@tailwindcss/oxide-linux-x64-gnu": "*",
+    "lightningcss-darwin-arm64": "*",
+    "lightningcss-linux-x64-gnu": "*"
   }
 }
