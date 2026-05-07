@@ -24,6 +24,7 @@ import Trip from "@/pages/Trip";
 import Discover from "@/pages/Discover";
 import NotFound from "@/pages/not-found";
 import VideoTemplate from "@/components/video/VideoTemplate";
+import Privacy from "@/pages/Privacy";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/onboarding" component={Onboarding} />
+      <Route path="/privacy" component={Privacy} />
       <Route path="/video-tour" component={VideoTemplate} />
       <Route path="/" component={() => <ProtectedRoute component={Home} />} />
       <Route path="/forecast" component={() => <ProtectedRoute component={Forecast} />} />
