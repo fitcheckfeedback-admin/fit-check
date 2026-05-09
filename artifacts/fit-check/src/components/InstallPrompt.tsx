@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, X, Share } from "lucide-react";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
+import { isNative } from "@/lib/platform";
 
 const DISMISSED_KEY = "fitcheck.installDismissed";
 const DELAY_MS = 20000;
@@ -11,6 +12,7 @@ export function InstallPrompt() {
   const { canInstall, ios, promptAvailable, install } = useInstallPrompt();
 
   useEffect(() => {
+    if (isNative()) return;
     if (localStorage.getItem(DISMISSED_KEY)) return;
     if (!canInstall) return;
 

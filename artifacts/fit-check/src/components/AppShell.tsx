@@ -15,7 +15,10 @@ export function AppShell({ children, hideNav = false }: AppShellProps) {
     <div className="h-[100dvh] w-full bg-zinc-100 dark:bg-zinc-950 flex justify-center">
       <div className="w-full max-w-[480px] bg-background h-full relative shadow-2xl overflow-hidden flex flex-col mx-auto border-x border-border/50" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <UpdateBanner />
-        <main className={`flex-1 min-h-0 overflow-y-auto scroll-smooth flex flex-col ${!hideNav ? "pb-32" : ""}`}>
+        <main
+          className="flex-1 min-h-0 overflow-y-auto scroll-smooth flex flex-col"
+          style={!hideNav ? { paddingBottom: "max(calc(env(safe-area-inset-bottom) + 6.5rem), 9rem)" } : undefined}
+        >
           {children}
         </main>
         {!hideNav && (

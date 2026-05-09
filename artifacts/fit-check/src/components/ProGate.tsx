@@ -5,6 +5,7 @@ import { usePremium } from "@/hooks/usePremium";
 import { isNative } from "@/lib/platform";
 import { Browser } from "@capacitor/browser";
 import { purchasePro, restorePurchases } from "@/lib/revenuecat";
+import { Link } from "wouter";
 
 interface ProGateProps {
   children: ReactNode;
@@ -208,18 +209,27 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
             </div>
 
             <div className="w-full space-y-2">
+              {isNative() && (
+                <div className="text-center">
+                  <p className="text-2xl font-black text-foreground">$2.99<span className="text-sm font-semibold text-muted-foreground"> / month</span></p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Auto-renews monthly. Cancel anytime.</p>
+                </div>
+              )}
+
               <button
                 onClick={handleUpgrade}
                 disabled={busy}
                 className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-black text-base px-6 py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 active:scale-95 transition-transform disabled:opacity-70"
               >
-                {(checkingOut || verifying) ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                {busy ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
-                  <Lock className="w-4 h-4" />
+                  <>
+                    <Lock className="w-4 h-4" />
+                    Upgrade to Pro
+                    <ArrowRight className="w-4 h-4" />
+                  </>
                 )}
-                {checkingOut ? "Loading…" : verifying ? "Verifying…" : "Upgrade to Pro"}
-                {!busy && <ArrowRight className="w-4 h-4" />}
               </button>
 
               <AnimatePresence>
@@ -235,8 +245,8 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
                 )}
               </AnimatePresence>
 
-              <p className="text-[11px] text-muted-foreground">
-                {isNative() ? "Cancel anytime · Managed by Apple" : "Cancel anytime · Secure checkout via Stripe"}
+              <p className="text-[11px] text-muted-foreground text-center">
+                {isNative() ? "Managed by Apple" : "Cancel anytime · Secure checkout via Stripe"}
               </p>
 
               <button
@@ -247,6 +257,23 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
                 {restoring ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
                 {isNative() ? "Restore purchases" : "Already paid?"}
               </button>
+
+              {isNative() && (
+                <div className="flex items-center justify-center gap-3 pt-1">
+                  <Link href="/privacy" className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground underline underline-offset-2">
+                    Privacy Policy
+                  </Link>
+                  <span className="text-muted-foreground/30 text-[10px]">·</span>
+                  <a
+                    href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground underline underline-offset-2"
+                  >
+                    Terms of Use
+                  </a>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>
