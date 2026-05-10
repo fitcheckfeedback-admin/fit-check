@@ -62,6 +62,12 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
     }
   }, [isOpen, isListening, transcript, isSpeaking, answer, weatherData, recommendation, settings, speak]);
 
+  // Auto-retry when nothing was heard
+  const handleRetry = () => {
+    setAnswer(null);
+    startListening();
+  };
+
   useEffect(() => {
     if (isOpen && answer && !isSpeaking) {
       answerTimeoutRef.current = setTimeout(() => {
@@ -166,6 +172,22 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
                   >
                     {answer}
                   </motion.p>
+                ) : error ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col items-center gap-4"
+                  >
+                    <p className="text-xl font-display font-medium text-muted-foreground">
+                      {error}
+                    </p>
+                    <button
+                      onClick={handleRetry}
+                      className="px-8 py-3 rounded-full bg-primary text-primary-foreground font-semibold"
+                    >
+                      Try again
+                    </button>
+                  </motion.div>
                 ) : (
                   <>
                     <p className="text-3xl font-display font-bold text-foreground min-h-[80px]">
