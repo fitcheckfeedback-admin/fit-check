@@ -40,6 +40,7 @@ export function useVoiceAssistant() {
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const abortedRef = useRef(false);
+  const latestTranscriptRef = useRef('');
 
   useEffect(() => {
     if (isNative()) {
@@ -65,7 +66,7 @@ export function useVoiceAssistant() {
     const handleStart = () => setIsListening(true);
     const handleEnd = () => setIsListening(false);
     const handleError = (e: SpeechRecognitionErrorEvent) => {
-      setError(e.error);
+      setError(e.error === 'no-speech' ? "I didn't catch that — try again" : e.error);
       setIsListening(false);
     };
     const handleResult = (e: SpeechRecognitionEvent) => {
@@ -74,6 +75,7 @@ export function useVoiceAssistant() {
         current += e.results[i][0].transcript;
       }
       setTranscript(current);
+      latestTranscriptRef.current = current;
     };
 
     recognition.addEventListener('start', handleStart);
@@ -92,6 +94,7 @@ export function useVoiceAssistant() {
   const startListening = useCallback(async () => {
     setError(null);
     setTranscript('');
+    latestTranscriptRef.current = '';
     abortedRef.current = false;
 
     if (isNative()) {
@@ -99,28 +102,38 @@ export function useVoiceAssistant() {
         const { SpeechRecognition: NativeSR } = await import('@capacitor-community/speech-recognition');
 
         const permResult = await NativeSR.requestPermission();
-        if (permResult.speechRecognition === 'denied') {
-          setError('Speech recognition permission denied');
-          return;
-        }
-
+        // requestPermission returns void in v7 — if it throws, permission was denied
+        
         setIsListening(true);
 
-        // start() resolves with { matches } when the user finishes speaking
-        const result = await NativeSR.start({
+        // Listen for partial results as they stream in
+        const handle = await NativeSR.addListener('partialResults', (data: { matches: string[] }) => {
+          const text = data.matches?.[0]?.trim() ?? '';
+          if (text) {
+            setTranscript(text);
+            latestTranscriptRef.current = text;
+          }
+        });
+
+        // start() kicks off recognition; on iOS it ends automatically after silence
+        await NativeSR.start({
           language: 'en-US',
           maxResults: 2,
-          partialResults: false,
+          partialResults: true,
           popup: false,
         });
 
+        // Clean up listener
+        await handle.remove();
+
         if (abortedRef.current) return;
 
-        const text = result?.matches?.[0]?.trim() ?? '';
-        if (!text) {
+        // Use whatever was captured via partialResults
+        const finalText = latestTranscriptRef.current;
+        if (!finalText) {
           setError("I didn't catch that — try again");
         } else {
-          setTranscript(text);
+          setTranscript(finalText);
         }
       } catch (e: any) {
         if (!abortedRef.current) {
@@ -145,9 +158,7 @@ export function useVoiceAssistant() {
       try {
         const { SpeechRecognition: NativeSR } = await import('@capacitor-community/speech-recognition');
         await NativeSR.stop();
-      } catch {
-        // ignore
-      }
+      } catch { /* ignore */ }
     } else {
       try { recognitionRef.current?.stop(); } catch { /* ignore */ }
     }
