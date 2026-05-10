@@ -121,7 +121,8 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/90 backdrop-blur-xl p-6"
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6"
+            style={{ backgroundColor: 'rgba(250, 247, 244, 0.97)' }}
             onClick={handleClose}
           >
             <button 

@@ -30,6 +30,8 @@ import { buildClosetDescription } from "@/lib/closetDesc";
 import { AIStylistCard } from "@/components/AIStylistCard";
 import { CitySearch } from "@/components/CitySearch";
 import { isNative } from "@/lib/platform";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { reverseGeocode } from "@/lib/weather";
 
 function LocationGate({ onLocation }: { onLocation: (loc: { lat: number; lon: number; name: string }) => void }) {
   const [fallback, setFallback] = useState(isNative());
@@ -114,6 +116,8 @@ export default function Home() {
     settings.location?.lon ?? null,
   );
   const { refetch: refetchPremium } = usePremium();
+  const { getCurrentPosition } = useGeolocation();
+  const [isLocating, setIsLocating] = useState(false);
   const [proToast, setProToast] = useState<"success" | "cancel" | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [showShare, setShowShare] = useState(false);
@@ -365,14 +369,28 @@ export default function Home() {
                 <button
                   className="w-9 h-9 flex items-center justify-center rounded-full backdrop-blur-md border transition-colors"
                   style={{ background: pillBg, borderColor: pillBorder }}
-                  onClick={() => refetch()}
-                  title="Refresh weather"
+                  onClick={async () => {
+                    try {
+                      setIsLocating(true);
+                      const coords = await getCurrentPosition();
+                      const cityName = await reverseGeocode(coords.lat, coords.lon);
+                      if (cityName) {
+                        updateSettings({ location: { lat: coords.lat, lon: coords.lon, name: cityName } });
+                      }
+                    } catch {
+                      // GPS failed — just refetch weather for existing location
+                    } finally {
+                      setIsLocating(false);
+                      refetch();
+                    }
+                  }}
+                  title="Refresh location & weather"
                 >
                   <RefreshCw
                     className="w-4 h-4"
                     style={{
                       color: textPrimary,
-                      animation: isFetching ? "spin 1s linear infinite" : "none",
+                      animation: (isFetching || isLocating) ? "spin 1s linear infinite" : "none",
                     }}
                   />
                 </button>
