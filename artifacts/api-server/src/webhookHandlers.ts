@@ -1,4 +1,5 @@
-import { getStripeSync } from "./stripeClient";
+import Stripe from "stripe";
+import { getUncachableStripeClient } from "./stripeClient";
 import { db, premiumAccessTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "./lib/logger";
@@ -12,14 +13,22 @@ export class WebhookHandlers {
       );
     }
 
-    const sync = await getStripeSync();
-    const event = await sync.processWebhook(payload, signature);
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      throw new Error("STRIPE_WEBHOOK_SECRET is not set");
+    }
 
-    if (!event) return;
+    const stripe = getUncachableStripeClient();
+    let event: Stripe.Event;
+    try {
+      event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+    } catch (err: any) {
+      throw new Error(`Stripe webhook signature verification failed: ${err.message}`);
+    }
 
     try {
       if (event.type === "checkout.session.completed") {
-        const session = event.data.object as any;
+        const session = event.data.object as Stripe.Checkout.Session;
         const deviceId: string | undefined = session.metadata?.deviceId;
         if (deviceId) {
           await db
@@ -34,14 +43,12 @@ export class WebhookHandlers {
         event.type === "customer.subscription.deleted" ||
         event.type === "customer.subscription.updated"
       ) {
-        const sub = event.data.object as any;
+        const sub = event.data.object as Stripe.Subscription;
         if (sub.status !== "active" && sub.status !== "trialing") {
-          const customerId: string = sub.customer;
-          const stripe = (await import("./stripeClient")).getUncachableStripeClient;
-          const stripeClient = await stripe();
-          const customer = await stripeClient.customers.retrieve(customerId);
+          const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+          const customer = await stripe.customers.retrieve(customerId);
           if (customer.deleted) return;
-          const deviceId: string | undefined = (customer as any).metadata?.deviceId;
+          const deviceId: string | undefined = (customer as Stripe.Customer).metadata?.deviceId;
           if (deviceId) {
             await db
               .delete(premiumAccessTable)

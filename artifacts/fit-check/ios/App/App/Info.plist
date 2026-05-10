@@ -32,6 +32,8 @@
         <string>FIT Check uses your camera for the GRWM video feature so you can record your outfit of the day.</string>
         <key>NSMicrophoneUsageDescription</key>
         <string>FIT Check uses your microphone to record audio for GRWM videos and the voice assistant feature.</string>
+        <key>NSSpeechRecognitionUsageDescription</key>
+        <string>FIT Check uses speech recognition to let you ask questions about what to wear today.</string>
         <key>NSPhotoLibraryUsageDescription</key>
         <string>FIT Check accesses your photo library so you can upload clothing items to your digital closet.</string>
         <key>NSPhotoLibraryAddUsageDescription</key>
