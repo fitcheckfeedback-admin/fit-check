@@ -25,7 +25,7 @@ const HINTS = [
 ];
 
 export function VoiceAssistant({ weatherData, recommendation, settings, autoStart, onCloseAutoStart }: VoiceAssistantProps) {
-  const { isSupported, isListening, isSpeaking, transcript, startListening, stopListening, speak, cancelSpeech } = useVoiceAssistant();
+  const { isSupported, isListening, isSpeaking, transcript, error, startListening, stopListening, speak, cancelSpeech } = useVoiceAssistant();
   const [isOpen, setIsOpen] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
   const [hintIndex, setHintIndex] = useState(0);
