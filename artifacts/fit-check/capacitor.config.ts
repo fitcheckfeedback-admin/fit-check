@@ -2,7 +2,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
   appId: "app.stylesense.fitcheck",
-  appName: "FIT Check",
+  appName: "FIT Check: Outfit Planner",
   webDir: "www",
   server: {
     androidScheme: "https",

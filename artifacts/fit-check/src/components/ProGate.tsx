@@ -18,10 +18,10 @@ const PRO_GATING_ENABLED = true;
 const PRO_FEATURES = [
   "AI Stylist",
   "Trip Planner",
-  "Shop the Gap",
   "Unlimited Closet",
-  "Voice Assistant",
   "Favorite Outfits",
+  "Weather-Based Outfits",
+  "Saved Looks",
 ];
 
 async function startStripeCheckout(deviceId: string): Promise<string | null> {
@@ -96,7 +96,9 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
         const result = await purchasePro();
         if (result.success) {
           refetch();
-        } else if (!result.cancelled) {
+        } else if (result.cancelled) {
+          setHint("Purchase was not completed.");
+        } else {
           setError(result.error ?? "Purchase failed. Please try again.");
         }
       } catch {
@@ -211,6 +213,7 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
             <div className="w-full space-y-2">
               {isNative() && (
                 <div className="text-center">
+                  <p className="text-[11px] font-bold text-muted-foreground mb-0.5">Fit Check Pro Monthly</p>
                   <p className="text-2xl font-black text-foreground">$2.99<span className="text-sm font-semibold text-muted-foreground"> / month</span></p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">Auto-renews monthly. Cancel anytime.</p>
                 </div>
