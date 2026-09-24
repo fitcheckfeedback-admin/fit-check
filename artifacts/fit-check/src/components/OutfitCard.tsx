@@ -11,6 +11,7 @@ import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "./ui/label";
 import { trackEvent } from "@/lib/analytics";
+import { recordFitSaved } from "@/lib/appReview";
 
 interface OutfitCardProps {
   recommendation: Recommendation;
@@ -53,6 +54,7 @@ export function OutfitCard({ recommendation, weatherTags = [] }: OutfitCardProps
     setPopoverOpen(false);
     toast({ title: "Fit saved!", description: "Added to your saved combos." });
     trackEvent("fit_saved", { style: settings.style, fitScore });
+    recordFitSaved();
   };
 
   const handleUnsave = () => {

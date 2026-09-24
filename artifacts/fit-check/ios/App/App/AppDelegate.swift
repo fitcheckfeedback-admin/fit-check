@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import StoreKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -46,4 +47,25 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
+}
+
+// MARK: - In-app App Store review prompt
+// Minimal Capacitor plugin (auto-registered by the Capacitor bridge) so the
+// web app can ask StoreKit for a rating after genuine positive moments
+// (AI stylist success, saved outfit). No incentives, requested at most once
+// per install; iOS itself throttles how often the prompt actually displays.
+@objc(AppReview)
+public class AppReview: CAPPlugin {
+    @objc func requestReview(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            if #available(iOS 16.0, *),
+               let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
+                SKStoreReviewController.requestReview(in: scene)
+            } else {
+                // iOS 15 fallback. Deprecated in the iOS 18 SDK but still functional.
+                SKStoreReviewController.requestReview()
+            }
+            call.resolve()
+        }
+    }
 }

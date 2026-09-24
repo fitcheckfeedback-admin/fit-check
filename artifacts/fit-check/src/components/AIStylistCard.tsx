@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Sparkles, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { recordStylistSuccess } from "@/lib/appReview";
 
 interface AIStylistCardProps {
   weather: {
@@ -37,6 +38,7 @@ export function AIStylistCard({ weather, closetItems, style, gender = "unspecifi
       if (!res.ok) throw new Error("Request failed");
       const data = await res.json();
       setResult(data.recommendation);
+      recordStylistSuccess();
     } catch {
       setError("Couldn't reach the AI stylist. Try again.");
     } finally {
