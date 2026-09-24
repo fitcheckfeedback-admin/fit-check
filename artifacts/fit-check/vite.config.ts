@@ -8,20 +8,18 @@ const isCapacitorBuild = process.env.CAPACITOR_BUILD === "true";
 
 const rawPort = process.env.PORT;
 if (!isCapacitorBuild && !rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
+  console.warn("PORT environment variable is not set; defaulting to 3000.");
 }
 const port = rawPort ? Number(rawPort) : 3000;
-if (!isCapacitorBuild && (Number.isNaN(port) || port <= 0)) {
+if (rawPort && (Number.isNaN(port) || port <= 0)) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-const basePath = process.env.BASE_PATH;
-if (!isCapacitorBuild && !basePath) {
-  throw new Error(
-    "BASE_PATH environment variable is required but was not provided.",
-  );
+// BASE_PATH defaults to "/" so hosted production builds (e.g. Vercel) work
+// without it; it is only required to be explicit in the Replit dev setup.
+const basePath = process.env.BASE_PATH ?? "/";
+if (!isCapacitorBuild && !process.env.BASE_PATH) {
+  console.warn('BASE_PATH environment variable is not set; defaulting to "/".');
 }
 
 export default defineConfig({
