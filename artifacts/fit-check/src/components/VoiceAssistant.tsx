@@ -49,6 +49,7 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
       }, 4000);
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [isOpen]);
 
   useEffect(() => {

@@ -1,7 +1,12 @@
-import { motion } from 'framer-motion';
+import { motion, type TargetAndTransition, type Transition } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
-const slideTransitions = {
+const slideTransitions: {
+  initial: TargetAndTransition;
+  animate: TargetAndTransition;
+  exit: TargetAndTransition;
+  transition: Transition;
+} = {
   initial: { x: '100%', opacity: 0, scale: 0.95 },
   animate: { x: 0, opacity: 1, scale: 1 },
   exit: { x: '-100%', opacity: 0, scale: 0.95 },

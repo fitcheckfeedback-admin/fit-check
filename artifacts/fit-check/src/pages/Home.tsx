@@ -156,6 +156,7 @@ export default function Home() {
       const timer = setTimeout(() => setProToast(null), 5000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

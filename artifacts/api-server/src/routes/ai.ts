@@ -87,10 +87,10 @@ Give a brief, specific outfit suggestion in 2-3 sentences, appropriate for the w
     });
 
     const content = response.choices[0]?.message?.content ?? "";
-    res.json({ recommendation: content });
+    return res.json({ recommendation: content });
   } catch (err) {
     console.error("AI stylist error:", err);
-    res.status(500).json({ error: "AI stylist failed" });
+    return res.status(500).json({ error: "AI stylist failed" });
   }
 });
 

@@ -212,7 +212,7 @@ export function RadarMap({ lat, lon, temperatureF, units }: RadarMapProps) {
       {status === "error" && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#1a1a1a]/90 z-40 gap-3">
           <p className="text-white/60 text-sm">Radar unavailable</p>
-          <button onClick={fetchFrames} className="text-sm font-bold text-primary bg-primary/20 px-5 py-2 rounded-full">
+          <button onClick={() => fetchFrames()} className="text-sm font-bold text-primary bg-primary/20 px-5 py-2 rounded-full">
             Retry
           </button>
         </div>
@@ -231,7 +231,7 @@ export function RadarMap({ lat, lon, temperatureF, units }: RadarMapProps) {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={fetchFrames} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 border border-white/10">
+              <button onClick={() => fetchFrames()} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 border border-white/10">
                 <RefreshCw className="w-3.5 h-3.5 text-white/80" />
               </button>
               <button onClick={() => setPlaying(p => !p)} className="w-8 h-8 flex items-center justify-center rounded-full bg-primary/80 border border-primary/30">

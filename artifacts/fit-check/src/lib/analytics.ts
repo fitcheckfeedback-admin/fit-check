@@ -16,7 +16,12 @@ export type EventType =
   | "location_set"
   | "style_changed"
   | "settings_opened"
-  | "session_end";
+  | "session_end"
+  | "location_gate_view"
+  | "gender_set"
+  | "install_tapped_settings"
+  | "gender_changed"
+  | "feedback_tapped";
 
 function getLocationContext(): { city?: string; lat?: number; lon?: number } {
   try {

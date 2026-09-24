@@ -6,7 +6,7 @@ import NotFound from "@/pages/not-found";
 import Privacy from "@/pages/Privacy";
 import Screenshots from "@/pages/Screenshots";
 import Support from "@/pages/Support";
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { motion, useScroll, useTransform, AnimatePresence, type Variants } from "framer-motion";
 import { Sun, CloudRain, Wind, Snowflake, Star, Check, ArrowRight, Thermometer, Sparkles, ShoppingBag } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 
@@ -41,7 +41,7 @@ function useLandingTracker() {
   return track;
 }
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 32 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
 };

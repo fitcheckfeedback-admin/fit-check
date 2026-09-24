@@ -222,7 +222,7 @@ function prioritiseAccessories(accessories: ProductCard[], counts: ReturnType<ty
 function DiscoverContent() {
   const [, nav] = useLocation();
   const { settings } = useFitCheckSettings();
-  const counts = getClosetCounts(settings.closet as Record<string, string[] | undefined>);
+  const counts = getClosetCounts(settings.closet as unknown as Record<string, string[] | undefined>);
   const products = prioritiseProducts(ALL_PRODUCTS, counts);
   const accessories = prioritiseAccessories(ALL_ACCESSORIES, counts);
 

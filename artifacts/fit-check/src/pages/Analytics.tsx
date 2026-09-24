@@ -994,7 +994,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                     ) : (
                       <span className="text-[10px] text-muted-foreground/50 italic">no location</span>
                     )}
-                    {evt.metadata && (evt.metadata as Record<string, unknown>).page && (
+                    {evt.metadata && Boolean((evt.metadata as Record<string, unknown>).page) && (
                       <span className="text-[10px] text-purple-500">
                         {String((evt.metadata as Record<string, unknown>).page)}
                       </span>

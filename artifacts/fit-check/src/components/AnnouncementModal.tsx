@@ -18,6 +18,7 @@ export function AnnouncementModal({ appUrl = "https://style-sense-fitcheck.repli
       const t = setTimeout(() => setVisible(true), 1000);
       return () => clearTimeout(t);
     }
+    return undefined;
   }, []);
 
   const dismiss = () => {

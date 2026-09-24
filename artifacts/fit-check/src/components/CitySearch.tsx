@@ -6,7 +6,7 @@ import { searchCity, reverseGeocode } from "@/lib/weather";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface CitySearchProps {
-  onSelect: (city: { name: string; admin1?: string; latitude: number; longitude: number }) => void;
+  onSelect: (city: { name: string; admin1?: string; country?: string; latitude: number; longitude: number }) => void;
   onCancel?: () => void;
   autoFocus?: boolean;
 }

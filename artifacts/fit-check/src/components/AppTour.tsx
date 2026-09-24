@@ -43,6 +43,7 @@ export function AppTour() {
       const t = setTimeout(() => setVisible(true), 800);
       return () => clearTimeout(t);
     }
+    return undefined;
   }, []);
 
   const dismiss = () => {

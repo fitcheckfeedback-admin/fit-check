@@ -30,11 +30,11 @@ export default function Forecast() {
 
   // Always start from today — compare ISO date strings to avoid timezone UTC issues
   const todayStr = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD
-  const startIdx = Math.max(0, daily.time.findIndex(t => t >= todayStr));
+  const startIdx = Math.max(0, daily.time.findIndex((t: string) => t >= todayStr));
   const days = daily.time.slice(startIdx, startIdx + 5);
 
   // Prepare chart data for next 24h
-  const chartData = weather.hourly.time.slice(0, 24).filter((_, i) => i % 3 === 0).map((t, i) => {
+  const chartData: { time: string; temp: number }[] = weather.hourly.time.slice(0, 24).filter((_: string, i: number) => i % 3 === 0).map((t: string, i: number) => {
     const idx = i * 3;
     const date = new Date(t);
     return {
@@ -46,8 +46,8 @@ export default function Forecast() {
   const minChartTemp = Math.min(...chartData.map(d => d.temp)) - 5;
   const maxChartTemp = Math.max(...chartData.map(d => d.temp)) + 5;
 
-  const overallMin = Math.min(...days.map((_, j) => daily.temperature_2m_min[startIdx + j]));
-  const overallMax = Math.max(...days.map((_, j) => daily.temperature_2m_max[startIdx + j]));
+  const overallMin = Math.min(...days.map((_: string, j: number) => daily.temperature_2m_min[startIdx + j]));
+  const overallMax = Math.max(...days.map((_: string, j: number) => daily.temperature_2m_max[startIdx + j]));
   const range = overallMax - overallMin || 1;
 
   function formatSunTime(raw: string) {
@@ -100,7 +100,7 @@ export default function Forecast() {
             lat={settings.location.lat}
             lon={settings.location.lon}
             temperatureF={weather.current.temperature_2m}
-            units={settings.units}
+            units={settings.units === "f" ? "imperial" : "metric"}
           />
           <p className="text-xs text-center text-muted-foreground">
             Live precipitation radar · Powered by RainViewer · Auto-updates every 30s
@@ -130,7 +130,7 @@ export default function Forecast() {
 
           {/* 5-day list — starting TODAY */}
           <section className="space-y-3">
-            {days.map((dateStr, j) => {
+            {days.map((dateStr: string, j: number) => {
               const i = startIdx + j;
               const code = daily.weather_code[i];
               const info = getWeatherInfo(code);

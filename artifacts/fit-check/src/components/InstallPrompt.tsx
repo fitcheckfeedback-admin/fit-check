@@ -20,6 +20,7 @@ export function InstallPrompt() {
       const t = setTimeout(() => setVisible(true), DELAY_MS);
       return () => clearTimeout(t);
     }
+    return undefined;
   }, [canInstall, promptAvailable, ios]);
 
   const handleInstall = async () => {
