@@ -49,6 +49,19 @@ interface VoiceTTSPlugin {
 
 const NativeTTS = registerPlugin<VoiceTTSPlugin>("VoiceTTS");
 
+/**
+ * Cloud voice: our own backend's /api/tts endpoint (human neural voice).
+ * Set to the Railway deploy URL when it exists; empty string disables
+ * the cloud path and the app uses on-device voices only.
+ */
+export const CLOUD_TTS_BASE = "";
+
+export const CLOUD_VOICE_ID = "cloud-fitcheck-voice";
+
+export function isCloudTtsConfigured(): boolean {
+  return CLOUD_TTS_BASE.length > 0;
+}
+
 /** True when the native iOS VoiceTTS plugin is available. */
 export function isNativeTts(): boolean {
   try {
@@ -82,9 +95,24 @@ function normalizeQuality(q: string): TtsQuality {
 
 /** Every real, available voice on this device, best first. Never invented. */
 export async function listVoices(): Promise<TtsVoice[]> {
+  const voices: TtsVoice[] = [];
+
+  // Cloud "Fit Check Voice" first when our backend is configured — the
+  // human neural voice, no downloads needed.
+  if (isCloudTtsConfigured()) {
+    voices.push({
+      id: CLOUD_VOICE_ID,
+      name: "Fit Check Voice",
+      label: "Fit Check Voice",
+      sublabel: "Human · online",
+      quality: "neural",
+      language: "en-US",
+    });
+  }
+
   if (isNativeTts()) {
-    const { voices } = await NativeTTS.getVoices();
-    return voices
+    const { voices: nativeInfos } = await NativeTTS.getVoices();
+    const native = nativeInfos
       .map((v): TtsVoice => {
         const quality = normalizeQuality(v.quality);
         const label = cleanVoiceLabel(v.name);
@@ -102,13 +130,14 @@ export async function listVoices(): Promise<TtsVoice[]> {
           ? QUALITY_ORDER[a.quality] - QUALITY_ORDER[b.quality]
           : a.label.localeCompare(b.label)
       );
+    return [...voices, ...native];
   }
 
   // Web fallback: ranked speechSynthesis voices (English only).
   const all = typeof window !== "undefined" && window.speechSynthesis
     ? window.speechSynthesis.getVoices()
     : [];
-  return rankVoices(all).map((rv): TtsVoice => ({
+  const web = rankVoices(all).map((rv): TtsVoice => ({
     id: rv.voice.name,
     name: rv.voice.name,
     label: rv.label,
@@ -116,6 +145,61 @@ export async function listVoices(): Promise<TtsVoice[]> {
     quality: rv.quality,
     language: rv.voice.lang,
   }));
+  return [...voices, ...web];
+}
+
+// ---- Cloud voice (our backend /api/tts — human neural voice) ----
+
+let cloudAudio: HTMLAudioElement | null = null;
+let cloudObjectUrl: string | null = null;
+
+function stopCloudAudio(): void {
+  if (cloudAudio) {
+    try {
+      cloudAudio.pause();
+      cloudAudio.src = "";
+    } catch { /* ignore */ }
+    cloudAudio = null;
+  }
+  if (cloudObjectUrl) {
+    try { URL.revokeObjectURL(cloudObjectUrl); } catch { /* ignore */ }
+    cloudObjectUrl = null;
+  }
+}
+
+/**
+ * Speak via the cloud human voice. Returns true when audio actually
+ * started playing; false when the cloud path is unavailable so the
+ * caller falls back to on-device voices.
+ */
+async function speakCloud(text: string, opts: SpeakOptions): Promise<boolean> {
+  if (!isCloudTtsConfigured()) return false;
+  try {
+    stopCloudAudio();
+    const res = await fetch(`${CLOUD_TTS_BASE}/api/tts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) return false;
+    const blob = await res.blob();
+    if (!blob.size) return false;
+    cloudObjectUrl = URL.createObjectURL(blob);
+    const audio = new Audio(cloudObjectUrl);
+    cloudAudio = audio;
+    const done = () => {
+      if (cloudAudio === audio) stopCloudAudio();
+      opts.onEnd?.();
+    };
+    audio.onended = done;
+    audio.onerror = done;
+    opts.onStart?.();
+    await audio.play();
+    return true;
+  } catch {
+    stopCloudAudio();
+    return false;
+  }
 }
 
 // ---- Native event plumbing (one subscription, per-call callbacks) ----
@@ -181,6 +265,10 @@ export async function speak(text: string, opts: SpeakOptions = {}): Promise<void
   const clean = text.trim();
   if (!clean) return;
 
+  // Cloud human voice first when selected (or Auto with cloud configured).
+  const wantCloud = opts.voiceId === CLOUD_VOICE_ID || (!opts.voiceId && isCloudTtsConfigured());
+  if (wantCloud && (await speakCloud(clean, opts))) return;
+
   if (isNativeTts()) {
     await ensureNativeListeners();
     // New speech supersedes anything in flight.
@@ -205,6 +293,7 @@ export async function speak(text: string, opts: SpeakOptions = {}): Promise<void
 
 /** Stop any in-flight speech. */
 export async function stopSpeaking(): Promise<void> {
+  stopCloudAudio();
   if (isNativeTts()) {
     try { await NativeTTS.stop(); } catch { /* ignore */ }
     const c = currentCall;
