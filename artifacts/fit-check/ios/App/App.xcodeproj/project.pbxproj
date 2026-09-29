@@ -20,7 +20,6 @@
 		FC0000000000000000000016 /* AppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000014 /* AppShortcuts.swift */; };
 		FC0000000000000000000019 /* VoiceTTS.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000018 /* VoiceTTS.swift */; };
 		FC0000000000000000000008 /* FitCheckWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000F /* FitCheckWidget.swift */; };
-		FC0000000000000000000009 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000010 /* Info.plist */; };
 		FC000000000000000000000A /* FitCheckWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000E /* FitCheckWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -246,7 +245,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FC0000000000000000000009 /* Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -479,6 +477,7 @@
 				);
 				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = app.stylesense.fitcheck.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -502,6 +501,7 @@
 				);
 				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = app.stylesense.fitcheck.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
