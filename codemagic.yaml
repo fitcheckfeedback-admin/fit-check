@@ -33,7 +33,7 @@ workflows:
             app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
             app-store-connect fetch-signing-files "$WIDGET_BUNDLE_ID" --type IOS_APP_STORE --create
             keychain add-certificates
-            xcode-project use-profiles
+            xcode-project --verbose use-profiles --code-signing-setup-verbose-logging
         - name: Archive
           script: |
             set -o pipefail
