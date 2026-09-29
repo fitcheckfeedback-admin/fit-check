@@ -1,0 +1,1 @@
+{"$schema":"https://railway.app/railway.schema.json","build":{"buildCommand":"pnpm --filter @workspace/api-server run build","builder":"NIXPACKS"},"deploy":{"healthcheckPath":"/api/healthz","healthcheckTimeout":120,"restartPolicyMaxRetries":10,"restartPolicyType":"ON_FAILURE","startCommand":"pnpm --filter @workspace/api-server run start"}}
