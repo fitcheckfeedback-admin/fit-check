@@ -24,6 +24,32 @@ workflows:
           script: |
             cd artifacts/fit-check
             npx cap sync ios
+        - name: Register local plugins
+          script: |
+            set -e
+            # cap sync only scans node_modules for plugin classes, so our
+            # app-target Swift plugins (VoiceTTS, FitCheckSnapshot, AppReview)
+            # never land in packageClassList and the bridge never registers
+            # them. Without this, isPluginAvailable() is false on device and
+            # every plugin call silently falls back to the web implementation.
+            python3 - <<'EOF'
+            import json
+            p = "artifacts/fit-check/ios/App/App/capacitor.config.json"
+            with open(p) as f:
+                cfg = json.load(f)
+            needed = ["VoiceTTS", "FitCheckSnapshot", "AppReview"]
+            lst = cfg.get("packageClassList") or []
+            for n in needed:
+                if n not in lst:
+                    lst.append(n)
+            cfg["packageClassList"] = lst
+            with open(p, "w") as f:
+                json.dump(cfg, f, indent="\t")
+                f.write("\n")
+            print("packageClassList now:", lst)
+            missing = [n for n in needed if n not in lst]
+            assert not missing, f"failed to register: {missing}"
+            EOF
         - name: Set up signing
           script: |
             set -e
