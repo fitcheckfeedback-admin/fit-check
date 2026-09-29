@@ -77,9 +77,9 @@ struct FitCheckShortcuts: AppShortcutsProvider {
             intent: WhatShouldIWearIntent(),
             phrases: [
                 "What should I wear today with \(.applicationName)",
-                "What should I wear today",
-                "What should I wear",
-                "What do I wear today",
+                "What should I wear with \(.applicationName) today",
+                "What should I wear with \(.applicationName)",
+                "What do I wear today with \(.applicationName)",
             ],
             shortTitle: "What to wear",
             systemImageName: "tshirt"
@@ -88,9 +88,9 @@ struct FitCheckShortcuts: AppShortcutsProvider {
             intent: WhatsTheWeatherIntent(),
             phrases: [
                 "What's the weather like with \(.applicationName)",
-                "What's the weather like",
-                "How's the weather",
-                "What's the weather",
+                "What's the weather like today with \(.applicationName)",
+                "How's the weather with \(.applicationName)",
+                "What's the weather with \(.applicationName)",
             ],
             shortTitle: "Weather",
             systemImageName: "cloud.sun"
