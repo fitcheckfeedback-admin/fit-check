@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { RadarMap } from "@/components/RadarMap";
+import { SectionTitle } from "@/components/SectionTitle";
 
 export default function Forecast() {
   const { settings } = useFitCheckSettings();
@@ -66,7 +67,7 @@ export default function Forecast() {
       <div className="flex items-center gap-4 mb-2">
         <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-xl shadow-sm" />
         <div>
-          <h1 className="text-4xl font-display font-bold"><span className="brand-gradient-text">Fore</span>cast</h1>
+          <SectionTitle>Forecast</SectionTitle>
           <p className="text-muted-foreground font-medium">Next 5 days + live radar.</p>
         </div>
       </div>
@@ -101,6 +102,7 @@ export default function Forecast() {
             lon={settings.location.lon}
             temperatureF={weather.current.temperature_2m}
             units={settings.units === "f" ? "imperial" : "metric"}
+            cityName={settings.location.name}
           />
           <p className="text-xs text-center text-muted-foreground">
             Live precipitation radar · Powered by RainViewer · Auto-updates every 30s

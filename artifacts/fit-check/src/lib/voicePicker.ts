@@ -1,13 +1,15 @@
 // Browser voice ranking — prioritize premium/neural voices when the device has them.
 
+export type VoiceQuality = "neural" | "enhanced" | "standard";
+
 export interface RankedVoice {
   voice: SpeechSynthesisVoice;
-  quality: "premium" | "enhanced" | "standard";
+  quality: VoiceQuality;
   label: string;
   sublabel: string;
 }
 
-const PREMIUM_PATTERNS = [
+const NEURAL_PATTERNS = [
   /natural/i, /\(natural\)/i, /online \(natural\)/i,
   /premium/i, /enhanced/i,
   /siri/i, /\(siri/i,
@@ -23,13 +25,13 @@ const ENHANCED_NAME_HINTS = [
   /microsoft.*online/i,
 ];
 
-export function classifyVoice(v: SpeechSynthesisVoice): "premium" | "enhanced" | "standard" {
-  if (PREMIUM_PATTERNS.some(re => re.test(v.name))) return "premium";
+export function classifyVoice(v: SpeechSynthesisVoice): VoiceQuality {
+  if (NEURAL_PATTERNS.some(re => re.test(v.name))) return "neural";
   if (ENHANCED_NAME_HINTS.some(re => re.test(v.name))) return "enhanced";
   return "standard";
 }
 
-function cleanLabel(name: string): string {
+export function cleanVoiceLabel(name: string): string {
   // Strip noisy suffixes for nicer display
   return name
     .replace(/Microsoft\s+/i, "")
@@ -40,8 +42,8 @@ function cleanLabel(name: string): string {
     .trim();
 }
 
-function qualityLabel(q: "premium" | "enhanced" | "standard"): string {
-  if (q === "premium") return "Premium";
+function qualityLabel(q: VoiceQuality): string {
+  if (q === "neural") return "Neural";
   if (q === "enhanced") return "Enhanced";
   return "Standard";
 }
@@ -51,16 +53,17 @@ export function rankVoices(all: SpeechSynthesisVoice[]): RankedVoice[] {
 
   const ranked: RankedVoice[] = english.map(v => {
     const quality = classifyVoice(v);
+    const label = cleanVoiceLabel(v.name) || v.name;
     return {
       voice: v,
       quality,
-      label: cleanLabel(v.name) || v.name,
+      label,
       sublabel: `${qualityLabel(quality)} · ${v.lang}`,
     };
   });
 
-  // Sort: premium > enhanced > standard, then by name
-  const order = { premium: 0, enhanced: 1, standard: 2 } as const;
+  // Sort: neural > enhanced > standard, then by name
+  const order: Record<VoiceQuality, number> = { neural: 0, enhanced: 1, standard: 2 };
   ranked.sort((a, b) => {
     if (order[a.quality] !== order[b.quality]) return order[a.quality] - order[b.quality];
     return a.label.localeCompare(b.label);

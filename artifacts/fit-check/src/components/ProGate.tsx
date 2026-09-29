@@ -1,10 +1,10 @@
 import { ReactNode, useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Crown, Lock, Sparkles, ArrowRight, Check, Loader2, RotateCcw } from "lucide-react";
+import { Crown, Sparkles, ArrowRight, Check, Loader2, RotateCcw } from "lucide-react";
 import { usePremium } from "@/hooks/usePremium";
 import { isNative } from "@/lib/platform";
 import { Browser } from "@capacitor/browser";
-import { purchasePro, restorePurchases } from "@/lib/revenuecat";
+import { purchasePro, restorePurchases, getProOffering } from "@/lib/revenuecat";
 import { Link } from "wouter";
 
 interface ProGateProps {
@@ -15,13 +15,14 @@ interface ProGateProps {
 
 const PRO_GATING_ENABLED = true;
 
+// Only list what Pro genuinely unlocks today — never advertise free features.
 const PRO_FEATURES = [
-  "AI Stylist",
   "Trip Planner",
-  "Unlimited Closet",
-  "Favorite Outfits",
-  "Weather-Based Outfits",
-  "Saved Looks",
+  "Day-by-day trip outfits",
+  "Smart packing lists",
+  "Shop the Gap picks",
+  "New Pro features first",
+  "Support indie development",
 ];
 
 async function startStripeCheckout(deviceId: string): Promise<string | null> {
@@ -53,7 +54,18 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
   const [restoring, setRestoring] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
+  const [priceString, setPriceString] = useState<string | null>(null);
   const awaitingReturnRef = useRef(false);
+
+  // Pull the real display price from the RevenueCat offering — never hardcode it.
+  useEffect(() => {
+    if (!isNative() || !PRO_GATING_ENABLED) return;
+    let alive = true;
+    getProOffering()
+      .then(o => { if (alive) setPriceString(o?.priceString ?? null); })
+      .catch(() => { /* keep the placeholder shimmering */ });
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     if (isNative()) return;
@@ -177,7 +189,7 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
           {children}
         </div>
 
-        <div className="absolute inset-0 flex flex-col items-center justify-center px-6">
+        <div className="absolute inset-0 flex flex-col items-center justify-end px-6" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 1.25rem)" }}>
           <motion.div
             initial={{ opacity: 0, y: 24, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -194,10 +206,13 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
             </div>
 
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-1.5">FIT✔️ Pro</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-1.5 flex items-center justify-center gap-1.5">
+                <Crown className="w-3.5 h-3.5" />
+                Fit Check Pro
+              </p>
               <h2 className="text-xl font-black leading-tight mb-2">{feature}</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                {description ?? "Upgrade to unlock smarter styling, AI advice, trip planning, and more."}
+                {description ?? "Upgrade to unlock trip planning, smart packing lists, and new Pro features as they land."}
               </p>
             </div>
 
@@ -214,8 +229,12 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
               {isNative() && (
                 <div className="text-center">
                   <p className="text-[11px] font-bold text-muted-foreground mb-0.5">Fit Check Pro Monthly</p>
-                  <p className="text-2xl font-black text-foreground">$2.99<span className="text-sm font-semibold text-muted-foreground"> / month</span></p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Auto-renews monthly. Cancel anytime.</p>
+                  {priceString ? (
+                    <p className="text-2xl font-black text-foreground">{priceString}<span className="text-sm font-semibold text-muted-foreground"> / month</span></p>
+                  ) : (
+                    <div className="h-8 w-28 mx-auto rounded-lg bg-muted animate-pulse" aria-label="Loading price" />
+                  )}
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Auto-renews monthly. Cancel anytime in Settings → Subscription.</p>
                 </div>
               )}
 
@@ -228,8 +247,7 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
                   <>
-                    <Lock className="w-4 h-4" />
-                    Upgrade to Pro
+                    {priceString ? `Upgrade to Pro — ${priceString}` : "Upgrade to Pro"}
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -249,7 +267,7 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
               </AnimatePresence>
 
               <p className="text-[11px] text-muted-foreground text-center">
-                {isNative() ? "Managed by Apple" : "Cancel anytime · Secure checkout via Stripe"}
+                {isNative() ? "Secure purchase through the App Store · Cancel anytime" : "Cancel anytime · Secure checkout via Stripe"}
               </p>
 
               <button

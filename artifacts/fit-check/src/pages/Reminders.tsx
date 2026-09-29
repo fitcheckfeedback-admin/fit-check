@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
+import { SectionTitle } from "@/components/SectionTitle";
 import { Link } from "wouter";
 
 export default function Reminders() {
@@ -90,7 +91,7 @@ export default function Reminders() {
         <div className="flex items-center gap-4">
           <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-xl shadow-sm" />
           <div>
-            <h1 className="text-3xl font-display font-bold"><span className="brand-gradient-text">Remind</span>ers</h1>
+            <SectionTitle className="text-3xl">Reminders</SectionTitle>
             <p className="text-muted-foreground font-medium text-sm">Stay on top of your day.</p>
           </div>
         </div>

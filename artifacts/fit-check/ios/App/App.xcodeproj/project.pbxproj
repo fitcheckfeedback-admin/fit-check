@@ -15,7 +15,42 @@
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
+
+		FC0000000000000000000015 /* FitCheckSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000013 /* FitCheckSnapshot.swift */; };
+		FC0000000000000000000016 /* AppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000014 /* AppShortcuts.swift */; };
+		FC0000000000000000000017 /* VoiceTTS.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000018 /* VoiceTTS.swift */; };
+		FC0000000000000000000008 /* FitCheckWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000F /* FitCheckWidget.swift */; };
+		FC0000000000000000000009 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000010 /* Info.plist */; };
+		FC000000000000000000000A /* FitCheckWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000E /* FitCheckWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+
+		FC000000000000000000000D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FC0000000000000000000001;
+			remoteInfo = FitCheckWidget;
+		};
+
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+
+		FC000000000000000000000B /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				FC000000000000000000000A /* FitCheckWidget.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
@@ -28,6 +63,15 @@
 		504EC3131FED79650016851F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
+
+		FC000000000000000000000E /* FitCheckWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FitCheckWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		FC000000000000000000000F /* FitCheckWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FitCheckWidget.swift; path = FitCheckWidget.swift; sourceTree = "<group>"; };
+		FC0000000000000000000010 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = Info.plist; sourceTree = "<group>"; };
+		FC0000000000000000000011 /* FitCheckWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = FitCheckWidget.entitlements; path = FitCheckWidget.entitlements; sourceTree = "<group>"; };
+		FC0000000000000000000012 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
+		FC0000000000000000000013 /* FitCheckSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitCheckSnapshot.swift; sourceTree = "<group>"; };
+		FC0000000000000000000014 /* AppShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppShortcuts.swift; sourceTree = "<group>"; };
+		FC0000000000000000000018 /* VoiceTTS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceTTS.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -39,12 +83,21 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+
+		FC0000000000000000000006 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		504EC2FB1FED79650016851F = {
 			isa = PBXGroup;
 			children = (
+				FC0000000000000000000017 /* FitCheckWidget */,
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
 				504EC3051FED79650016851F /* Products */,
@@ -54,6 +107,7 @@
 		504EC3051FED79650016851F /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				FC000000000000000000000E /* FitCheckWidget.appex */,
 				504EC3041FED79650016851F /* App.app */,
 			);
 			name = Products;
@@ -62,6 +116,10 @@
 		504EC3061FED79650016851F /* App */ = {
 			isa = PBXGroup;
 			children = (
+				FC0000000000000000000012 /* App.entitlements */,
+				FC0000000000000000000013 /* FitCheckSnapshot.swift */,
+				FC0000000000000000000014 /* AppShortcuts.swift */,
+				FC0000000000000000000018 /* VoiceTTS.swift */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
@@ -74,6 +132,17 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+
+		FC0000000000000000000017 /* FitCheckWidget */ = {
+			isa = PBXGroup;
+			children = (
+				FC000000000000000000000F /* FitCheckWidget.swift */,
+				FC0000000000000000000010 /* Info.plist */,
+				FC0000000000000000000011 /* FitCheckWidget.entitlements */,
+			);
+			path = FitCheckWidget;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -81,6 +150,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 504EC3161FED79650016851F /* Build configuration list for PBXNativeTarget "App" */;
 			buildPhases = (
+				FC000000000000000000000B /* Embed App Extensions */,
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
@@ -88,6 +158,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				FC000000000000000000000C /* PBXTargetDependency */,
 			);
 			name = App;
 			packageProductDependencies = (
@@ -96,6 +167,24 @@
 			productName = App;
 			productReference = 504EC3041FED79650016851F /* App.app */;
 			productType = "com.apple.product-type.application";
+		};
+
+		FC0000000000000000000001 /* FitCheckWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FC0000000000000000000002 /* Build configuration list for PBXNativeTarget "FitCheckWidget" */;
+			buildPhases = (
+				FC0000000000000000000005 /* Sources */,
+				FC0000000000000000000006 /* Frameworks */,
+				FC0000000000000000000007 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FitCheckWidget;
+			productName = FitCheckWidget;
+			productReference = FC000000000000000000000E /* FitCheckWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -109,6 +198,9 @@
 					504EC3031FED79650016851F = {
 						CreatedOnToolsVersion = 9.2;
 						LastSwiftMigration = 1100;
+						ProvisioningStyle = Automatic;
+					};
+					FC0000000000000000000001 = {
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -130,6 +222,7 @@
 			projectRoot = "";
 			targets = (
 				504EC3031FED79650016851F /* App */,
+				FC0000000000000000000001 /* FitCheckWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -148,6 +241,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+
+		FC0000000000000000000007 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FC0000000000000000000009 /* Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -155,11 +257,33 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FC0000000000000000000015 /* FitCheckSnapshot.swift in Sources */,
+				FC0000000000000000000016 /* AppShortcuts.swift in Sources */,
+				FC0000000000000000000017 /* VoiceTTS.swift in Sources */,
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+
+		FC0000000000000000000005 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FC0000000000000000000008 /* FitCheckWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+
+		FC000000000000000000000C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FC0000000000000000000001 /* FitCheckWidget */;
+			targetProxy = FC000000000000000000000D /* PBXContainerItemProxy */;
+		};
+
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		504EC30B1FED79650016851F /* Main.storyboard */ = {
@@ -230,7 +354,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -281,7 +405,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -296,15 +420,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 			DEVELOPMENT_TEAM = P6D4L2GJ75;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = app.stylesense.fitcheck;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -319,20 +444,68 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 			DEVELOPMENT_TEAM = P6D4L2GJ75;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = app.stylesense.fitcheck;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+
+		FC0000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = FitCheckWidget/FitCheckWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = P6D4L2GJ75;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = FitCheckWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = app.stylesense.fitcheck.widget;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+			};
+			name = Debug;
+		};
+		FC0000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = FitCheckWidget/FitCheckWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = P6D4L2GJ75;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = FitCheckWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = app.stylesense.fitcheck.widget;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -353,6 +526,16 @@
 			buildConfigurations = (
 				504EC3171FED79650016851F /* Debug */,
 				504EC3181FED79650016851F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+
+		FC0000000000000000000002 /* Build configuration list for PBXNativeTarget "FitCheckWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FC0000000000000000000003 /* Debug */,
+				FC0000000000000000000004 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

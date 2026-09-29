@@ -4,9 +4,13 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/analytics";
 import { STYLE_TYPES, GenderPreference } from "@/lib/storage";
-import { MapPin, RefreshCw, Sun, Moon, Laptop, Thermometer, Trash2, Copy, Mic, Play, BellRing, CheckCircle2, Sparkles, Plus, X, User, Check, MessageSquare, Download, Share, Smartphone } from "lucide-react";
+import { MapPin, RefreshCw, Sun, Moon, Laptop, Thermometer, Trash2, Copy, Mic, Play, BellRing, CheckCircle2, Sparkles, Plus, X, User, Check, MessageSquare, Download, Share, Smartphone, Crown } from "lucide-react";
+import { usePremium } from "@/hooks/usePremium";
+import { isNative } from "@/lib/platform";
+import { restorePurchases } from "@/lib/revenuecat";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useLocation } from "wouter";
+import { SectionTitle } from "@/components/SectionTitle";
 import { CitySearch } from "@/components/CitySearch";
 import { motion, AnimatePresence } from "framer-motion";
 import { reverseGeocode } from "@/lib/weather";
@@ -29,6 +33,22 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import type { TtsQuality } from "@/lib/tts";
+
+function VoiceQualityBadge({ quality }: { quality: TtsQuality }) {
+  const styles =
+    quality === "neural"
+      ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+      : quality === "enhanced"
+        ? "bg-blue-500/15 text-blue-700 dark:text-blue-400"
+        : "bg-muted text-muted-foreground";
+  const label = quality === "neural" ? "Neural" : quality === "enhanced" ? "Enhanced" : "Standard";
+  return (
+    <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0 ${styles}`}>
+      {label}
+    </span>
+  );
+}
 
 export default function Settings() {
   const { settings, updateSettings } = useFitCheckSettings();
@@ -42,6 +62,41 @@ export default function Settings() {
   const { ranked: rankedVoices, loading: voicesLoading } = useVoices();
   const { canInstall, installed, ios, promptAvailable, install } = useInstallPrompt();
   const [iosHintVisible, setIosHintVisible] = useState(false);
+  const { isPro, refetch: refetchPremium } = usePremium();
+  const [restoring, setRestoring] = useState(false);
+
+  const handleRestore = async () => {
+    setRestoring(true);
+    try {
+      if (isNative()) {
+        const restored = await restorePurchases();
+        refetchPremium();
+        toast({ title: restored ? "Subscription restored!" : "No previous purchase found for this Apple ID." });
+      } else {
+        const deviceId = localStorage.getItem("fitcheck.deviceId");
+        if (!deviceId) {
+          toast({ title: "Could not identify your device.", variant: "destructive" });
+          return;
+        }
+        const res = await fetch("/api/stripe/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deviceId }),
+        });
+        const { isPro: paid } = res.ok ? await res.json() : { isPro: false };
+        if (paid) {
+          refetchPremium();
+          toast({ title: "Subscription restored!" });
+        } else {
+          toast({ title: "No active subscription found." });
+        }
+      }
+    } catch {
+      toast({ title: "Restore failed. Please try again.", variant: "destructive" });
+    } finally {
+      setRestoring(false);
+    }
+  };
   
   const handleTestVoice = (voiceId?: string | null) => {
     if (isSpeaking) {
@@ -167,10 +222,74 @@ export default function Settings() {
       <div className="flex items-center gap-4 mb-2">
         <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-xl shadow-sm" />
         <div>
-          <h1 className="text-4xl font-display font-bold"><span className="brand-gradient-text">Set</span>tings</h1>
+          <SectionTitle>Settings</SectionTitle>
           <p className="text-muted-foreground font-medium">Manage your preferences and location.</p>
         </div>
       </div>
+
+      {/* Subscription */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider pl-2">Subscription</h2>
+        <div className="bg-card rounded-[2rem] border shadow-sm p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl shrink-0 text-white" style={{ background: "linear-gradient(135deg, #FFB800, #FF6B00)" }}>
+              <Crown className="w-5 h-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-base font-bold flex items-center gap-1.5">
+                <Crown className="w-4 h-4 text-amber-500 shrink-0" />
+                Fit Check Pro
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isPro ? "Active — thanks for supporting FIT✔️!" : "You're on the free plan."}
+              </p>
+            </div>
+            <span className={`text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${isPro ? "bg-amber-500/15 text-amber-600" : "bg-muted text-muted-foreground"}`}>
+              {isPro ? "Pro" : "Free"}
+            </span>
+          </div>
+
+          {isPro ? (
+            <div className="grid grid-cols-2 gap-3">
+              <a
+                href="https://apps.apple.com/account/subscriptions"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center"
+              >
+                Manage Subscription
+              </a>
+              <button
+                onClick={handleRestore}
+                disabled={restoring}
+                className="h-12 rounded-2xl border-2 border-border text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                {restoring ? <RefreshCw className="w-4 h-4 animate-spin" /> : null}
+                Restore Purchases
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <button
+                onClick={() => setLocation("/trip")}
+                className="w-full h-12 rounded-2xl text-sm font-bold text-black flex items-center justify-center gap-2"
+                style={{ background: "linear-gradient(135deg, #FFB800, #FF6B00)" }}
+              >
+                <Crown className="w-4 h-4" />
+                See Fit Check Pro
+              </button>
+              <button
+                onClick={handleRestore}
+                disabled={restoring}
+                className="w-full text-xs text-muted-foreground/70 py-1 flex items-center justify-center gap-1.5 disabled:opacity-60"
+              >
+                {restoring ? <RefreshCw className="w-3 h-3 animate-spin" /> : null}
+                Already subscribed? Restore purchases
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Install App */}
       {!installed && (
@@ -589,81 +708,100 @@ export default function Settings() {
               Loading voices from your device...
             </p>
           ) : (
-            <div className="space-y-2 max-h-96 overflow-y-auto pr-1 -mr-1">
-              {/* Auto option */}
-              {(() => {
-                const isActive = !settings.voiceName;
-                return (
-                  <div
-                    onClick={() => updateSettings({ voiceName: null })}
-                    className={cn(
-                      "flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition-all",
-                      isActive ? "border-primary bg-primary/5" : "border-transparent bg-muted/30 hover:bg-muted/50"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-9 h-9 rounded-full flex items-center justify-center font-display font-bold text-sm shrink-0",
-                      isActive ? "bg-primary text-primary-foreground" : "bg-background text-foreground"
-                    )}>
-                      A
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm leading-tight">Auto</p>
-                      <p className="text-xs text-muted-foreground truncate">Best voice your device has</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); handleTestVoice(null); }}
-                      className="w-9 h-9 rounded-full bg-background border flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors shrink-0"
-                      aria-label="Preview"
+            <div className="space-y-5 max-h-96 overflow-y-auto pr-1 -mr-1">
+              {/* Recommended — Auto always uses the best voice on the device */}
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1 mb-2">Recommended</p>
+                {(() => {
+                  const isActive = !settings.voiceName;
+                  const best = rankedVoices[0];
+                  return (
+                    <div
+                      onClick={() => updateSettings({ voiceName: null })}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition-all",
+                        isActive ? "border-primary bg-primary/5" : "border-transparent bg-muted/30 hover:bg-muted/50"
+                      )}
                     >
-                      <Play className="w-4 h-4" />
-                    </button>
-                  </div>
-                );
-              })()}
-
-              {rankedVoices.map(rv => {
-                const isActive = settings.voiceName === rv.voice.name;
-                return (
-                  <div
-                    key={rv.voice.name}
-                    onClick={() => updateSettings({ voiceName: rv.voice.name })}
-                    className={cn(
-                      "flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition-all",
-                      isActive ? "border-primary bg-primary/5" : "border-transparent bg-muted/30 hover:bg-muted/50"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-9 h-9 rounded-full flex items-center justify-center font-display font-bold text-sm shrink-0",
-                      isActive ? "bg-primary text-primary-foreground" : "bg-background text-foreground"
-                    )}>
-                      {rv.label[0]?.toUpperCase() ?? "?"}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-sm leading-tight truncate">{rv.label}</p>
-                        {rv.quality === "premium" && (
-                          <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 shrink-0">
-                            Premium
-                          </span>
-                        )}
-                        {rv.quality === "enhanced" && (
-                          <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-400 shrink-0">
-                            Enhanced
-                          </span>
-                        )}
+                      <div className={cn(
+                        "w-9 h-9 rounded-full flex items-center justify-center shrink-0",
+                        isActive ? "bg-primary text-primary-foreground" : "bg-background text-foreground"
+                      )}>
+                        <Sparkles className="w-4 h-4" />
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">{rv.sublabel}</p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-sm leading-tight">Auto</p>
+                          {best && <VoiceQualityBadge quality={best.quality} />}
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {best ? `Uses ${best.label} — the best voice on this device` : "Best voice your device has"}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleTestVoice(null); }}
+                        className="w-9 h-9 rounded-full bg-background border flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors shrink-0"
+                        aria-label="Preview recommended voice"
+                      >
+                        <Play className="w-4 h-4" />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); handleTestVoice(rv.voice.name); }}
-                      className="w-9 h-9 rounded-full bg-background border flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors shrink-0"
-                      aria-label={`Preview ${rv.label}`}
-                    >
-                      <Play className="w-4 h-4" />
-                    </button>
+                  );
+                })()}
+              </div>
+
+              {/* All voices, grouped by quality */}
+              {(["neural", "enhanced", "standard"] as const).map(quality => {
+                const groupVoices = rankedVoices.filter(rv => rv.quality === quality);
+                if (groupVoices.length === 0) return null;
+                const title = quality === "neural" ? "Neural" : quality === "enhanced" ? "Enhanced" : "Standard";
+                const hint = quality === "neural"
+                  ? "Most natural — closest to a human voice"
+                  : quality === "enhanced"
+                    ? "High-quality device voices"
+                    : "Built-in voices";
+                return (
+                  <div key={quality}>
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1 mb-1">{title}</p>
+                    <p className="text-[11px] text-muted-foreground px-1 mb-2">{hint}</p>
+                    <div className="space-y-2">
+                      {groupVoices.map(rv => {
+                        const isActive = settings.voiceName === rv.id;
+                        return (
+                          <div
+                            key={rv.id}
+                            onClick={() => updateSettings({ voiceName: rv.id })}
+                            className={cn(
+                              "flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition-all",
+                              isActive ? "border-primary bg-primary/5" : "border-transparent bg-muted/30 hover:bg-muted/50"
+                            )}
+                          >
+                            <div className={cn(
+                              "w-9 h-9 rounded-full flex items-center justify-center font-display font-bold text-sm shrink-0",
+                              isActive ? "bg-primary text-primary-foreground" : "bg-background text-foreground"
+                            )}>
+                              {rv.label[0]?.toUpperCase() ?? "?"}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="font-semibold text-sm leading-tight truncate">{rv.label}</p>
+                                <VoiceQualityBadge quality={rv.quality} />
+                              </div>
+                              <p className="text-xs text-muted-foreground truncate">{rv.sublabel}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleTestVoice(rv.id); }}
+                              className="w-9 h-9 rounded-full bg-background border flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors shrink-0"
+                              aria-label={`Preview ${rv.label}`}
+                            >
+                              <Play className="w-4 h-4" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })}
@@ -672,7 +810,7 @@ export default function Settings() {
           
           <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3">
             <p className="text-xs text-muted-foreground leading-relaxed">
-              <strong className="text-foreground">Tip:</strong> The most natural voices are marked Premium. On iPhone, download more in Settings → Accessibility → Spoken Content → Voices (look for "Siri" or "Enhanced" voices). On Mac, check System Settings → Accessibility → Spoken Content.
+              <strong className="text-foreground">Tip:</strong> Voices marked Neural sound the most human. {isNative() ? "On iPhone, download more in Settings → Accessibility → Spoken Content → Voices (look for voices marked Enhanced, or with the Siri icon)." : "On Mac, check System Settings → Accessibility → Spoken Content for more voices."}
             </p>
           </div>
         </div>

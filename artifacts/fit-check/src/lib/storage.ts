@@ -91,22 +91,61 @@ const DEFAULT_SETTINGS: FitCheckSettings = {
 };
 
 export function getSettings(): FitCheckSettings {
-  try {
-    const onboarded = localStorage.getItem("fitcheck.onboarded") === "true";
-    const locRaw = localStorage.getItem("fitcheck.location");
-    const location = locRaw ? JSON.parse(locRaw) : null;
-    const units = (localStorage.getItem("fitcheck.units") as "f" | "c") || "f";
-    const style = (localStorage.getItem("fitcheck.style") as StylePreference) || "Casual";
-    const closetRaw = localStorage.getItem("fitcheck.closet");
-    
-    let closet: ClosetData = DEFAULT_SETTINGS.closet;
-    if (closetRaw) {
-      const parsed = JSON.parse(closetRaw);
+  // Each key is parsed independently: one corrupt value falls back to its own
+  // default and can never wipe the user's other settings (or bounce them back
+  // to onboarding).
+  const safeGet = (key: string): string | null => {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  };
+
+  const safeParse = <T>(key: string, fallback: T, validate?: (v: unknown) => v is T): T => {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return fallback;
+      const parsed: unknown = JSON.parse(raw);
+      return validate ? (validate(parsed) ? parsed : fallback) : (parsed as T);
+    } catch {
+      return fallback;
+    }
+  };
+
+  const isStringArray = (v: unknown): v is string[] => Array.isArray(v) && v.every(x => typeof x === "string");
+
+  const onboarded = safeGet("fitcheck.onboarded") === "true";
+
+  const locationRaw = safeParse<unknown>("fitcheck.location", null);
+  const location: LocationData | null =
+    locationRaw !== null &&
+    typeof locationRaw === "object" &&
+    typeof (locationRaw as LocationData).lat === "number" &&
+    typeof (locationRaw as LocationData).lon === "number"
+      ? (locationRaw as LocationData)
+      : null;
+
+  const unitsRaw = safeGet("fitcheck.units");
+  const units: "f" | "c" = unitsRaw === "c" || unitsRaw === "f" ? unitsRaw : "f";
+
+  const styleRaw = safeGet("fitcheck.style");
+  const style: StylePreference =
+    styleRaw === "Casual" || styleRaw === "Streetwear" || styleRaw === "Athletic" ||
+    styleRaw === "Workwear" || styleRaw === "Minimal"
+      ? styleRaw
+      : "Casual";
+
+  const closetRaw = safeParse<unknown>("fitcheck.closet", null);
+  let closet: ClosetData = DEFAULT_SETTINGS.closet;
+  if (closetRaw !== null && typeof closetRaw === "object") {
+    try {
+      const parsed = closetRaw as Record<string, unknown>;
       // Migration from old string[] shape
-      const migrateCategory = (items: any[], cat: Category): ClosetItem[] => {
-        if (!items) return [];
+      const migrateCategory = (items: unknown, cat: Category): ClosetItem[] => {
+        if (!Array.isArray(items)) return [];
         return items.map(item => {
-          if (typeof item === 'string') {
+          if (typeof item === "string") {
             return {
               id: crypto.randomUUID(),
               name: item,
@@ -119,7 +158,7 @@ export function getSettings(): FitCheckSettings {
           return item as ClosetItem;
         });
       };
-      
+
       closet = {
         tops: migrateCategory(parsed.tops, "tops"),
         bottoms: migrateCategory(parsed.bottoms, "bottoms"),
@@ -127,24 +166,29 @@ export function getSettings(): FitCheckSettings {
         shoes: migrateCategory(parsed.shoes, "shoes"),
         accessories: migrateCategory(parsed.accessories ?? [], "accessories"),
       };
+    } catch {
+      closet = DEFAULT_SETTINGS.closet;
     }
-    const theme = (localStorage.getItem("fitcheck.theme") as ThemePreference) || "system";
-    const voiceName = localStorage.getItem("fitcheck.voiceName") || null;
-    const notificationsEnabled = localStorage.getItem("fitcheck.notificationsEnabled") === "true";
-    const morningAlertTime = localStorage.getItem("fitcheck.morningAlertTime") || "08:00";
-    
-    const savedFitsRaw = localStorage.getItem("fitcheck.savedFits");
-    const savedFits: SavedFit[] = savedFitsRaw ? JSON.parse(savedFitsRaw) : [];
-
-    const styleTypesRaw = localStorage.getItem("fitcheck.styleTypes");
-    const styleTypes: string[] = styleTypesRaw ? JSON.parse(styleTypesRaw) : [];
-
-    const gender = (localStorage.getItem("fitcheck.gender") as GenderPreference) || "unspecified";
-
-    return { onboarded, location, units, style, styleTypes, gender, closet, theme, voiceName, notificationsEnabled, morningAlertTime, savedFits };
-  } catch (e) {
-    return DEFAULT_SETTINGS;
   }
+
+  const themeRaw = safeGet("fitcheck.theme");
+  const theme: ThemePreference =
+    themeRaw === "light" || themeRaw === "dark" || themeRaw === "system" ? themeRaw : "system";
+
+  const voiceName = safeGet("fitcheck.voiceName") || null;
+  const notificationsEnabled = safeGet("fitcheck.notificationsEnabled") === "true";
+  const morningAlertTime = safeGet("fitcheck.morningAlertTime") || "08:00";
+
+  const savedFits = safeParse<SavedFit[]>("fitcheck.savedFits", [], (v): v is SavedFit[] => Array.isArray(v));
+  const styleTypes = safeParse<string[]>("fitcheck.styleTypes", [], isStringArray);
+
+  const genderRaw = safeGet("fitcheck.gender");
+  const gender: GenderPreference =
+    genderRaw === "male" || genderRaw === "female" || genderRaw === "unspecified"
+      ? genderRaw
+      : "unspecified";
+
+  return { onboarded, location, units, style, styleTypes, gender, closet, theme, voiceName, notificationsEnabled, morningAlertTime, savedFits };
 }
 
 export function saveSettings(settings: Partial<FitCheckSettings>) {

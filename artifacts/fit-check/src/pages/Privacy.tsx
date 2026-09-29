@@ -37,7 +37,7 @@ export default function Privacy() {
               </div>
               <div>
                 <h3 className="font-semibold text-zinc-800 mb-1">Payment Information</h3>
-                <p>If you subscribe to FIT✔️ Pro, payments are processed securely through Apple's in-app purchase system (iOS) or Stripe (web). We never see or store your full credit card number. Apple's and Stripe's privacy policies apply to payment data.</p>
+                <p>If you subscribe to Fit Check Pro, payments are processed securely through Apple's in-app purchase system (iOS) or Stripe (web). We never see or store your full credit card number. Apple's and Stripe's privacy policies apply to payment data.</p>
               </div>
             </div>
           </section>

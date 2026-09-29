@@ -1,5 +1,6 @@
 import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -9,6 +10,7 @@ import { useEffect } from "react";
 import { trackEvent, trackPageView } from "@/lib/analytics";
 import { useLocation } from "wouter";
 import { initRevenueCat } from "@/lib/revenuecat";
+import { useAppResumeRefresh } from "@/hooks/useAppResumeRefresh";
 
 // Pages
 import Onboarding from "@/pages/Onboarding";
@@ -25,8 +27,6 @@ import Discover from "@/pages/Discover";
 import NotFound from "@/pages/not-found";
 import VideoTemplate from "@/components/video/VideoTemplate";
 import Privacy from "@/pages/Privacy";
-
-const queryClient = new QueryClient();
 
 function ProtectedRoute({ component: Component, hideNav, ...rest }: any) {
   const { settings } = useFitCheckSettings();
@@ -101,6 +101,9 @@ function AppTracker() {
 }
 
 function App() {
+  // Refresh weather the moment the app returns to the foreground.
+  useAppResumeRefresh();
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>

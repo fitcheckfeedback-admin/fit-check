@@ -9,6 +9,7 @@ workflows:
         node: 22.12.0
         vars:
           BUNDLE_ID: app.stylesense.fitcheck
+          WIDGET_BUNDLE_ID: app.stylesense.fitcheck.widget
           TEAM_ID: P6D4L2GJ75
       scripts:
         - name: Install pnpm
@@ -30,6 +31,7 @@ workflows:
             python3 -c 'import base64; k=open("artifacts/fit-check/ios/cert_key.b64").read().strip(); pem=base64.b64decode(k).decode(); open("/tmp/cert_key.pem","w").write(pem)'
             export CERTIFICATE_PRIVATE_KEY="$(cat /tmp/cert_key.pem)"
             app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+            app-store-connect fetch-signing-files "$WIDGET_BUNDLE_ID" --type IOS_APP_STORE --create
             keychain add-certificates
             xcode-project use-profiles
         - name: Archive

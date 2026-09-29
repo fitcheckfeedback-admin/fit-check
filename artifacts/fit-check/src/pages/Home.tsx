@@ -22,6 +22,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { useLocation } from "wouter";
 import { getOrCreateDeviceId } from "@/lib/deviceId";
+import { saveFitSnapshot, todayDateKey } from "@/lib/snapshot";
 import { useQuery } from "@tanstack/react-query";
 import { FitCardShareSheet } from "@/components/FitCardShareSheet";
 import { generateHashtags } from "@/lib/fitCardHashtags";
@@ -33,7 +34,11 @@ import { isNative } from "@/lib/platform";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { reverseGeocode } from "@/lib/weather";
 
-function LocationGate({ onLocation }: { onLocation: (loc: { lat: number; lon: number; name: string }) => void }) {
+function LocationGate({ onLocation, error, onRetry }: {
+  onLocation: (loc: { lat: number; lon: number; name: string }) => void;
+  error?: boolean;
+  onRetry?: () => void;
+}) {
   const [fallback, setFallback] = useState(isNative());
 
   useEffect(() => {
@@ -79,6 +84,22 @@ function LocationGate({ onLocation }: { onLocation: (loc: { lat: number; lon: nu
   // Fallback: IP detection failed — show city search
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-6 gap-6">
+      {error && (
+        <div className="w-full max-w-sm rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-center">
+          <p className="text-sm font-bold text-destructive">Couldn't load the weather</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Check your connection and try again — we never guess your forecast.
+          </p>
+          {onRetry && (
+            <button
+              onClick={onRetry}
+              className="mt-3 px-5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold"
+            >
+              Retry
+            </button>
+          )}
+        </div>
+      )}
       <div className="text-center space-y-2">
         <img src="/logo.png" alt="FIT✔️" className="w-14 h-14 rounded-2xl shadow-md mx-auto mb-4" />
         <h2 className="text-2xl font-display font-black">Almost there</h2>
@@ -115,7 +136,7 @@ export default function Home() {
     settings.location?.lat ?? null,
     settings.location?.lon ?? null,
   );
-  const { refetch: refetchPremium } = usePremium();
+  const { refetch: refetchPremium, isPro } = usePremium();
   const { getCurrentPosition } = useGeolocation();
   const [isLocating, setIsLocating] = useState(false);
   const [proToast, setProToast] = useState<"success" | "cancel" | null>(null);
@@ -140,6 +161,33 @@ export default function Home() {
       }
     }
   }, [weather, settings.location, settings.style]);
+
+  const snapshotKeyRef = useRef<string | null>(null);
+
+  // Mirror today's fit + weather into the shared App Group container so the
+  // Siri shortcuts ("what should I wear today") and the home-screen widget
+  // can answer from real data. Native iOS only; silent no-op elsewhere.
+  // Runs after every render but only calls the native bridge when the
+  // payload actually changed (guarded by snapshotKeyRef).
+  useEffect(() => {
+    if (!weather || !settings.location) return;
+    const itemNames = Object.values(closetMatchResult)
+      .map((item) => item?.name)
+      .filter((n): n is string => !!n);
+    const payload = {
+      date: todayDateKey(),
+      locationName: settings.location.name,
+      tempF: Math.round(currentTempF),
+      condition: getWeatherInfo(currentWeatherCode).label,
+      precipChancePct: Math.round(currentPrecipChance),
+      fitItemNames: itemNames,
+      fitSummary: todayRec.mainOutfit,
+    };
+    const key = JSON.stringify(payload);
+    if (snapshotKeyRef.current === key) return;
+    snapshotKeyRef.current = key;
+    void saveFitSnapshot(payload);
+  });
 
   // Detect return from Stripe checkout and show toast
   useEffect(() => {
@@ -170,6 +218,17 @@ export default function Home() {
     refetchInterval: 60000,
   });
 
+  // Error or missing location must reach the recovery screen — never the skeleton.
+  if (isError || !settings.location) {
+    return (
+      <LocationGate
+        onLocation={(loc) => updateSettings({ location: loc })}
+        error={isError}
+        onRetry={() => refetch()}
+      />
+    );
+  }
+
   if (isLoading || !weather) {
     return (
       <div className="flex-1 flex flex-col p-6 space-y-8">
@@ -178,10 +237,6 @@ export default function Home() {
         <div className="h-32 bg-muted rounded-3xl animate-pulse" />
       </div>
     );
-  }
-
-  if (isError || !settings.location) {
-    return <LocationGate onLocation={(loc) => updateSettings({ location: loc })} />;
   }
 
   const isDay = weather.current.is_day === 1;
@@ -312,7 +367,7 @@ export default function Home() {
   } : null;
 
   return (
-    <div className="flex-1 flex flex-col relative pb-6">
+    <div className="flex-1 flex flex-col relative pb-12">
       <AnimatePresence>
         {showSearch && (
           <motion.div 
@@ -499,7 +554,7 @@ export default function Home() {
               <Crown className={`w-4 h-4 shrink-0 ${proToast === "success" ? "text-amber-500" : "text-muted-foreground"}`} />
               <p className="text-sm font-semibold flex-1">
                 {proToast === "success"
-                  ? "Welcome to FIT✔️ Pro! All features are unlocked."
+                  ? "Welcome to Fit Check Pro! All features are unlocked."
                   : "Upgrade cancelled — you can upgrade anytime."}
               </p>
               <button onClick={() => setProToast(null)} className="text-muted-foreground">
@@ -672,6 +727,34 @@ export default function Home() {
             <ChevronRight className="w-5 h-5 shrink-0" style={{ color: "rgba(255,149,0,0.6)" }} />
           </button>
         </motion.section>
+
+        {/* Pro upsell — subtle entry point for free users */}
+        {!isPro && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+          >
+            <button
+              onClick={() => setLocation('/trip')}
+              className="w-full rounded-3xl p-4 flex items-center gap-3 text-left bg-card border border-amber-500/25 shadow-sm"
+            >
+              <div
+                className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+                style={{ background: "linear-gradient(135deg, #FFB800, #FF6B00)" }}
+              >
+                <Crown className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm">Go Fit Check Pro</p>
+                <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                  Trip Planner, packing lists &amp; new features first
+                </p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+            </button>
+          </motion.section>
+        )}
       </div>
       
       {weather && activeRec && (

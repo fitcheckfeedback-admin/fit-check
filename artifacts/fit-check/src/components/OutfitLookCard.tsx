@@ -26,26 +26,27 @@ interface SlotProps {
 
 function ItemSlot({ item, label, icon: Icon, tall }: SlotProps) {
   const { src } = useClosetImage(item?.imageId ?? null);
+  const name = item?.name ?? label;
 
   return (
-    <div className={`relative rounded-2xl overflow-hidden bg-neutral-50 dark:bg-neutral-900 border border-border/30 flex items-center justify-center ${tall ? "row-span-2" : ""}`}>
-      {src ? (
-        <img
-          src={src}
-          alt={item?.name ?? label}
-          className="w-full h-full object-contain p-1"
-        />
-      ) : (
-        <div className="flex flex-col items-center justify-center gap-1.5 py-4 px-2 opacity-25">
-          <Icon className="w-7 h-7" />
-          <span className="text-[9px] font-bold uppercase tracking-wider text-center leading-tight">{label}</span>
-        </div>
-      )}
-      {item && (
-        <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-gradient-to-t from-black/30 to-transparent">
-          <p className="text-[9px] font-bold text-white truncate leading-tight">{item.name}</p>
-        </div>
-      )}
+    <div className={`rounded-2xl overflow-hidden bg-neutral-50 dark:bg-neutral-900 border border-border/30 flex flex-col ${tall ? "row-span-2" : ""}`}>
+      <div className="relative flex-1 min-h-0 flex items-center justify-center">
+        {src ? (
+          <img
+            src={src}
+            alt={name}
+            className="w-full h-full object-contain p-1"
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-1.5 py-4 px-2 opacity-25">
+            <Icon className="w-7 h-7" />
+          </div>
+        )}
+      </div>
+      {/* Single dark label per tile — no duplicate white-on-gradient overlay */}
+      <p className="text-[10px] font-bold text-foreground/75 dark:text-foreground/80 truncate leading-tight text-center px-2 py-1.5 border-t border-border/20">
+        {name}
+      </p>
     </div>
   );
 }
@@ -152,15 +153,15 @@ export function OutfitLookCard({ recommendation, closetMatch, weatherTags = [] }
           </div>
         )}
 
-        {/* Fit score + save — floating top-right */}
-        <div className="absolute top-5 right-5 flex items-center gap-2 z-10">
+        {/* Save — floating top-left; fit score — floating top-right (never overlapping) */}
+        <div className="absolute top-5 left-5 z-10">
           <Popover open={popoverOpen} onOpenChange={handleOpenChange}>
             <PopoverTrigger asChild>
               <button className="w-9 h-9 flex items-center justify-center rounded-full bg-white/80 dark:bg-black/50 backdrop-blur-md shadow-sm text-primary border border-border/20">
                 {isSaved ? <BookmarkCheck className="w-4.5 h-4.5 fill-current" /> : <Bookmark className="w-4.5 h-4.5" />}
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-64 p-4 rounded-2xl border-2" align="end">
+            <PopoverContent className="w-64 p-4 rounded-2xl border-2" align="start">
               {!isSaved ? (
                 <div className="space-y-3">
                   <div>
@@ -177,13 +178,15 @@ export function OutfitLookCard({ recommendation, closetMatch, weatherTags = [] }
               )}
             </PopoverContent>
           </Popover>
+        </div>
+        <div className="absolute top-5 right-5 z-10">
           <FitScoreBadge score={fitScore} />
         </div>
       </div>
 
       {/* ── Text summary ── */}
       {hasAnyPhoto && (
-        <div className="px-4 pb-4 space-y-3">
+        <div className="px-4 pr-28 pb-4 space-y-3">
           <div className="pt-1 border-t border-border/30">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1 mt-2">The Fit</p>
             <p className="text-base font-display font-semibold leading-snug text-foreground/90">

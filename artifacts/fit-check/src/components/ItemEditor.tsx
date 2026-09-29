@@ -8,6 +8,7 @@ import { useClosetImage } from "@/hooks/useClosetImage";
 import { saveImage, deleteImage } from "@/lib/imageStore";
 import { Trash2, Camera, Image as ImageIcon, Images } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
 
 const CATEGORIES: { id: Category; label: string }[] = [
   { id: "tops", label: "Tops" },
@@ -37,6 +38,7 @@ export function ItemEditor({ open, onOpenChange, item, initialCategory = "tops",
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [existingImageId, setExistingImageId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
 
   const { src: existingImageUrl } = useClosetImage(existingImageId);
 
@@ -90,12 +92,25 @@ export function ItemEditor({ open, onOpenChange, item, initialCategory = "tops",
       let finalImageId = existingImageId;
 
       if (photoBlob) {
+        // Save the NEW photo first — only delete the old one after the save
+        // succeeds, so a failed save can never destroy the existing photo.
+        const newImageId = await saveImage(photoBlob);
         if (item?.imageId) {
-          await deleteImage(item.imageId);
+          try {
+            await deleteImage(item.imageId);
+          } catch {
+            // Old-photo cleanup is best-effort; the new photo is already safe.
+          }
         }
-        finalImageId = await saveImage(photoBlob);
+        finalImageId = newImageId;
       } else if (!existingImageId && item?.imageId) {
-        await deleteImage(item.imageId);
+        // User removed the photo without replacing it.
+        try {
+          await deleteImage(item.imageId);
+        } catch {
+          // Best-effort cleanup.
+        }
+        finalImageId = null;
       }
 
       const finalStyles = styles.length > 0 ? styles : [currentStyle];
@@ -112,7 +127,13 @@ export function ItemEditor({ open, onOpenChange, item, initialCategory = "tops",
       onSave(newItem);
       onOpenChange(false);
     } catch (e) {
-      console.error("Save error", e);
+      // Keep the drawer open so the user's draft is not lost, and tell them
+      // what happened instead of failing silently.
+      toast({
+        title: "Couldn't save this item",
+        description: "Your photo and details were kept — please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }

@@ -1,39 +1,49 @@
 import { useEffect, useState } from "react";
-import { rankVoices, type RankedVoice } from "@/lib/voicePicker";
+import { listVoices, type TtsVoice } from "@/lib/tts";
 
-export function useVoices(): { voices: SpeechSynthesisVoice[]; ranked: RankedVoice[]; loading: boolean } {
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+/**
+ * Every real, available voice on this device, best first.
+ * On Capacitor iOS these are the native AVSpeech voices (with true
+ * neural/enhanced quality from the OS); on web they're the ranked
+ * speechSynthesis voices. Never invented — only what listVoices() returns.
+ */
+export function useVoices(): { voices: TtsVoice[]; ranked: TtsVoice[]; loading: boolean } {
+  const [voices, setVoices] = useState<TtsVoice[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !window.speechSynthesis) {
-      setLoading(false);
-      return;
-    }
-
     let mounted = true;
 
-    const load = () => {
-      const all = window.speechSynthesis.getVoices();
-      if (!mounted) return;
-      if (all.length > 0) {
-        setVoices(all);
-        setLoading(false);
+    const load = async () => {
+      try {
+        const all = await listVoices();
+        if (!mounted) return;
+        if (all.length > 0) {
+          setVoices(all);
+          setLoading(false);
+        }
+      } catch {
+        if (mounted) setLoading(false);
       }
     };
 
     load();
-    window.speechSynthesis.addEventListener("voiceschanged", load);
 
-    // Some browsers (esp. iOS Safari) need a delayed retry
-    const retries = [200, 500, 1000, 2000].map(ms => setTimeout(load, ms));
+    // Web voices can arrive late (esp. iOS Safari) — retry + listen.
+    const retry = setTimeout(load, 1500);
+    const onVoicesChanged = () => load();
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.addEventListener("voiceschanged", onVoicesChanged);
+    }
 
     return () => {
       mounted = false;
-      window.speechSynthesis.removeEventListener("voiceschanged", load);
-      retries.forEach(clearTimeout);
+      clearTimeout(retry);
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.removeEventListener("voiceschanged", onVoicesChanged);
+      }
     };
   }, []);
 
-  return { voices, ranked: rankVoices(voices), loading };
+  return { voices, ranked: voices, loading };
 }

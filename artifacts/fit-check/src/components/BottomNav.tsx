@@ -1,14 +1,14 @@
 import { Link, useLocation } from "wouter";
-import { Home, Shirt, Settings, ShoppingBag, CloudSun } from "lucide-react";
+import { Home, Shirt, Settings, CloudSun, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 const NAV_ITEMS = [
-  { path: "/", label: "Home", icon: Home, pro: false },
-  { path: "/discover", label: "Shop", icon: ShoppingBag, pro: true },
-  { path: "/forecast", label: "Forecast", icon: CloudSun, pro: false },
-  { path: "/closet", label: "Closet", icon: Shirt, pro: false },
-  { path: "/settings", label: "Settings", icon: Settings, pro: false },
+  { path: "/", label: "Home", icon: Home },
+  { path: "/discover", label: "Pro", icon: Crown },
+  { path: "/forecast", label: "Forecast", icon: CloudSun },
+  { path: "/closet", label: "Closet", icon: Shirt },
+  { path: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function BottomNav() {
@@ -18,7 +18,7 @@ export function BottomNav() {
     <div className="flex justify-center pt-2 px-4 pointer-events-none" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 1.5rem)" }}>
       <nav className="pointer-events-auto w-full max-w-sm bg-background/90 backdrop-blur-md border border-border/50 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.12)] px-2 py-2">
         <div className="flex items-center justify-around">
-          {NAV_ITEMS.map(({ path, label, icon: Icon, pro }) => {
+          {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
             const isActive = location === path;
             return (
               <Link
@@ -38,11 +38,6 @@ export function BottomNav() {
                       )}
                       strokeWidth={isActive ? 2.5 : 1.75}
                     />
-                    {pro && (
-                      <span className="absolute -top-1 -right-1.5 text-[8px] font-black bg-amber-500 text-black px-1 rounded-full leading-tight">
-                        PRO
-                      </span>
-                    )}
                   </div>
                   <span
                     className={cn(

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { isNativeTts } from '@/lib/tts';
 
 interface SpeechRecognitionEvent extends Event {
   readonly resultIndex: number;
@@ -42,7 +43,9 @@ export function useVoiceAssistant() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SR && window.speechSynthesis) {
+    // Speech input needs the Web Speech API; speech output works through the
+    // native VoiceTTS plugin on iOS or speechSynthesis on web.
+    if (SR && (window.speechSynthesis || isNativeTts())) {
       setIsSupported(true);
       const recognition = new SR();
       recognition.continuous = false;
@@ -107,33 +110,18 @@ export function useVoiceAssistant() {
   }, []);
 
   const speak = useCallback(async (text: string, voiceName?: string | null) => {
-    if (!window.speechSynthesis) return;
-    const { findVoiceByName, pickAutoVoice } = await import('@/lib/voicePicker');
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-
-    const setVoice = () => {
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length === 0) return;
-      const chosen = findVoiceByName(voices, voiceName) ?? pickAutoVoice(voices);
-      if (chosen) utterance.voice = chosen;
-    };
-    setVoice();
-    if (window.speechSynthesis.getVoices().length === 0) {
-      window.speechSynthesis.addEventListener('voiceschanged', setVoice, { once: true });
-    }
-
-    utterance.rate = 0.97;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-    window.speechSynthesis.speak(utterance);
+    // All spoken audio routes through the unified TTS module: native
+    // AVSpeech voices on Capacitor iOS, speechSynthesis everywhere else.
+    const { speak: ttsSpeak } = await import('@/lib/tts');
+    await ttsSpeak(text, {
+      voiceId: voiceName ?? null,
+      onStart: () => setIsSpeaking(true),
+      onEnd: () => setIsSpeaking(false),
+    });
   }, []);
 
   const cancelSpeech = useCallback(() => {
-    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    import('@/lib/tts').then(m => m.stopSpeaking());
     setIsSpeaking(false);
   }, []);
 

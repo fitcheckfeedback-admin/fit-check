@@ -27,6 +27,19 @@ export async function getRCProStatus(): Promise<boolean> {
   }
 }
 
+/** Returns the current Pro offering's display price (e.g. "$2.99") from RevenueCat. */
+export async function getProOffering(): Promise<{ priceString: string } | null> {
+  if (!isNative()) return null;
+  try {
+    const offerings = await Purchases.getOfferings();
+    const pkg = offerings.current?.availablePackages?.[0];
+    if (!pkg) return null;
+    return { priceString: pkg.product.priceString };
+  } catch {
+    return null;
+  }
+}
+
 export async function purchasePro(): Promise<{
   success: boolean;
   cancelled?: boolean;
@@ -41,11 +54,31 @@ export async function purchasePro(): Promise<{
     }
     const pkg = current.availablePackages[0];
     const { customerInfo } = await Purchases.purchasePackage({ aPackage: pkg });
-    const isPro = PRO_ENTITLEMENT in customerInfo.entitlements.active;
-    return { success: isPro };
+    let isPro = PRO_ENTITLEMENT in customerInfo.entitlements.active;
+    if (!isPro) {
+      // The entitlement can lag a few seconds behind a completed purchase.
+      // Poll briefly before telling the user anything went wrong.
+      for (let i = 0; i < 3 && !isPro; i++) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        try {
+          const { customerInfo: refreshed } = await Purchases.getCustomerInfo();
+          isPro = PRO_ENTITLEMENT in refreshed.entitlements.active;
+        } catch {
+          // Keep polling; a transient network blip shouldn't fail the purchase.
+        }
+      }
+    }
+    if (isPro) return { success: true };
+    return {
+      success: false,
+      error: "Purchase completed, but we couldn't confirm your Pro status yet. Your receipt is safe — tap \"Restore purchases\" and it will unlock.",
+    };
   } catch (e: any) {
     if (e?.userCancelled) return { success: false, cancelled: true };
-    return { success: false, error: "Purchase failed. Please try again." };
+    const message = typeof e?.message === "string" && e.message.trim().length > 0
+      ? e.message
+      : "Purchase failed. Please try again.";
+    return { success: false, error: message };
   }
 }
 

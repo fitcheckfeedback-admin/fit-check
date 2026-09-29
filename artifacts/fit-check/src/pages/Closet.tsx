@@ -12,6 +12,7 @@ import { useClosetImage } from "@/hooks/useClosetImage";
 import { ItemEditor } from "@/components/ItemEditor";
 import { deleteImage } from "@/lib/imageStore";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { SectionTitle } from "@/components/SectionTitle";
 
 const CATEGORIES: {
   id: Category;
@@ -379,7 +380,7 @@ export default function Closet() {
         <div className="flex items-center gap-4 mb-2">
           <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-xl shadow-sm" />
           <div>
-            <h1 className="text-4xl font-display font-bold">My <span className="brand-gradient-text">Closet</span></h1>
+            <SectionTitle>My Closet</SectionTitle>
             <p className="text-muted-foreground font-medium mt-1 text-sm">Tap a section to browse your pieces.</p>
           </div>
         </div>
