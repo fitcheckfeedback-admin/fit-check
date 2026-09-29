@@ -10,8 +10,9 @@ import AVFoundation
 //
 // Methods:
 //   getVoices() -> { voices: [{ id, name, language, quality }] }
-//     quality is one of "neural" (AVSpeechSynthesisVoiceQuality.premium),
-//     "enhanced", or "standard". English voices only.
+//     quality is one of "neural" (premium download, or Apple's built-in
+//     "super-compact" on-device neural voices), "enhanced", or "standard".
+//     English voices only.
 //   speak({ text, voiceId?, rate?, pitch? })
 //     rate/pitch are web-scale (1.0 = normal). rate is mapped to the
 //     AVSpeech 0.0-1.0 range (0.5 = default). Emits "ttsStart"/"ttsEnd".
@@ -28,12 +29,19 @@ public class VoiceTTS: CAPPlugin, AVSpeechSynthesizerDelegate {
 
     // MARK: - Voice selection
 
-    private func qualityString(_ q: AVSpeechSynthesisVoiceQuality) -> String {
-        switch q {
-        case .premium: return "neural"
-        case .enhanced: return "enhanced"
-        default: return "standard"
-        }
+    /// Apple's on-device neural voices (Siri-like quality) don't reliably
+    /// report a premium/enhanced quality flag — they're identified by
+    /// "super-compact" in the voice identifier. Without this check the picker
+    /// and auto-select can land on a legacy robotic compact voice even though
+    /// a far better built-in voice is sitting right there.
+    private func isNeuralClass(_ v: AVSpeechSynthesisVoice) -> Bool {
+        v.quality == .premium || v.identifier.lowercased().contains("super-compact")
+    }
+
+    private func qualityString(_ v: AVSpeechSynthesisVoice) -> String {
+        if isNeuralClass(v) { return "neural" }
+        if v.quality == .enhanced { return "enhanced" }
+        return "standard"
     }
 
     private func englishVoices() -> [AVSpeechSynthesisVoice] {
@@ -42,14 +50,14 @@ public class VoiceTTS: CAPPlugin, AVSpeechSynthesizerDelegate {
         }
     }
 
-    /// Best available English voice: neural (premium) > enhanced > standard.
+    /// Best available English voice: premium download > built-in super-compact
+    /// neural > enhanced > legacy standard (robotic).
     private func bestVoice() -> AVSpeechSynthesisVoice? {
         let rank: (AVSpeechSynthesisVoice) -> Int = { v in
-            switch v.quality {
-            case .premium: return 0
-            case .enhanced: return 1
-            default: return 2
-            }
+            if v.quality == .premium { return 0 }
+            if v.identifier.lowercased().contains("super-compact") { return 1 }
+            if v.quality == .enhanced { return 2 }
+            return 3
         }
         let english = englishVoices().sorted { rank($0) < rank($1) }
         return english.first ?? AVSpeechSynthesisVoice.speechVoices().first
@@ -74,7 +82,7 @@ public class VoiceTTS: CAPPlugin, AVSpeechSynthesizerDelegate {
                     "id": v.identifier,
                     "name": v.name,
                     "language": v.language,
-                    "quality": self.qualityString(v.quality),
+                    "quality": self.qualityString(v),
                 ]
             }
             call.resolve(["voices": list])
