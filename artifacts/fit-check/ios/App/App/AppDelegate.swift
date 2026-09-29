@@ -55,7 +55,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 // (AI stylist success, saved outfit). No incentives, requested at most once
 // per install; iOS itself throttles how often the prompt actually displays.
 @objc(AppReview)
-public class AppReview: CAPPlugin {
+public class AppReview: CAPPlugin, CAPBridgedPlugin {
+    // CAPBridgedPlugin conformance: without this the Capacitor bridge
+    // silently skips the plugin during registration (CapacitorPlugin is
+    // CAPPlugin & CAPBridgedPlugin), so the rating prompt never fires.
+    public let identifier = "AppReviewPlugin"
+    public let jsName = "AppReview"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "requestReview", returnType: CAPPluginReturnPromise),
+    ]
     @objc func requestReview(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
             if #available(iOS 16.0, *),

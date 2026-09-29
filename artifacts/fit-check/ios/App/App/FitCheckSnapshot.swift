@@ -12,7 +12,16 @@ import WidgetKit
 // Keys: date, locationName, tempF, condition, precipChancePct,
 //       fitItemNames, fitSummary
 @objc(FitCheckSnapshot)
-public class FitCheckSnapshot: CAPPlugin {
+public class FitCheckSnapshot: CAPPlugin, CAPBridgedPlugin {
+
+    // CAPBridgedPlugin conformance: without this the Capacitor bridge
+    // silently skips the plugin during registration (CapacitorPlugin is
+    // CAPPlugin & CAPBridgedPlugin), so Siri/widget snapshots never run.
+    public let identifier = "FitCheckSnapshotPlugin"
+    public let jsName = "FitCheckSnapshot"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "saveSnapshot", returnType: CAPPluginReturnPromise),
+    ]
 
     static let appGroupID = "group.app.stylesense.fitcheck"
     static let fileName = "fitcheck-snapshot.json"

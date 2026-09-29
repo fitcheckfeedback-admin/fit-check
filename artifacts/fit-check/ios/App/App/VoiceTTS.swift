@@ -19,7 +19,18 @@ import AVFoundation
 //   stop()
 // Events: "ttsStart", "ttsEnd" (also fired on cancel).
 @objc(VoiceTTS)
-public class VoiceTTS: CAPPlugin, AVSpeechSynthesizerDelegate {
+public class VoiceTTS: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesizerDelegate {
+
+    // CAPBridgedPlugin conformance: without this the Capacitor bridge
+    // silently skips the plugin during registration (CapacitorPlugin is
+    // CAPPlugin & CAPBridgedPlugin), leaving the app on the web fallback.
+    public let identifier = "VoiceTTSPlugin"
+    public let jsName = "VoiceTTS"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "getVoices", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "speak", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "stop", returnType: CAPPluginReturnPromise),
+    ]
 
     private lazy var synthesizer: AVSpeechSynthesizer = {
         let s = AVSpeechSynthesizer()
