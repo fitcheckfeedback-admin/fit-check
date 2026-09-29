@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import type { TtsQuality } from "@/lib/tts";
+import { isNativeTts } from "@/lib/tts";
 
 function VoiceQualityBadge({ quality }: { quality: TtsQuality }) {
   const styles =
@@ -813,6 +814,9 @@ export default function Settings() {
               <strong className="text-foreground">Tip:</strong> Voices marked Neural sound the most human. {isNative() ? "On iPhone, download more in Settings → Accessibility → Spoken Content → Voices (look for voices marked Enhanced, or with the Siri icon)." : "On Mac, check System Settings → Accessibility → Spoken Content for more voices."}
             </p>
           </div>
+          <p className="text-[11px] text-muted-foreground px-1">
+            Voice engine: {isNativeTts() ? `Apple native · ${rankedVoices.length} device voices` : `browser fallback · ${rankedVoices.length} voices`}
+          </p>
         </div>
       </section>
 
