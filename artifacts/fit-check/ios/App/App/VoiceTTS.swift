@@ -10,8 +10,8 @@ import AVFoundation
 //
 // Methods:
 //   getVoices() -> { voices: [{ id, name, language, quality }] }
-//     quality is one of "neural" (premium download, or Apple's built-in
-//     "super-compact" on-device neural voices), "enhanced", or "standard".
+//     quality is one of "neural" (Apple's premium on-device voices — the
+//     best quality third-party apps can use), "enhanced", or "standard".
 //     English voices only.
 //   speak({ text, voiceId?, rate?, pitch? })
 //     rate/pitch are web-scale (1.0 = normal). rate is mapped to the
@@ -40,17 +40,13 @@ public class VoiceTTS: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesizerDelegate 
 
     // MARK: - Voice selection
 
-    /// Apple's on-device neural voices (Siri-like quality) don't reliably
-    /// report a premium/enhanced quality flag — they're identified by
-    /// "super-compact" in the voice identifier. Without this check the picker
-    /// and auto-select can land on a legacy robotic compact voice even though
-    /// a far better built-in voice is sitting right there.
-    private func isNeuralClass(_ v: AVSpeechSynthesisVoice) -> Bool {
-        v.quality == .premium || v.identifier.lowercased().contains("super-compact")
-    }
-
+    /// Quality comes straight from Apple's own metadata: premium (the
+    /// on-device neural voices — the best third-party apps can use) >
+    /// enhanced > default/compact. Note "super-compact" in an identifier is
+    /// just Apple's compact format at default quality, NOT a neural voice —
+    /// it must never outrank a real enhanced/premium voice.
     private func qualityString(_ v: AVSpeechSynthesisVoice) -> String {
-        if isNeuralClass(v) { return "neural" }
+        if v.quality == .premium { return "neural" }
         if v.quality == .enhanced { return "enhanced" }
         return "standard"
     }
@@ -61,14 +57,15 @@ public class VoiceTTS: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesizerDelegate 
         }
     }
 
-    /// Best available English voice: premium download > built-in super-compact
-    /// neural > enhanced > legacy standard (robotic).
+    /// Best available English voice: premium > enhanced > compact.
+    /// If nothing good is installed this will be a compact voice — which
+    /// sounds robotic. Only the user can fix that, by downloading
+    /// Enhanced/Premium voices in iOS Settings (no API for it).
     private func bestVoice() -> AVSpeechSynthesisVoice? {
         let rank: (AVSpeechSynthesisVoice) -> Int = { v in
             if v.quality == .premium { return 0 }
-            if v.identifier.lowercased().contains("super-compact") { return 1 }
-            if v.quality == .enhanced { return 2 }
-            return 3
+            if v.quality == .enhanced { return 1 }
+            return 2
         }
         let english = englishVoices().sorted { rank($0) < rank($1) }
         return english.first ?? AVSpeechSynthesisVoice.speechVoices().first

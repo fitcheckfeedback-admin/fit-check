@@ -811,7 +811,7 @@ export default function Settings() {
           
           <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3">
             <p className="text-xs text-muted-foreground leading-relaxed">
-              <strong className="text-foreground">Tip:</strong> Voices marked Neural sound the most human. {isNative() ? "On iPhone, download more in Settings → Accessibility → Spoken Content → Voices (look for voices marked Enhanced, or with the Siri icon)." : "On Mac, check System Settings → Accessibility → Spoken Content for more voices."}
+              <strong className="text-foreground">Tip:</strong> If every voice sounds robotic, your iPhone only has Apple's basic built-in voices — the human-sounding ones are a free download that only you can install: open iPhone Settings → Accessibility → Spoken Content → Voices → English, and download an Enhanced or Premium voice. Then pick it here.
             </p>
           </div>
           <p className="text-[11px] text-muted-foreground px-1">
