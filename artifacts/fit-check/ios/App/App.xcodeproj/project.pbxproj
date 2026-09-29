@@ -18,7 +18,7 @@
 
 		FC0000000000000000000015 /* FitCheckSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000013 /* FitCheckSnapshot.swift */; };
 		FC0000000000000000000016 /* AppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000014 /* AppShortcuts.swift */; };
-		FC0000000000000000000017 /* VoiceTTS.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000018 /* VoiceTTS.swift */; };
+		FC0000000000000000000019 /* VoiceTTS.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000018 /* VoiceTTS.swift */; };
 		FC0000000000000000000008 /* FitCheckWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000F /* FitCheckWidget.swift */; };
 		FC0000000000000000000009 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000010 /* Info.plist */; };
 		FC000000000000000000000A /* FitCheckWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000E /* FitCheckWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -259,7 +259,7 @@
 			files = (
 				FC0000000000000000000015 /* FitCheckSnapshot.swift in Sources */,
 				FC0000000000000000000016 /* AppShortcuts.swift in Sources */,
-				FC0000000000000000000017 /* VoiceTTS.swift in Sources */,
+				FC0000000000000000000019 /* VoiceTTS.swift in Sources */,
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
