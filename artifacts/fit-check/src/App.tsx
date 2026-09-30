@@ -11,6 +11,7 @@ import { trackEvent, trackPageView } from "@/lib/analytics";
 import { useLocation } from "wouter";
 import { initRevenueCat } from "@/lib/revenuecat";
 import { useAppResumeRefresh } from "@/hooks/useAppResumeRefresh";
+import { useForegroundLocation } from "@/hooks/useForegroundLocation";
 
 // Pages
 import Onboarding from "@/pages/Onboarding";
@@ -103,6 +104,8 @@ function AppTracker() {
 function App() {
   // Refresh weather the moment the app returns to the foreground.
   useAppResumeRefresh();
+  // Reacquire GPS on foreground so the city follows the user when traveling.
+  useForegroundLocation();
 
   return (
     <QueryClientProvider client={queryClient}>

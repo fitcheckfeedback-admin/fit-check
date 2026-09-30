@@ -1,11 +1,38 @@
 export interface VoiceIntent {
-  type: "today" | "morning" | "afternoon" | "evening" | "tomorrow" | "rain" | "warmth" | "general";
+  type: "today" | "morning" | "afternoon" | "evening" | "tomorrow" | "rain" | "warmth" | "app" | "general";
   raw: string;
 }
 
+// Questions about the app and its contents (closet, wardrobe, saved fits).
+// Checked first: "do I have a warm jacket" is a closet question, not a
+// weather question — and the AI backend has the full closet in context.
+const APP_KEYWORDS = [
+  "closet",
+  "wardrobe",
+  "how many",
+  "do i have",
+  "what do i have",
+  "my clothes",
+  "my shirts",
+  "my shirt",
+  "my pants",
+  "my shoes",
+  "my jackets",
+  "my jacket",
+  "my tops",
+  "my bottoms",
+  "my outfits",
+  "my outfit",
+  "saved fit",
+];
+
 export function parseVoiceQuestion(transcript: string): VoiceIntent {
   const lower = transcript.toLowerCase();
-  
+
+  if (APP_KEYWORDS.some((k) => lower.includes(k))) {
+    return { type: "app", raw: transcript };
+  }
+
   if (lower.includes("tomorrow")) {
     return { type: "tomorrow", raw: transcript };
   }

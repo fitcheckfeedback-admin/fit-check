@@ -246,6 +246,7 @@ export function useVoiceAssistant() {
     isSpeaking,
     transcript,
     error,
+    setError,
     startListening,
     stopListening,
     speak,

@@ -4,6 +4,7 @@ import { Mic, X } from "lucide-react";
 import { useVoiceAssistant } from "@/hooks/useVoiceAssistant";
 import { parseVoiceQuestion } from "@/lib/voiceIntent";
 import { buildVoiceAnswer } from "@/lib/voiceAnswer";
+import { buildAiContext } from "@/lib/appContext";
 import { useToast } from "@/hooks/use-toast";
 import { WeatherForecastResponse } from "@/lib/weather";
 import { Recommendation } from "@/lib/recommend";
@@ -21,13 +22,15 @@ const HINTS = [
   "Try: 'What should I wear today?'",
   "Try: 'Will it rain?'",
   "Try: 'What about tomorrow?'",
-  "Try: 'Is it cold outside?'"
+  "Try: 'Is it cold outside?'",
+  "Try: 'How many shirts are in my closet?'"
 ];
 
 export function VoiceAssistant({ weatherData, recommendation, settings, autoStart, onCloseAutoStart }: VoiceAssistantProps) {
-  const { isSupported, isListening, isSpeaking, transcript, error, startListening, stopListening, speak, cancelSpeech } = useVoiceAssistant();
+  const { isSupported, isListening, isSpeaking, transcript, error, setError, startListening, stopListening, speak, cancelSpeech } = useVoiceAssistant();
   const [isOpen, setIsOpen] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
+  const [isThinking, setIsThinking] = useState(false);
   const [hintIndex, setHintIndex] = useState(0);
   const { toast } = useToast();
   const answerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -53,19 +56,56 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
   }, [isOpen]);
 
   useEffect(() => {
-    if (isOpen && !isListening && transcript && !isSpeaking && !answer) {
-      if (weatherData && recommendation) {
-        const intent = parseVoiceQuestion(transcript);
-        const ans = buildVoiceAnswer(intent, weatherData, recommendation, settings);
-        setAnswer(ans);
-        speak(ans, settings.voiceName);
-      }
+    if (!isOpen || isListening || !transcript || isSpeaking || answer) return;
+    const intent = parseVoiceQuestion(transcript);
+
+    if (intent.type === "app") {
+      // Questions about the app and its contents (closet, wardrobe, saved
+      // fits) go to the AI backend, which has the full closet, weather, and
+      // style context in its prompt — the local answer builder can't see it.
+      let cancelled = false;
+      setIsThinking(true);
+      (async () => {
+        try {
+          const res = await fetch("/api/ai/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              messages: [{ role: "user", content: transcript }],
+              context: buildAiContext(settings, weatherData),
+            }),
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          const reply = String(data.reply ?? "").trim();
+          if (!reply) throw new Error("empty");
+          if (cancelled) return;
+          setAnswer(reply);
+          speak(reply, settings.voiceName);
+        } catch {
+          if (cancelled) return;
+          setError("Couldn't reach the assistant. Check your connection and try again.");
+        } finally {
+          if (!cancelled) setIsThinking(false);
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
     }
-  }, [isOpen, isListening, transcript, isSpeaking, answer, weatherData, recommendation, settings, speak]);
+
+    if (weatherData && recommendation) {
+      const ans = buildVoiceAnswer(intent, weatherData, recommendation, settings);
+      setAnswer(ans);
+      speak(ans, settings.voiceName);
+    }
+    return undefined;
+  }, [isOpen, isListening, transcript, isSpeaking, answer, weatherData, recommendation, settings, speak, setError]);
 
   // Auto-retry when nothing was heard
   const handleRetry = () => {
     setAnswer(null);
+    setIsThinking(false);
     startListening();
   };
 
@@ -90,6 +130,7 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
     }
     setIsOpen(true);
     setAnswer(null);
+    setIsThinking(false);
     startListening();
   };
 
@@ -98,6 +139,7 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
     cancelSpeech();
     setIsOpen(false);
     setAnswer(null);
+    setIsThinking(false);
   };
 
   if (!isSupported && !autoStart) return null;
@@ -193,7 +235,7 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
                 ) : (
                   <>
                     <p className="text-3xl font-display font-bold text-foreground min-h-[80px]">
-                      {transcript || (isListening ? "Listening..." : "Processing...")}
+                      {isThinking ? "Thinking..." : (transcript || (isListening ? "Listening..." : "Processing..."))}
                     </p>
                     {isListening && !transcript && (
                       <AnimatePresence mode="wait">
