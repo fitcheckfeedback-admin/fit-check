@@ -31,6 +31,10 @@ declare global {
   }
 }
 
+// Safety net: if the recognizer wedges (no end/error event), force a reset
+// instead of leaving the UI stuck on "Listening..." forever.
+const WATCHDOG_MS = 30000;
+
 export function useVoiceAssistant() {
   const [isSupported, setIsSupported] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -39,6 +43,7 @@ export function useVoiceAssistant() {
   const [error, setError] = useState<string | null>(null);
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -47,32 +52,80 @@ export function useVoiceAssistant() {
     // native VoiceTTS plugin on iOS or speechSynthesis on web.
     if (SR && (window.speechSynthesis || isNativeTts())) {
       setIsSupported(true);
-      const recognition = new SR();
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-      recognitionRef.current = recognition;
+    }
+    return () => {
+      try { recognitionRef.current?.abort(); } catch { /* ignore */ }
+      recognitionRef.current = null;
+      if (watchdogRef.current) clearTimeout(watchdogRef.current);
+      watchdogRef.current = null;
+    };
+  }, []);
+
+  const teardownRecognition = useCallback(() => {
+    if (watchdogRef.current) {
+      clearTimeout(watchdogRef.current);
+      watchdogRef.current = null;
+    }
+    const r = recognitionRef.current;
+    recognitionRef.current = null;
+    if (r) {
+      try { r.abort(); } catch { /* ignore */ }
     }
   }, []);
 
-  useEffect(() => {
-    const recognition = recognitionRef.current;
-    if (!recognition) return;
+  const startListening = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      setError('Voice input is not supported here');
+      return;
+    }
+    // Always start a FRESH recognition instance. Reusing one instance across
+    // sessions wedges iOS's speech recognizer: the second start() fires
+    // onstart but never delivers results or onend, leaving the UI stuck on
+    // "Listening..." until the app restarts.
+    teardownRecognition();
+    setError(null);
+    setTranscript('');
 
-    const handleStart = () => {
+    const recognition = new SR();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    recognitionRef.current = recognition;
+
+    // Guard every handler: events from a torn-down (aborted) instance must
+    // not touch the state of the session that replaced it.
+    const isCurrent = () => recognitionRef.current === recognition;
+    const finishSession = () => {
+      if (watchdogRef.current) {
+        clearTimeout(watchdogRef.current);
+        watchdogRef.current = null;
+      }
+      recognitionRef.current = null;
+      setIsListening(false);
+    };
+
+    recognition.onstart = () => {
+      if (!isCurrent()) return;
       setIsListening(true);
       setError(null);
     };
-    const handleEnd = () => setIsListening(false);
-    const handleError = (e: SpeechRecognitionErrorEvent) => {
+    recognition.onend = () => {
+      if (!isCurrent()) return;
+      finishSession();
+    };
+    recognition.onerror = (e: SpeechRecognitionErrorEvent) => {
+      if (!isCurrent()) return;
       if (e.error === 'no-speech') {
         setError("I didn't catch that — try again");
       } else if (e.error !== 'aborted') {
         setError(e.error);
       }
-      setIsListening(false);
+      finishSession();
     };
-    const handleResult = (e: SpeechRecognitionEvent) => {
+    recognition.onresult = (e: SpeechRecognitionEvent) => {
+      if (!isCurrent()) return;
       let current = '';
       for (let i = e.resultIndex; i < e.results.length; ++i) {
         current += e.results[i][0].transcript;
@@ -80,38 +133,30 @@ export function useVoiceAssistant() {
       setTranscript(current);
     };
 
-    recognition.addEventListener('start', handleStart);
-    recognition.addEventListener('end', handleEnd);
-    recognition.addEventListener('error', handleError as any);
-    recognition.addEventListener('result', handleResult as any);
-
-    return () => {
-      recognition.removeEventListener('start', handleStart);
-      recognition.removeEventListener('end', handleEnd);
-      recognition.removeEventListener('error', handleError as any);
-      recognition.removeEventListener('result', handleResult as any);
-    };
-  }, [isSupported]);
-
-  const startListening = useCallback(() => {
-    if (!recognitionRef.current) return;
-    setError(null);
-    setTranscript('');
     try {
-      recognitionRef.current.start();
+      recognition.start();
+      watchdogRef.current = setTimeout(() => {
+        watchdogRef.current = null;
+        // The recognizer wedged: no end/error arrived. Force a reset so the
+        // user can try again instead of staring at "Listening..." forever.
+        teardownRecognition();
+        setIsListening(false);
+        setError('The microphone got stuck — try again');
+      }, WATCHDOG_MS);
     } catch (e: any) {
-      setError(e.message || 'Failed to start listening');
+      teardownRecognition();
+      setError(e?.message || 'Failed to start listening');
     }
-  }, []);
+  }, [teardownRecognition]);
 
   const stopListening = useCallback(() => {
-    try { recognitionRef.current?.stop(); } catch { /* ignore */ }
+    teardownRecognition();
     setIsListening(false);
-  }, []);
+  }, [teardownRecognition]);
 
   const speak = useCallback(async (text: string, voiceName?: string | null) => {
-    // All spoken audio routes through the unified TTS module: native
-    // AVSpeech voices on Capacitor iOS, speechSynthesis everywhere else.
+    // All spoken audio routes through the unified TTS module: cloud
+    // "Fit Check Voice" when reachable, native AVSpeech voices otherwise.
     const { speak: ttsSpeak } = await import('@/lib/tts');
     await ttsSpeak(text, {
       voiceId: voiceName ?? null,
