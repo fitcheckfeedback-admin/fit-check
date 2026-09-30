@@ -1,6 +1,7 @@
 import Foundation
 import Capacitor
 import AVFoundation
+import Speech
 
 // MARK: - Native text-to-speech
 // Capacitor plugin that speaks through AVSpeechSynthesizer instead of the
@@ -18,6 +19,24 @@ import AVFoundation
 //     AVSpeech 0.0-1.0 range (0.5 = default). Emits "ttsStart"/"ttsEnd".
 //   stop()
 // Events: "ttsStart", "ttsEnd" (also fired on cancel).
+//
+// MARK: - Native speech recognition
+// Uses SFSpeechRecognizer + AVAudioEngine (the iPhone's own dictation
+// engine). The WebView's webkitSpeechRecognition wedges on the second
+// session and cannot be restarted without killing the app, so the voice
+// assistant listens through this instead. The audio engine is fully torn
+// down after every session so the next one always starts clean.
+//
+// Methods:
+//   startListening() -> { transcript }
+//     Resolves when the user stops speaking (3s of silence), on
+//     stopListening, or after a 30s cap — whichever comes first. Rejects on
+//     permission errors or audio failures. The call is kept alive across
+//     the session.
+//   stopListening()
+//     Ends the current session gracefully; the pending startListening
+//     resolves with whatever was heard.
+// Events: "speechPartial" { transcript } — interim results for live UI.
 @objc(VoiceTTS)
 public class VoiceTTS: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesizerDelegate {
 
@@ -30,6 +49,8 @@ public class VoiceTTS: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesizerDelegate 
         CAPPluginMethod(name: "getVoices", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "speak", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "stop", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "startListening", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "stopListening", returnType: CAPPluginReturnPromise),
     ]
 
     private lazy var synthesizer: AVSpeechSynthesizer = {
@@ -150,5 +171,178 @@ public class VoiceTTS: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesizerDelegate 
     public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer,
                                   didCancel utterance: AVSpeechUtterance) {
         notifyListeners("ttsEnd", data: [:])
+    }
+
+    // MARK: - Native speech recognition
+
+    private static let listenSilenceTimeout: TimeInterval = 3.0
+    private static let listenCapTimeout: TimeInterval = 30.0
+
+    private var speechRecognizer: SFSpeechRecognizer? =
+        SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    private var recognitionTask: SFSpeechRecognitionTask?
+    private let audioEngine = AVAudioEngine()
+    private var listeningCall: CAPPluginCall?
+    private var lastTranscript: String = ""
+    private var silenceWorkItem: DispatchWorkItem?
+    private var capWorkItem: DispatchWorkItem?
+    private var stopFallbackItem: DispatchWorkItem?
+
+    @objc func startListening(_ call: CAPPluginCall) {
+        call.keepAlive = true
+        DispatchQueue.main.async {
+            // End any previous session first (resolves it with what it heard).
+            self.finishListening(transcript: self.lastTranscript.isEmpty ? nil : self.lastTranscript,
+                                 error: nil)
+
+            SFSpeechRecognizer.requestAuthorization { status in
+                DispatchQueue.main.async {
+                    switch status {
+                    case .authorized:
+                        self.listeningCall = call
+                        do {
+                            try self.beginRecognition()
+                        } catch {
+                            self.listeningCall = nil
+                            call.keepAlive = false
+                            call.reject("Microphone error: \(error.localizedDescription)")
+                        }
+                    case .denied:
+                        call.keepAlive = false
+                        call.reject("Speech recognition permission was denied. Turn it on for FIT Check in the Settings app.")
+                    case .restricted:
+                        call.keepAlive = false
+                        call.reject("Speech recognition is restricted on this device.")
+                    case .notDetermined:
+                        call.keepAlive = false
+                        call.reject("Speech recognition permission was not granted.")
+                    @unknown default:
+                        call.keepAlive = false
+                        call.reject("Speech recognition is unavailable on this device.")
+                    }
+                }
+            }
+        }
+    }
+
+    @objc func stopListening(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            // Graceful end: lets the recognizer deliver a final result, which
+            // resolves the pending startListening with what was heard.
+            self.silenceWorkItem?.cancel(); self.silenceWorkItem = nil
+            self.capWorkItem?.cancel(); self.capWorkItem = nil
+            self.stopFallbackItem?.cancel()
+            self.recognitionRequest?.endAudio()
+            // Safety net: if the final result never arrives, resolve anyway.
+            let item = DispatchWorkItem { [weak self] in
+                guard let self = self, self.listeningCall != nil else { return }
+                self.finishListening(transcript: self.lastTranscript, error: nil)
+            }
+            self.stopFallbackItem = item
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5, execute: item)
+            call.resolve()
+        }
+    }
+
+    private func beginRecognition() throws {
+        // Full teardown of any previous audio state before starting fresh.
+        teardownAudio()
+
+        guard let recognizer = speechRecognizer, recognizer.isAvailable else {
+            throw NSError(domain: "VoiceTTS", code: 1,
+                          userInfo: [NSLocalizedDescriptionKey: "Speech recognition is not available right now."])
+        }
+
+        let session = AVAudioSession.sharedInstance()
+        try session.setCategory(.record, mode: .measurement, options: .duckOthers)
+        try session.setActive(true, options: .notifyOthersOnDeactivation)
+
+        lastTranscript = ""
+        let request = SFSpeechAudioBufferRecognitionRequest()
+        request.shouldReportPartialResults = true
+        recognitionRequest = request
+
+        let inputNode = audioEngine.inputNode
+        let format = inputNode.outputFormat(forBus: 0)
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
+            request.append(buffer)
+        }
+        audioEngine.prepare()
+        try audioEngine.start()
+
+        recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                if let result = result {
+                    self.lastTranscript = result.bestTranscription.formattedString
+                    self.notifyListeners("speechPartial", data: ["transcript": self.lastTranscript])
+                    self.armSilenceTimer()
+                    if result.isFinal {
+                        self.finishListening(transcript: self.lastTranscript, error: nil)
+                        return
+                    }
+                }
+                if let error = error {
+                    // Already finished (e.g. cancelled by teardown): ignore.
+                    if self.listeningCall == nil { return }
+                    if !self.lastTranscript.isEmpty {
+                        self.finishListening(transcript: self.lastTranscript, error: nil)
+                    } else {
+                        self.finishListening(transcript: nil, error: error)
+                    }
+                }
+            }
+        }
+
+        armCapTimer()
+    }
+
+    /// Resolve/reject the pending startListening call (first call wins) and
+    /// release all audio resources so the next session starts clean.
+    private func finishListening(transcript: String?, error: Error?) {
+        guard let call = listeningCall else { return }
+        listeningCall = nil
+        teardownAudio()
+        call.keepAlive = false
+        if let error = error {
+            call.reject(error.localizedDescription)
+        } else {
+            call.resolve(["transcript": transcript ?? ""])
+        }
+    }
+
+    private func teardownAudio() {
+        silenceWorkItem?.cancel(); silenceWorkItem = nil
+        capWorkItem?.cancel(); capWorkItem = nil
+        stopFallbackItem?.cancel(); stopFallbackItem = nil
+        recognitionTask?.cancel(); recognitionTask = nil
+        recognitionRequest?.endAudio(); recognitionRequest = nil
+        if audioEngine.isRunning { audioEngine.stop() }
+        audioEngine.inputNode.removeTap(onBus: 0)
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+
+    /// End the session after 3s without new speech (mirrors the WebView
+    /// recognizer's auto-stop on silence).
+    private func armSilenceTimer() {
+        silenceWorkItem?.cancel()
+        let item = DispatchWorkItem { [weak self] in
+            self?.recognitionRequest?.endAudio()
+        }
+        silenceWorkItem = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.listenSilenceTimeout, execute: item)
+    }
+
+    /// Hard 30s cap: resolve with whatever was heard (possibly empty).
+    private func armCapTimer() {
+        capWorkItem?.cancel()
+        let item = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+            self.finishListening(transcript: self.lastTranscript.isEmpty ? nil : self.lastTranscript,
+                                 error: nil)
+        }
+        capWorkItem = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.listenCapTimeout, execute: item)
     }
 }

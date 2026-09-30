@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { isNativeTts } from '@/lib/tts';
+import { isNativeTts, isNativeListening, NativeTTS } from '@/lib/tts';
 
 interface SpeechRecognitionEvent extends Event {
   readonly resultIndex: number;
@@ -31,7 +31,7 @@ declare global {
   }
 }
 
-// Safety net: if the recognizer wedges (no end/error event), force a reset
+// Safety net: if listening wedges (no completion event), force a reset
 // instead of leaving the UI stuck on "Listening..." forever.
 const WATCHDOG_MS = 30000;
 
@@ -44,50 +44,62 @@ export function useVoiceAssistant() {
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const partialHandleRef = useRef<{ remove: () => void } | null>(null);
+  // Guards async completion: teardown bumps the id, so a stale session's
+  // promise resolution can never touch the new session's state.
+  const sessionRef = useRef(0);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    // Speech input needs the Web Speech API; speech output works through the
-    // native VoiceTTS plugin on iOS or speechSynthesis on web.
-    if (SR && (window.speechSynthesis || isNativeTts())) {
-      setIsSupported(true);
-    }
-    return () => {
-      try { recognitionRef.current?.abort(); } catch { /* ignore */ }
-      recognitionRef.current = null;
-      if (watchdogRef.current) clearTimeout(watchdogRef.current);
-      watchdogRef.current = null;
-    };
-  }, []);
-
-  const teardownRecognition = useCallback(() => {
+  const clearWatchdog = useCallback(() => {
     if (watchdogRef.current) {
       clearTimeout(watchdogRef.current);
       watchdogRef.current = null;
     }
+  }, []);
+
+  const teardownListening = useCallback(() => {
+    // Invalidate any in-flight session first.
+    sessionRef.current += 1;
+    clearWatchdog();
+    // Web path.
     const r = recognitionRef.current;
     recognitionRef.current = null;
     if (r) {
       try { r.abort(); } catch { /* ignore */ }
     }
-  }, []);
+    // Native path.
+    try { partialHandleRef.current?.remove(); } catch { /* ignore */ }
+    partialHandleRef.current = null;
+    if (isNativeListening()) {
+      NativeTTS.stopListening().catch(() => { /* no session: harmless */ });
+    }
+    setIsListening(false);
+  }, [clearWatchdog]);
 
-  const startListening = useCallback(() => {
+  useEffect(() => {
     if (typeof window === 'undefined') return;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    // Speech input: the native iPhone dictation engine when available,
+    // otherwise the Web Speech API. Speech output works through the unified
+    // TTS module (cloud voice / native AVSpeech / speechSynthesis).
+    if (isNativeListening() || (SR && (window.speechSynthesis || isNativeTts()))) {
+      setIsSupported(true);
+    }
+    return () => {
+      teardownListening();
+    };
+  }, [teardownListening]);
+
+  const startWebListening = useCallback((mySession: number) => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
       setError('Voice input is not supported here');
       return;
     }
+    const alive = () => sessionRef.current === mySession;
     // Always start a FRESH recognition instance. Reusing one instance across
     // sessions wedges iOS's speech recognizer: the second start() fires
     // onstart but never delivers results or onend, leaving the UI stuck on
     // "Listening..." until the app restarts.
-    teardownRecognition();
-    setError(null);
-    setTranscript('');
-
     const recognition = new SR();
     recognition.continuous = false;
     recognition.interimResults = true;
@@ -96,12 +108,9 @@ export function useVoiceAssistant() {
 
     // Guard every handler: events from a torn-down (aborted) instance must
     // not touch the state of the session that replaced it.
-    const isCurrent = () => recognitionRef.current === recognition;
+    const isCurrent = () => alive() && recognitionRef.current === recognition;
     const finishSession = () => {
-      if (watchdogRef.current) {
-        clearTimeout(watchdogRef.current);
-        watchdogRef.current = null;
-      }
+      clearWatchdog();
       recognitionRef.current = null;
       setIsListening(false);
     };
@@ -139,20 +148,81 @@ export function useVoiceAssistant() {
         watchdogRef.current = null;
         // The recognizer wedged: no end/error arrived. Force a reset so the
         // user can try again instead of staring at "Listening..." forever.
-        teardownRecognition();
-        setIsListening(false);
+        teardownListening();
         setError('The microphone got stuck — try again');
       }, WATCHDOG_MS);
     } catch (e: any) {
-      teardownRecognition();
+      teardownListening();
       setError(e?.message || 'Failed to start listening');
     }
-  }, [teardownRecognition]);
+  }, [clearWatchdog, teardownListening]);
+
+  const startNativeListening = useCallback((mySession: number) => {
+    const alive = () => sessionRef.current === mySession;
+    // Live interim transcripts for the UI.
+    NativeTTS.addListener('speechPartial', (data) => {
+      if (alive() && data?.transcript) setTranscript(data.transcript);
+    }).then(
+      (handle) => {
+        if (alive()) {
+          partialHandleRef.current = handle;
+        } else {
+          try { handle.remove(); } catch { /* ignore */ }
+        }
+      },
+      () => { /* listener attach failed: final transcript still resolves */ }
+    );
+
+    setIsListening(true);
+    setError(null);
+    watchdogRef.current = setTimeout(() => {
+      watchdogRef.current = null;
+      teardownListening();
+      setError('The microphone got stuck — try again');
+    }, WATCHDOG_MS);
+
+    NativeTTS.startListening().then(
+      (res) => {
+        if (!alive()) return;
+        clearWatchdog();
+        try { partialHandleRef.current?.remove(); } catch { /* ignore */ }
+        partialHandleRef.current = null;
+        setIsListening(false);
+        const text = (res?.transcript ?? '').trim();
+        if (text) {
+          setTranscript(text);
+        } else {
+          setError("I didn't catch that — try again");
+        }
+      },
+      (err: any) => {
+        if (!alive()) return;
+        clearWatchdog();
+        try { partialHandleRef.current?.remove(); } catch { /* ignore */ }
+        partialHandleRef.current = null;
+        setIsListening(false);
+        const msg = err?.message || (typeof err === 'string' ? err : '') || 'Listening failed';
+        setError(msg);
+      }
+    );
+  }, [clearWatchdog, teardownListening]);
+
+  const startListening = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    teardownListening();
+    setError(null);
+    setTranscript('');
+    const mySession = sessionRef.current;
+    if (isNativeListening()) {
+      startNativeListening(mySession);
+    } else {
+      startWebListening(mySession);
+    }
+  }, [teardownListening, startNativeListening, startWebListening]);
 
   const stopListening = useCallback(() => {
-    teardownRecognition();
-    setIsListening(false);
-  }, [teardownRecognition]);
+    teardownListening();
+  }, [teardownListening]);
 
   const speak = useCallback(async (text: string, voiceName?: string | null) => {
     // All spoken audio routes through the unified TTS module: cloud

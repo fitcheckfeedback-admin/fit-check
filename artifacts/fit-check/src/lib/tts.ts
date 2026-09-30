@@ -44,10 +44,17 @@ interface VoiceTTSPlugin {
   getVoices(): Promise<{ voices: NativeVoiceInfo[] }>;
   speak(options: { text: string; voiceId?: string; rate?: number; pitch?: number }): Promise<void>;
   stop(): Promise<void>;
-  addListener(eventName: "ttsStart" | "ttsEnd", listener: () => void): Promise<{ remove: () => void }>;
+  /** Native speech recognition (iPhone dictation engine). Resolves with the final transcript. */
+  startListening(): Promise<{ transcript: string }>;
+  /** Ends the current listening session; the pending startListening resolves with what was heard. */
+  stopListening(): Promise<void>;
+  addListener(
+    eventName: "ttsStart" | "ttsEnd" | "speechPartial",
+    listener: (data?: { transcript?: string }) => void
+  ): Promise<{ remove: () => void }>;
 }
 
-const NativeTTS = registerPlugin<VoiceTTSPlugin>("VoiceTTS");
+export const NativeTTS = registerPlugin<VoiceTTSPlugin>("VoiceTTS");
 
 /**
  * Cloud voice: our own backend's /api/tts endpoint (human neural voice).
@@ -73,6 +80,15 @@ export function isNativeTts(): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * True when the native plugin's speech-recognition methods are available.
+ * The Swift methods ship in the same binary as the plugin itself, so the
+ * plugin's presence is the feature check — no separate probing needed.
+ */
+export function isNativeListening(): boolean {
+  return isNativeTts();
 }
 
 /** Default speaking rate: natural 1.0, slightly slower for long fit readouts. */
