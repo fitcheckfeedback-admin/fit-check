@@ -4,13 +4,24 @@ import type { PluginListenerHandle } from "@capacitor/core";
 import { isNative } from "@/lib/platform";
 import { queryClient } from "@/lib/queryClient";
 
-// Must stay in sync with the queryKey in src/hooks/useWeather.ts.
-const WEATHER_QUERY_PREFIX = ["weather"] as const;
+// Must stay in sync with the queryKeys in useWeather.ts,
+// useNWSObservation.ts and useNWSAlerts.ts. Prefixes match the full keys
+// (which append lat/lon), so one invalidation refreshes every location.
+const WEATHER_QUERY_PREFIXES = [
+  ["weather"],
+  ["nws-observation"],
+  ["nws-alerts"],
+] as const;
 
 /**
- * Invalidates the weather query the moment the app returns to the foreground,
- * so weather refetches immediately instead of waiting for the 5-minute
- * background interval.
+ * Invalidates the weather queries the moment the app returns to the foreground,
+ * so weather refetches immediately instead of waiting for the background
+ * interval.
+ *
+ * This must cover ALL weather data sources, not just the Open-Meteo forecast:
+ * the Home screen's big temperature comes from the NWS station observation
+ * feed, which has its own query key — invalidating only ["weather"] left the
+ * displayed temperature stale until the next interval or a manual refresh.
  *
  * react-query's `refetchOnWindowFocus` does not fire reliably inside the
  * Capacitor WebView on iOS, so on native we listen to Capacitor's `resume`
@@ -23,7 +34,9 @@ const WEATHER_QUERY_PREFIX = ["weather"] as const;
 export function useAppResumeRefresh() {
   useEffect(() => {
     const refreshWeather = () => {
-      void queryClient.invalidateQueries({ queryKey: WEATHER_QUERY_PREFIX });
+      for (const queryKey of WEATHER_QUERY_PREFIXES) {
+        void queryClient.invalidateQueries({ queryKey: [...queryKey] });
+      }
     };
 
     let cancelled = false;

@@ -135,11 +135,14 @@ async function fetchRadarPayload(): Promise<RadarPayload> {
 
 /* ------------------------------------------------------------------ */
 /* Base-map tiles: bright Apple-style light basemap (light in both themes) */
-/* Primary CARTO light_all (clean light-gray land, subtle boundaries,       */
-/* readable city labels) -> fallback OSM standard (also light).            */
+/* Primary Esri World Light Gray canvas (keyless, clean light-gray land,    */
+/* subtle boundaries) -> fallback OSM standard (also light).                */
+/* NOTE: CARTO's basemaps now require an API key — their tiles render an    */
+/* "API KEY REQUIRED" watermark with HTTP 200, so tile-error failover      */
+/* never triggers. Do not switch the primary back to cartocdn without a key.*/
 /* ------------------------------------------------------------------ */
 
-const BASE_PRIMARY = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+const BASE_PRIMARY = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}";
 const BASE_FALLBACK = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const TILE_ERROR_THRESHOLD = 4;
 
@@ -249,7 +252,7 @@ export function RadarMap({ lat, lon, temperatureF, units, cityName }: RadarMapPr
   const [playing, setPlaying] = useState(true);
   const [status, setStatus] = useState<"loading" | "error" | "ok">("loading");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [attribution, setAttribution] = useState("© OpenStreetMap · © CARTO · RainViewer");
+  const [attribution, setAttribution] = useState("Esri · RainViewer");
 
   // Forecast data for the verdict banner (passive cache read — no new fetch)
   const { data: weather } = useCachedWeather(lat, lon);
@@ -267,7 +270,6 @@ export function RadarMap({ lat, lon, temperatureF, units, cityName }: RadarMapPr
 
     // Bright Apple-style light basemap with failover to OSM (also light)
     const base = L.tileLayer(BASE_PRIMARY, {
-      subdomains: "abcd",
       maxZoom: 19,
       crossOrigin: "anonymous",
     } as any);
