@@ -182,20 +182,24 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
 
   const busy = checkingOut || verifying || restoring;
 
+  // The gate is a viewport-bounded panel, not a scrolling page: the blurred
+  // preview is clipped (overflow-hidden) and the paywall sheet is pinned to
+  // the visible bottom. Previously the sheet was absolutely positioned at the
+  // bottom of the full (tall, scrollable) preview, forcing users to scroll
+  // past blurred content to reach the purchase button.
   return (
-    <div className="flex-1 flex flex-col">
-      <div className="relative flex-1 overflow-hidden">
-        <div className="opacity-30 pointer-events-none select-none blur-sm">
-          {children}
-        </div>
+    <div className="flex-1 min-h-0 flex flex-col relative overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden opacity-30 pointer-events-none select-none blur-sm" aria-hidden>
+        {children}
+      </div>
 
-        <div className="absolute inset-0 flex flex-col items-center justify-end px-6" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 1.25rem)" }}>
-          <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="w-full max-w-[320px] bg-card border border-border rounded-3xl p-7 shadow-2xl flex flex-col items-center text-center gap-4"
-          >
+      <div className="absolute inset-x-0 bottom-0 flex flex-col items-center px-6" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 1.25rem)" }}>
+        <motion.div
+          initial={{ opacity: 0, y: 24, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="w-full max-w-[320px] bg-card border border-border rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center gap-3"
+        >
             <div className="relative">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
                 <Crown className="w-8 h-8 text-white" />
@@ -297,7 +301,6 @@ export function ProGate({ children, feature = "Pro Feature", description }: ProG
               )}
             </div>
           </motion.div>
-        </div>
       </div>
     </div>
   );

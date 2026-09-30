@@ -34,6 +34,19 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
   const [hintIndex, setHintIndex] = useState(0);
   const { toast } = useToast();
   const answerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Conversation state: lets follow-ups ("yes, list them") make sense.
+  const historyRef = useRef<{ role: "user" | "assistant"; content: string }[]>([]);
+  const lastWasAppRef = useRef(false);
+  // Auto follow-up: when the assistant ends its reply with a question, the
+  // mic reopens automatically so Joshua can answer in the same session
+  // instead of closing and starting over. One auto round per answer.
+  const autoFollowedUpRef = useRef(false);
+
+  function resetConversation() {
+    historyRef.current = [];
+    lastWasAppRef.current = false;
+    autoFollowedUpRef.current = false;
+  }
 
   useEffect(() => {
     if (autoStart && isSupported && !isOpen) {
@@ -57,12 +70,20 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
 
   useEffect(() => {
     if (!isOpen || isListening || !transcript || isSpeaking || answer) return;
-    const intent = parseVoiceQuestion(transcript);
+    // Follow-ups to an AI turn stay with the AI: the local weather builder
+    // can't interpret "yes" or "list them", but the backend can with history.
+    const intent = lastWasAppRef.current
+      ? { type: "app" as const, raw: transcript }
+      : parseVoiceQuestion(transcript);
+    autoFollowedUpRef.current = false;
 
     if (intent.type === "app") {
       // Questions about the app and its contents (closet, wardrobe, saved
       // fits) go to the AI backend, which has the full closet, weather, and
       // style context in its prompt — the local answer builder can't see it.
+      // Recent turns travel along so follow-ups resolve against the thread.
+      lastWasAppRef.current = true;
+      const thread = [...historyRef.current.slice(-8), { role: "user" as const, content: transcript }];
       let cancelled = false;
       setIsThinking(true);
       (async () => {
@@ -71,7 +92,7 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              messages: [{ role: "user", content: transcript }],
+              messages: thread,
               context: buildAiContext(settings, weatherData),
             }),
           });
@@ -80,6 +101,7 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
           const reply = String(data.reply ?? "").trim();
           if (!reply) throw new Error("empty");
           if (cancelled) return;
+          historyRef.current = [...thread, { role: "assistant" as const, content: reply }].slice(-20);
           setAnswer(reply);
           speak(reply, settings.voiceName);
         } catch {
@@ -94,6 +116,7 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
       };
     }
 
+    lastWasAppRef.current = false;
     if (weatherData && recommendation) {
       const ans = buildVoiceAnswer(intent, weatherData, recommendation, settings);
       setAnswer(ans);
@@ -109,8 +132,32 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
     startListening();
   };
 
+  // Reply in the same session: clear the shown answer and listen again,
+  // keeping the conversation history so follow-ups make sense.
+  const handleReply = () => {
+    setError(null);
+    setAnswer(null);
+    setIsThinking(false);
+    startListening();
+  };
+
+  // When the assistant's reply ends with a question, reopen the mic
+  // automatically so Joshua can answer it in the same session.
   useEffect(() => {
-    if (isOpen && answer && !isSpeaking) {
+    if (!isOpen || !answer || isSpeaking || isListening || error || autoFollowedUpRef.current) return;
+    if (!/\?\s*["']?$/.test(answer)) return;
+    autoFollowedUpRef.current = true;
+    // Brief pause so the mic doesn't catch the speaker's tail.
+    const t = setTimeout(() => {
+      handleReply();
+    }, 800);
+    return () => clearTimeout(t);
+  }, [isOpen, answer, isSpeaking, isListening, error, startListening]);
+
+  useEffect(() => {
+    // Idle auto-close: only when the answer is sitting there with the mic
+    // and speaker both quiet. Never close mid-listen or mid-speech.
+    if (isOpen && answer && !isSpeaking && !isListening) {
       answerTimeoutRef.current = setTimeout(() => {
         handleClose();
       }, 20000);
@@ -118,7 +165,7 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
     return () => {
       if (answerTimeoutRef.current) clearTimeout(answerTimeoutRef.current);
     };
-  }, [isOpen, answer, isSpeaking]);
+  }, [isOpen, answer, isSpeaking, isListening]);
 
   const handleOpen = () => {
     if (!isSupported) {
@@ -128,6 +175,7 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
       });
       return;
     }
+    resetConversation();
     setIsOpen(true);
     setAnswer(null);
     setIsThinking(false);
@@ -137,6 +185,7 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
   const handleClose = () => {
     stopListening();
     cancelSpeech();
+    resetConversation();
     setIsOpen(false);
     setAnswer(null);
     setIsThinking(false);
@@ -255,14 +304,25 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
               </div>
 
               {answer && !isSpeaking && (
-                <motion.button
+                <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  onClick={handleClose}
-                  className="px-8 py-3 rounded-full bg-foreground text-background font-semibold hover:bg-foreground/90 transition-colors"
+                  className="flex items-center gap-3"
                 >
-                  Done
-                </motion.button>
+                  <button
+                    onClick={handleReply}
+                    className="px-8 py-3 rounded-full bg-primary text-primary-foreground font-semibold flex items-center gap-2 hover:bg-primary/90 transition-colors"
+                  >
+                    <Mic className="w-5 h-5" />
+                    Reply
+                  </button>
+                  <button
+                    onClick={handleClose}
+                    className="px-8 py-3 rounded-full bg-foreground text-background font-semibold hover:bg-foreground/90 transition-colors"
+                  >
+                    Done
+                  </button>
+                </motion.div>
               )}
             </div>
           </motion.div>
