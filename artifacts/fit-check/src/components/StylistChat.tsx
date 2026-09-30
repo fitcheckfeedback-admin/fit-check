@@ -1,8 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Loader2, Volume2, Square, Sparkles, ImagePlus } from "lucide-react";
+import { X, Send, Loader2, Volume2, Square, Sparkles, ImagePlus, Crown } from "lucide-react";
+import { useLocation } from "wouter";
 import { compressImage } from "@/lib/imageCompress";
 import { speak, stopSpeaking } from "@/lib/tts";
+import { usePremium } from "@/hooks/usePremium";
+import { fetchDeals, Deal } from "@/lib/deals";
+import { buildAiContext } from "@/lib/appContext";
+import { DealResults } from "@/components/DealResults";
 
 export interface ChatWeather {
   tempF: number;
@@ -28,17 +33,23 @@ interface ChatMsg {
   role: "user" | "assistant";
   content: string;
   image?: string;
+  deals?: Deal[];
+  /** Renders an inline Pro upsell card instead of plain text. */
+  action?: "pro_upsell";
 }
 
 const THREAD_KEY = "fitcheck-stylist-thread";
 const MAX_STORED = 40;
 
-const QUICK_PROMPTS = [
+const QUICK_PROMPTS: { label: string; text?: string; deals?: boolean }[] = [
   { label: "☀️ Morning briefing", text: "Give me my morning briefing: today's weather and my outfit." },
   { label: "🧳 Trip packing", text: "Help me plan a packing list for a trip." },
   { label: "👔 Closet gaps", text: "What gaps do you see in my closet? What should I shop for next?" },
   { label: "✨ Surprise me", text: "Suggest an outfit for today that pushes my style a little." },
+  { label: "🔥 Find deals", deals: true },
 ];
+
+const DEFAULT_DEALS_QUERY = "Find clothing deals that match my style and fill the gaps in my wardrobe.";
 
 function loadThread(): ChatMsg[] {
   try {
@@ -60,6 +71,8 @@ export function StylistChat({ open, onClose, weather, closetItems, style, gender
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const { isPro, loading: premiumLoading } = usePremium();
+  const [, nav] = useLocation();
 
   useEffect(() => {
     try {
@@ -110,6 +123,72 @@ export function StylistChat({ open, onClose, weather, closetItems, style, gender
       setMessages((prev) => [...prev, { id: `a-${Date.now()}`, role: "assistant" as const, content: reply }].slice(-MAX_STORED));
     } catch {
       setError("Couldn't reach the stylist. Check your connection and try again.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  /** Pro-only web deal search, matched to the user's wardrobe. */
+  async function askDeals() {
+    if (sending || premiumLoading) return;
+    const query = input.trim() || DEFAULT_DEALS_QUERY;
+    setError(null);
+    const userMsg: ChatMsg = {
+      id: `u-${Date.now()}`,
+      role: "user",
+      content: `🔥 ${query}`,
+    };
+    const pushMsg = (m: ChatMsg) =>
+      setMessages((prev) => [...prev, m].slice(-MAX_STORED));
+
+    if (!isPro) {
+      pushMsg(userMsg);
+      pushMsg({
+        id: `a-${Date.now()}`,
+        role: "assistant",
+        content: "",
+        action: "pro_upsell",
+      });
+      setInput("");
+      return;
+    }
+
+    pushMsg(userMsg);
+    setInput("");
+    setSending(true);
+    try {
+      const result = await fetchDeals(query, {
+        weather,
+        closetItems,
+        style,
+        gender,
+        pastOutfits,
+      });
+      if (result.ok) {
+        const content =
+          result.summary ||
+          (result.deals.length > 0
+            ? "Here's what I found:"
+            : "I couldn't find live deals for that right now — try different wording.");
+        pushMsg({
+          id: `a-${Date.now()}`,
+          role: "assistant",
+          content,
+          deals: result.deals,
+        });
+      } else if (result.error === "pro_required") {
+        pushMsg({ id: `a-${Date.now()}`, role: "assistant", content: "", action: "pro_upsell" });
+      } else if (result.error === "daily_limit") {
+        pushMsg({
+          id: `a-${Date.now()}`,
+          role: "assistant",
+          content: result.detail ?? "You've hit today's deal search limit — it resets tomorrow.",
+        });
+      } else {
+        throw new Error("failed");
+      }
+    } catch {
+      setError("Deal search isn't working right now. Try again in a bit.");
     } finally {
       setSending(false);
     }
@@ -204,7 +283,30 @@ export function StylistChat({ open, onClose, weather, closetItems, style, gender
                     {m.image && (
                       <img src={m.image} alt="Outfit" className="rounded-xl mb-2 max-h-48 w-full object-cover" />
                     )}
-                    <p className="whitespace-pre-wrap">{m.content}</p>
+                    {m.action === "pro_upsell" ? (
+                      <div className="flex flex-col gap-2 py-1">
+                        <div className="flex items-center gap-2">
+                          <Crown className="w-4 h-4 text-amber-500" />
+                          <span className="font-bold text-sm">Deal hunting is a Pro feature</span>
+                        </div>
+                        <p className="text-sm text-neutral-600 dark:text-neutral-300">
+                          Pro searches the web for live clothing deals matched to your wardrobe and style.
+                        </p>
+                        <button
+                          onClick={() => {
+                            onClose();
+                            nav("/discover");
+                          }}
+                          className="mt-1 px-4 py-2 rounded-full text-white text-sm font-bold self-start"
+                          style={{ background: "linear-gradient(135deg, #FF9500 0%, #FF6B00 100%)" }}
+                        >
+                          See Fit Check Pro
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="whitespace-pre-wrap">{m.content}</p>
+                    )}
+                    {m.deals && m.deals.length > 0 && <DealResults deals={m.deals} />}
                     {m.role === "assistant" && (
                       <button
                         onClick={() => toggleSpeak(m)}
@@ -234,7 +336,7 @@ export function StylistChat({ open, onClose, weather, closetItems, style, gender
               {QUICK_PROMPTS.map((q) => (
                 <button
                   key={q.label}
-                  onClick={() => send(q.text)}
+                  onClick={() => (q.deals ? askDeals() : q.text ? send(q.text) : undefined)}
                   disabled={sending}
                   className="shrink-0 text-xs font-semibold px-3 py-2 rounded-full border border-orange-300 text-orange-600 dark:text-orange-400 disabled:opacity-50"
                 >

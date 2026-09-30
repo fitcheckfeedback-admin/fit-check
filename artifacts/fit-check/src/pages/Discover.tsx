@@ -1,10 +1,12 @@
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ShoppingBag, Crown, Sparkles, ExternalLink, ChevronLeft, TrendingUp, AlertCircle } from "lucide-react";
+import { ShoppingBag, Crown, Sparkles, ExternalLink, ChevronLeft, TrendingUp, AlertCircle, BadgeDollarSign } from "lucide-react";
 import { useLocation } from "wouter";
 import { ProGate } from "@/components/ProGate";
 import { isNative } from "@/lib/platform";
 import { Browser } from "@capacitor/browser";
+import { fetchSponsored, openDealLink, SponsoredProduct } from "@/lib/deals";
 
 interface ProductCard {
   id: string;
@@ -219,6 +221,62 @@ function prioritiseAccessories(accessories: ProductCard[], counts: ReturnType<ty
   return [...priority, ...rest].slice(0, 3);
 }
 
+/** Paid brand placements. Every card carries a visible "Sponsored" badge. */
+function SponsoredRow() {
+  const [products, setProducts] = useState<SponsoredProduct[]>([]);
+
+  useEffect(() => {
+    let live = true;
+    fetchSponsored().then((p) => {
+      if (live) setProducts(p);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  if (products.length === 0) return null;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 px-1">
+        <BadgeDollarSign className="w-4 h-4 text-amber-500" />
+        <h2 className="text-sm font-black">Featured Partners</h2>
+      </div>
+
+      <div className="space-y-3">
+        {products.map((p, i) => (
+          <motion.button
+            key={p.id}
+            onClick={() => openDealLink(p.url, p.id)}
+            initial={{ opacity: 0, x: -16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.15 + i * 0.07 }}
+            className="flex items-center gap-4 p-4 bg-card border border-amber-500/25 rounded-2xl active:scale-[0.99] transition-transform w-full text-left"
+          >
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="text-[10px] text-muted-foreground font-semibold">{p.brand}</p>
+                <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                  Sponsored
+                </span>
+              </div>
+              <p className="text-sm font-black mt-0.5">{p.name}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5 capitalize">{p.category}</p>
+            </div>
+            <div className="shrink-0 text-right">
+              {p.price && <p className="font-black text-base">{p.price}</p>}
+              <div className="flex items-center gap-0.5 text-[10px] font-bold text-primary justify-end mt-0.5">
+                View <ExternalLink className="w-3 h-3" />
+              </div>
+            </div>
+          </motion.button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function DiscoverContent() {
   const [, nav] = useLocation();
   const { settings } = useFitCheckSettings();
@@ -305,6 +363,8 @@ function DiscoverContent() {
             ))}
           </div>
         </div>
+
+        <SponsoredRow />
 
         <div className="space-y-4">
           <div className="flex items-center gap-2 px-1">

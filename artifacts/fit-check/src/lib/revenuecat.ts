@@ -27,6 +27,17 @@ export async function getRCProStatus(): Promise<boolean> {
   }
 }
 
+/** RevenueCat app user id, used for server-side Pro verification. Null on web. */
+export async function getRCUserId(): Promise<string | null> {
+  if (!isNative()) return null;
+  try {
+    const { customerInfo } = await Purchases.getCustomerInfo();
+    return customerInfo.originalAppUserId || null;
+  } catch {
+    return null;
+  }
+}
+
 /** Returns the current Pro offering's display price (e.g. "$2.99") from RevenueCat. */
 export async function getProOffering(): Promise<{ priceString: string } | null> {
   if (!isNative()) return null;

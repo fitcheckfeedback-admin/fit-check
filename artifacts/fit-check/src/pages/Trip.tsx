@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plane, MapPin, Calendar, ChevronLeft, Package, Sparkles, Droplets, Wind } from "lucide-react";
+import { Plane, MapPin, Calendar, ChevronLeft, Package, Sparkles, Droplets, Wind, Tag, Loader2, X } from "lucide-react";
 import { ProGate } from "@/components/ProGate";
 import { CitySearch } from "@/components/CitySearch";
 import { WeatherScene } from "@/components/WeatherScene";
@@ -11,6 +11,10 @@ import { formatTemp } from "@/lib/format";
 import { getWeatherInfo } from "@/lib/weather-codes";
 import { useFitCheckSettings } from "@/hooks/useFitCheckSettings";
 import { useLocation } from "wouter";
+import { ClosetData } from "@/lib/storage";
+import { flattenCloset } from "@/lib/appContext";
+import { fetchDeals, Deal } from "@/lib/deals";
+import { DealResults } from "@/components/DealResults";
 
 interface TripLocation {
   name: string;
@@ -27,52 +31,91 @@ function formatDisplayDate(dateStr: string) {
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
-function buildPackingList(days: TripDayForecast[], style: string, gender: string = "unspecified") {
-  const layers = new Set<string>();
-  const tops = new Set<string>();
-  const bottoms = new Set<string>();
-  const shoes = new Set<string>();
-  const extras = new Set<string>();
+interface WeatherNeeds {
+  cold: boolean;
+  cool: boolean;
+  warm: boolean;
+  hot: boolean;
+  rain: boolean;
+}
 
-  let hasRain = false;
-  let hasCold = false;
-  let hasHot = false;
-  let hasWind = false;
+function deriveNeeds(days: TripDayForecast[]): WeatherNeeds {
+  const needs: WeatherNeeds = { cold: false, cool: false, warm: false, hot: false, rain: false };
+  for (const d of days) {
+    if (d.precipChance > 40) needs.rain = true;
+    if (d.avgF < 50) needs.cold = true;
+    else if (d.avgF < 65) needs.cool = true;
+    else if (d.avgF <= 78) needs.warm = true;
+    else needs.hot = true;
+  }
+  return needs;
+}
 
-  for (const day of days) {
-    if (day.precipChance > 40) hasRain = true;
-    if (day.avgF < 50) hasCold = true;
-    if (day.avgF > 78) hasHot = true;
+export interface SmartPackingSection {
+  label: string;
+  /** Items the user already owns (from their closet). */
+  owned: string[];
+  /** Complementing essentials the weather calls for but the closet lacks. */
+  missing: string[];
+}
 
-    const rec = generateRecommendation({
-      temperatureF: day.avgF,
-      feelsLikeF: day.avgF,
-      precipChance: day.precipChance,
-      weatherCode: day.weatherCode,
-      windMph: 8,
-      humidity: 50,
-      isDay: true,
-      style: style as any,
-      gender: gender as any,
-    });
+/**
+ * Smart packing list: cross-references the destination forecast with what
+ * the user actually owns. Each section lists owned items first, then the
+ * complementing essentials worth packing (or shopping for).
+ */
+export function buildSmartPackingList(
+  days: TripDayForecast[],
+  closet: ClosetData,
+  _style: string,
+  _gender: string = "unspecified"
+): SmartPackingSection[] {
+  const needs = deriveNeeds(days);
+  const has = (names: string[], ...words: string[]) =>
+    names.some((n) => words.some((w) => n.includes(w)));
 
-    if (rec.outerwear) layers.add(rec.outerwear);
-    const mainParts = rec.mainOutfit.split(/[,+]/);
-    mainParts.forEach(p => {
-      const t = p.trim().toLowerCase();
-      if (t.includes("shirt") || t.includes("tee") || t.includes("top") || t.includes("henley") || t.includes("long sleeve") || t.includes("layer")) tops.add(p.trim());
-      if (t.includes("jeans") || t.includes("pants") || t.includes("chinos") || t.includes("shorts") || t.includes("skirt") || t.includes("trousers")) bottoms.add(p.trim());
-      if (t.includes("sneakers") || t.includes("shoes") || t.includes("boots") || t.includes("sandals") || t.includes("loafers")) shoes.add(p.trim());
-    });
+  const sections: SmartPackingSection[] = [];
+  const cats: { key: keyof ClosetData; label: string }[] = [
+    { key: "tops", label: "Tops" },
+    { key: "bottoms", label: "Bottoms" },
+    { key: "outerwear", label: "Layers" },
+    { key: "shoes", label: "Shoes" },
+    { key: "accessories", label: "Don't forget" },
+  ];
+
+  for (const { key, label } of cats) {
+    const ownedNames = (closet[key] ?? []).map((i) => i.name);
+    const ownedLower = ownedNames.map((n) => n.toLowerCase());
+    const missing: string[] = [];
+
+    if (key === "outerwear") {
+      if (needs.cold && !has(ownedLower, "coat", "parka", "puffer", "heavy jacket")) missing.push("Warm insulated coat");
+      if (needs.rain && !has(ownedLower, "rain")) missing.push("Rain jacket");
+      if ((needs.cool || needs.warm) && !has(ownedLower, "jacket", "coat", "blazer", "windbreaker", "hoodie", "cardigan"))
+        missing.push("Light jacket or windbreaker");
+    } else if (key === "tops") {
+      if (needs.cold && !has(ownedLower, "sweater", "hoodie", "fleece", "thermal", "turtleneck")) missing.push("Sweaters or hoodies");
+      if (needs.hot && !has(ownedLower, "tank", "linen")) missing.push("Breathable tees or tanks");
+    } else if (key === "bottoms") {
+      if (needs.cold && !has(ownedLower, "jean", "pant", "trouser", "corduroy")) missing.push("Jeans or heavier pants");
+      if (needs.hot && !has(ownedLower, "short")) missing.push("Shorts");
+    } else if (key === "shoes") {
+      if (needs.rain && !has(ownedLower, "waterproof", "rain boot", "galosh")) missing.push("Water-resistant shoes");
+      if (needs.cold && !has(ownedLower, "boot")) missing.push("Boots");
+      if (needs.hot && !has(ownedLower, "sandal", "flip")) missing.push("Sandals");
+    } else if (key === "accessories") {
+      if (needs.cold && !has(ownedLower, "beanie", "warm hat", "glove", "scarf")) missing.push("Warm hat & gloves");
+      if (needs.hot && !has(ownedLower, "sunglass")) missing.push("Sunglasses");
+      if (needs.rain && !has(ownedLower, "umbrella")) missing.push("Compact umbrella");
+      if (needs.hot && !has(ownedLower, "sunscreen")) missing.push("Sunscreen SPF 30+");
+    }
+
+    if (ownedNames.length > 0 || missing.length > 0) {
+      sections.push({ label, owned: ownedNames, missing });
+    }
   }
 
-  if (hasRain) extras.add("Compact umbrella / rain jacket");
-  if (hasCold) extras.add("Warm hat & gloves");
-  if (hasHot) extras.add("Sunscreen SPF 30+");
-  if (hasWind) extras.add("Windproof layer");
-  extras.add("Comfortable walking shoes");
-
-  return { layers: [...layers], tops: [...tops], bottoms: [...bottoms], shoes: [...shoes], extras: [...extras] };
+  return sections;
 }
 
 export default function Trip() {
@@ -91,6 +134,13 @@ export default function Trip() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedDay, setExpandedDay] = useState<number | null>(0);
+  const [dealState, setDealState] = useState<{
+    query: string;
+    loading: boolean;
+    summary: string;
+    deals: Deal[];
+    error: string | null;
+  } | null>(null);
 
   async function handlePlan() {
     if (!destination) return;
@@ -108,8 +158,31 @@ export default function Trip() {
     }
   }
 
-  const packing = forecast ? buildPackingList(forecast, settings.style, settings.gender) : null;
+  const packing = forecast ? buildSmartPackingList(forecast, settings.closet, settings.style, settings.gender) : null;
   const nightsBefore = forecast ? Math.max(0, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000)) : 0;
+
+  async function runDealSearch(item: string) {
+    const query = `Find deals on ${item.toLowerCase()} in ${settings.style || "my"} style`;
+    setDealState({ query, loading: true, summary: "", deals: [], error: null });
+    const result = await fetchDeals(query, {
+      closetItems: flattenCloset(settings.closet),
+      style: settings.style,
+      gender: settings.gender,
+    });
+    if (result.ok) {
+      setDealState({ query, loading: false, summary: result.summary, deals: result.deals, error: null });
+    } else if (result.error === "daily_limit") {
+      setDealState({
+        query,
+        loading: false,
+        summary: "",
+        deals: [],
+        error: result.detail ?? "You've hit today's deal search limit — it resets tomorrow.",
+      });
+    } else {
+      setDealState({ query, loading: false, summary: "", deals: [], error: "Deal search isn't working right now. Try again in a bit." });
+    }
+  }
 
   return (
     <ProGate
@@ -320,26 +393,83 @@ export default function Trip() {
                 </div>
 
                 <div className="space-y-4">
-                  {[
-                    { label: "Tops", items: packing.tops },
-                    { label: "Bottoms", items: packing.bottoms },
-                    { label: "Layers", items: packing.layers },
-                    { label: "Shoes", items: packing.shoes },
-                    { label: "Don't forget", items: packing.extras },
-                  ].filter(s => s.items.length > 0).map(({ label, items }) => (
-                    <div key={label}>
-                      <span className="text-[10px] uppercase tracking-widest font-black text-primary">{label}</span>
-                      <div className="mt-1.5 space-y-1">
-                        {items.map(item => (
-                          <div key={item} className="flex items-start gap-2">
-                            <div className="w-4 h-4 rounded border-2 border-border mt-0.5 shrink-0" />
-                            <span className="text-sm font-medium">{item}</span>
+                  {packing.map((section) => (
+                    <div key={section.label}>
+                      <span className="text-[10px] uppercase tracking-widest font-black text-primary">{section.label}</span>
+                      {section.owned.length > 0 && (
+                        <div className="mt-1.5">
+                          <p className="text-[11px] font-semibold text-muted-foreground mb-1">From your closet</p>
+                          <div className="space-y-1">
+                            {section.owned.map((item) => (
+                              <div key={item} className="flex items-start gap-2">
+                                <div className="w-4 h-4 rounded border-2 border-border mt-0.5 shrink-0" />
+                                <span className="text-sm font-medium">{item}</span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      )}
+                      {section.missing.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400 mb-1">Worth adding</p>
+                          <div className="space-y-1.5">
+                            {section.missing.map((item) => (
+                              <div key={item} className="flex items-center gap-2">
+                                <Tag className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                <span className="text-sm font-medium flex-1">{item}</span>
+                                <button
+                                  onClick={() => runDealSearch(item)}
+                                  className="shrink-0 text-xs font-bold px-2.5 py-1 rounded-full border border-orange-300 text-orange-600 dark:text-orange-400"
+                                >
+                                  Find deals
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
+              </motion.div>
+            )}
+
+            {/* Inline deal results for a complementing item */}
+            {dealState && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-card border rounded-2xl p-5 shadow-sm"
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+                    style={{ background: "linear-gradient(135deg, #FF9500, #FF6B00)" }}>
+                    <Tag className="w-4 h-4 text-white" />
+                  </div>
+                  <h3 className="font-display font-black text-base leading-tight flex-1">Deals</h3>
+                  <button
+                    onClick={() => setDealState(null)}
+                    className="p-1.5 rounded-full text-muted-foreground"
+                    aria-label="Close deals"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                {dealState.loading ? (
+                  <div className="flex items-center gap-2 py-6 justify-center">
+                    <Loader2 className="w-5 h-5 animate-spin text-orange-500" />
+                    <span className="text-sm text-muted-foreground font-medium">Searching live deals…</span>
+                  </div>
+                ) : dealState.error ? (
+                  <p className="text-sm text-destructive font-medium">{dealState.error}</p>
+                ) : (
+                  <>
+                    {dealState.summary && (
+                      <p className="text-sm text-muted-foreground mb-1">{dealState.summary}</p>
+                    )}
+                    <DealResults deals={dealState.deals} />
+                  </>
+                )}
               </motion.div>
             )}
           </motion.div>
