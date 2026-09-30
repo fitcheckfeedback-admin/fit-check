@@ -8,9 +8,11 @@ import { logger } from "./logger";
  *  1. deviceId exists in premium_access (web/Stripe purchases + manual grants), or
  *  2. rcUserId (RevenueCat app user id) verifies live against RevenueCat's API.
  *
- * #2 needs REVENUECAT_SECRET_KEY in the environment (RevenueCat dashboard →
- * API keys → Secret). Results are cached 1h in memory; a restart just means
- * re-verification, never a wrong answer.
+ * #2 needs REVENUECAT_SECRET_KEY in the environment. Generate it in the
+ * RevenueCat dashboard under Project Settings → API keys → "New secret API
+ * key", choosing **V1** as the API version (this code calls the v1
+ * /subscribers endpoint; a V2 key returns 403 there). Results are cached
+ * 1h in memory; a restart just means re-verification, never a wrong answer.
  */
 
 const PRO_ENTITLEMENT = "pro";
