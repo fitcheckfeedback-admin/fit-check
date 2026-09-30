@@ -605,6 +605,9 @@ export default function Home() {
             closetItems={allClosetItems}
             style={settings.style}
             gender={settings.gender}
+            pastOutfits={allSavedFits.slice(0, 5).map((f) =>
+              `${f.label}: ${f.mainOutfit}${f.outerwear ? ` + ${f.outerwear}` : ""}`
+            )}
           />
         </motion.section>
 

@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Sparkles, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Sparkles, Loader2, ChevronDown, ChevronUp, MessageCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { recordStylistSuccess } from "@/lib/appReview";
+import { StylistChat } from "@/components/StylistChat";
 
 interface AIStylistCardProps {
   weather: {
@@ -16,13 +17,15 @@ interface AIStylistCardProps {
   closetItems: { name: string; category: string }[];
   style: string;
   gender?: string;
+  pastOutfits?: string[];
 }
 
-export function AIStylistCard({ weather, closetItems, style, gender = "unspecified" }: AIStylistCardProps) {
+export function AIStylistCard({ weather, closetItems, style, gender = "unspecified", pastOutfits }: AIStylistCardProps) {
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   async function fetchStyling() {
     setLoading(true);
@@ -47,6 +50,7 @@ export function AIStylistCard({ weather, closetItems, style, gender = "unspecifi
   }
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -59,11 +63,20 @@ export function AIStylistCard({ weather, closetItems, style, gender = "unspecifi
             <Sparkles className="w-4 h-4 text-white/90" />
             <span className="text-[11px] font-black uppercase tracking-wider text-white/80">AI Stylist</span>
           </div>
-          {result && (
-            <button onClick={() => setCollapsed(c => !c)} className="text-white/70">
-              {collapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setChatOpen(true)}
+              className="flex items-center gap-1 text-white/80 text-xs font-bold bg-white/15 hover:bg-white/25 rounded-full px-3 py-1.5 transition-colors"
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              Chat
             </button>
-          )}
+            {result && (
+              <button onClick={() => setCollapsed(c => !c)} className="text-white/70 p-1">
+                {collapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+              </button>
+            )}
+          </div>
         </div>
 
         {!result && !loading && (
@@ -128,5 +141,15 @@ export function AIStylistCard({ weather, closetItems, style, gender = "unspecifi
         </AnimatePresence>
       </div>
     </motion.div>
+    <StylistChat
+      open={chatOpen}
+      onClose={() => setChatOpen(false)}
+      weather={weather}
+      closetItems={closetItems}
+      style={style}
+      gender={gender}
+      pastOutfits={pastOutfits}
+    />
+    </>
   );
 }

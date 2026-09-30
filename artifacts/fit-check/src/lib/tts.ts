@@ -54,7 +54,7 @@ const NativeTTS = registerPlugin<VoiceTTSPlugin>("VoiceTTS");
  * Set to the Railway deploy URL when it exists; empty string disables
  * the cloud path and the app uses on-device voices only.
  */
-export const CLOUD_TTS_BASE = "";
+export const CLOUD_TTS_BASE = "https://api-production-9e7ca.up.railway.app";
 
 export const CLOUD_VOICE_ID = "cloud-fitcheck-voice";
 

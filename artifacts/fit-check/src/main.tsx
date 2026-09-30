@@ -5,7 +5,7 @@ import { registerServiceWorker } from "./lib/swRegister";
 import { setBaseUrl } from "@workspace/api-client-react";
 import { isNative } from "./lib/platform";
 
-const PROD_API = "https://style-sense-fitcheck.replit.app";
+const PROD_API = "https://api-production-9e7ca.up.railway.app";
 
 if (isNative()) {
   setBaseUrl(PROD_API);
