@@ -5,7 +5,7 @@ import { useLocation } from "wouter";
 import { compressImage } from "@/lib/imageCompress";
 import { speak, stopSpeaking } from "@/lib/tts";
 import { usePremium } from "@/hooks/usePremium";
-import { fetchDeals, Deal } from "@/lib/deals";
+import { fetchDeals, Deal, DEAL_RE } from "@/lib/deals";
 import { buildAiContext } from "@/lib/appContext";
 import { DealResults } from "@/components/DealResults";
 
@@ -91,6 +91,14 @@ export function StylistChat({ open, onClose, weather, closetItems, style, gender
   async function send(text: string, image?: string | null) {
     const content = text.trim();
     if ((!content && !image) || sending) return;
+    // Shopping/link asks go to the live deal search, not the chat model —
+    // the chat model has no web access and can't return real links.
+    if (!image && DEAL_RE.test(content)) {
+      setInput("");
+      setPendingImage(null);
+      await askDeals(content);
+      return;
+    }
     setError(null);
     const userMsg: ChatMsg = {
       id: `u-${Date.now()}`,
@@ -129,9 +137,9 @@ export function StylistChat({ open, onClose, weather, closetItems, style, gender
   }
 
   /** Pro-only web deal search, matched to the user's wardrobe. */
-  async function askDeals() {
+  async function askDeals(overrideQuery?: string) {
     if (sending || premiumLoading) return;
-    const query = input.trim() || DEFAULT_DEALS_QUERY;
+    const query = (overrideQuery ?? input).trim() || DEFAULT_DEALS_QUERY;
     setError(null);
     const userMsg: ChatMsg = {
       id: `u-${Date.now()}`,

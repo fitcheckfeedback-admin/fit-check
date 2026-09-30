@@ -5,7 +5,7 @@ import { useVoiceAssistant } from "@/hooks/useVoiceAssistant";
 import { parseVoiceQuestion } from "@/lib/voiceIntent";
 import { buildVoiceAnswer } from "@/lib/voiceAnswer";
 import { buildAiContext } from "@/lib/appContext";
-import { fetchDeals, Deal } from "@/lib/deals";
+import { fetchDeals, Deal, DEAL_RE } from "@/lib/deals";
 import { DealResults } from "@/components/DealResults";
 import { useToast } from "@/hooks/use-toast";
 import { WeatherForecastResponse } from "@/lib/weather";
@@ -73,15 +73,14 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
     return undefined;
   }, [isOpen]);
 
-  // Pro-only: phrases that mean "search the web for clothing deals".
-  const DEAL_RE = /\bdeals?\b|\bsale\b|\bdiscount\b|\bcheapest\b|\bcoupon\b|where can i buy|find me.*(cheap|deal)/i;
-
   useEffect(() => {
     if (!isOpen || isListening || !transcript || isSpeaking || answer) return;
     // Follow-ups to an AI turn stay with the AI: the local weather builder
     // can't interpret "yes" or "list them", but the backend can with history.
-    // Deal asks are fresh questions (not follow-ups) matching deal keywords.
-    const isDealAsk = !lastWasAppRef.current && DEAL_RE.test(transcript);
+    // Deal/link asks are checked first, even as follow-ups ("give me links
+    // to those"): the chat model has no web access, so only the deal search
+    // can return real links.
+    const isDealAsk = DEAL_RE.test(transcript);
     const intent = lastWasAppRef.current
       ? { type: "app" as const, raw: transcript }
       : parseVoiceQuestion(transcript);
@@ -96,7 +95,16 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
       setIsThinking(true);
       (async () => {
         try {
-          const result = await fetchDeals(transcript, buildAiContext(settings, weatherData));
+          // "those"/"them" refer to the previous suggestion — include it so
+          // the search knows what the user wants links for.
+          const lastAssistant = [...historyRef.current]
+            .reverse()
+            .find((m) => m.role === "assistant")?.content;
+          const dealQuery =
+            lastAssistant && /\b(those|them|that|it)\b/i.test(transcript)
+              ? `Earlier suggestion: ${lastAssistant}\nUser asks: ${transcript}`
+              : transcript;
+          const result = await fetchDeals(dealQuery, buildAiContext(settings, weatherData));
           if (cancelled) return;
           if (result.ok) {
             const summary =
@@ -288,10 +296,10 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
             </button>
 
             <div 
-              className="flex flex-col items-center max-w-sm w-full space-y-12"
+              className="flex flex-col items-center max-w-sm w-full max-h-full overflow-y-auto space-y-8 shrink-0"
               onClick={e => e.stopPropagation()}
             >
-              <div className="relative flex items-center justify-center w-48 h-48">
+              <div className="relative flex items-center justify-center w-48 h-48 shrink-0">
                 <motion.div
                   animate={{
                     scale: isListening ? [1, 1.5, 1] : isSpeaking ? [1, 1.1, 1] : 1,
@@ -319,7 +327,12 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
                 </motion.div>
               </div>
 
-              <div className="text-center space-y-6 min-h-[160px] flex flex-col justify-center">
+              {/* Scrollable conversation region: long answers scroll in place
+                  instead of pushing the Reply/Done buttons off-screen. The
+                  m-auto inner wrapper keeps short content centered without
+                  clipping the top when scrolled. */}
+              <div className="w-full min-h-[120px] max-h-[42vh] overflow-y-auto flex px-1">
+                <div className="m-auto w-full text-center space-y-6">
                 {answer ? (
                   <>
                     <motion.p
@@ -331,7 +344,7 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
                     </motion.p>
                     {dealResults && dealResults.length > 0 && (
                       <div
-                        className="max-h-64 overflow-y-auto w-full text-left"
+                        className="w-full text-left"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <DealResults deals={dealResults} />
@@ -374,13 +387,14 @@ export function VoiceAssistant({ weatherData, recommendation, settings, autoStar
                     )}
                   </>
                 )}
+                </div>
               </div>
 
               {answer && !isSpeaking && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="flex items-center gap-3"
+                  className="flex items-center gap-3 shrink-0"
                 >
                   <button
                     onClick={handleReply}

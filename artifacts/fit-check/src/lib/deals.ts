@@ -25,6 +25,13 @@ export interface SponsoredProduct {
   url: string;
 }
 
+/** Phrases that mean "search the web for clothing deals or product links".
+ *  Shared by the voice assistant and stylist chat so shopping asks always
+ *  route to the live deal search — the plain chat model has no web access
+ *  and cannot return real links. */
+export const DEAL_RE =
+  /\bdeals?\b|\bsale\b|\bdiscount\b|\bcheapest\b|\bcoupon\b|where can i buy|find me.*(cheap|deal)|\blinks?\b|\bshop\b|\bbuy\b|where (can|do) i (get|find|buy)/i;
+
 export type DealsResult =
   | { ok: true; summary: string; deals: Deal[] }
   | { ok: false; error: "pro_required" | "daily_limit" | "failed"; detail?: string };
